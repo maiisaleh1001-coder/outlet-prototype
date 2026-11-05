@@ -25,6 +25,14 @@ html.standalone .device > .screen { width: 100% !important; height: 100% !import
 .proto-toast.show { opacity: 1; transform: translate(-50%, 0); }
 .proto-pop { animation: proto-pop .3s ease; }
 .proto-hide { display: none !important; }
+.proto-sheet-wrap { position: absolute; inset: 0; z-index: 30; }
+.proto-backdrop { position: absolute; inset: 0; background: rgba(28,25,23,0.45); opacity: 0; transition: opacity .25s ease; }
+.proto-sheet { position: absolute; left: 0; right: 0; bottom: 0; transform: translateY(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+.proto-sheet-wrap.open .proto-backdrop { opacity: 1; }
+.proto-sheet-wrap.open .proto-sheet { transform: translateY(0); }
+.proto-sheet.dragging { transition: none; }
+.proto-toast { z-index: 40; }
+@media (prefers-reduced-motion: reduce) { .proto-backdrop, .proto-sheet { transition: none; } }
 .proto-empty { padding: 48px 24px; text-align: center; font: 700 16px/24px "Thmanyah Sans", system-ui, sans-serif; color: #1C1917; }
 .proto-empty span { display: block; margin-top: 4px; font-weight: 400; font-size: 13px; line-height: 20px; color: #6B635D; }
 @keyframes proto-pop { 50% { transform: scale(1.25); } }
