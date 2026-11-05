@@ -284,17 +284,48 @@
     var key = heroImg ? heroImg.getAttribute('src') : '';
     var favBtn = document.querySelector('[data-p="fav"]');
     if (favBtn) paintFav(favBtn, !!favs[key]);
-    var views = [['none', '50% 50%'], ['scale(1.9)', '50% 22%'], ['scale(1.8)', '50% 88%']], view = 0;
-    var showView = function () {
-      if (!heroImg) return;
+    // Photos change in place with a card flip (no sliding or zooming out of the frame); the arrows loop round.
+    var views = [['none', '50% 50%'], ['scale(1.9)', '50% 22%'], ['scale(1.8)', '50% 88%']], view = 0, flipping = false;
+    var frame = null;
+    if (heroImg) {
+      frame = document.createElement('div');
+      ['position', 'top', 'left', 'width', 'height', 'marginLeft'].forEach(function (k) { frame.style[k] = heroImg.style[k]; });
+      frame.style.overflow = 'hidden';
+      frame.style.mixBlendMode = 'multiply';        // the white photo background still disappears into the page
+      frame.style.transformStyle = 'preserve-3d';
+      frame.style.willChange = 'transform';
+      heroImg.parentNode.insertBefore(frame, heroImg);
+      frame.appendChild(heroImg);
+      heroImg.style.cssText = 'display: block; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal';
+    }
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var setView = function () {
       heroImg.style.transformOrigin = views[view][1]; heroImg.style.transform = views[view][0];
       var c = document.querySelector('[data-pager-count]'); if (c) c.textContent = (view + 1) + '/' + views.length;
+    };
+    var flipTo = function (dir) { // dir: 1 = next, -1 = previous
+      if (!frame || flipping) return;
+      view = (view + (dir > 0 ? 1 : views.length - 1)) % views.length;
+      if (reduceMotion) { setView(); return; }
+      flipping = true;
+      var out = dir > 0 ? -90 : 90; // RTL: next turns towards the left
+      frame.style.transition = 'transform .2s cubic-bezier(.55,0,.75,.4)';
+      frame.style.transform = 'perspective(900px) rotateY(' + out + 'deg)';
+      setTimeout(function () {
+        setView();
+        frame.style.transition = 'none';
+        frame.style.transform = 'perspective(900px) rotateY(' + (-out) + 'deg)';
+        void frame.offsetWidth;
+        frame.style.transition = 'transform .24s cubic-bezier(.2,.7,.3,1)';
+        frame.style.transform = 'perspective(900px) rotateY(0deg)';
+        setTimeout(function () { flipping = false; }, 240);
+      }, 200);
     };
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('[data-pager], [data-act], [data-p="fav"], [data-p="seller-link"]');
       if (!b) return;
       e.stopPropagation(); e.preventDefault();
-      if (b.hasAttribute('data-pager')) { view = (view + (b.getAttribute('data-pager') === 'next' ? 1 : views.length - 1)) % views.length; showView(); }
+      if (b.hasAttribute('data-pager')) { flipTo(b.getAttribute('data-pager') === 'next' ? 1 : -1); }
       else if (b.getAttribute('data-p') === 'fav') { paintFav(b, toggleFav(key)); }
       else if (b.getAttribute('data-p') === 'seller-link') { toast('صفحة البائع لسه بتتصمم'); }
       else if (b.getAttribute('data-act') === 'more') {
