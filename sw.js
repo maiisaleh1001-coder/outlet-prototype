@@ -5,6 +5,8 @@ const CORE = [
   './index.html',
   './category.html',
   './categories.html',
+  './search.html',
+  './product.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

@@ -1,5 +1,10 @@
+// outlet prototype behaviour (prototype only; the design canvas stays static).
+// Back, favourites, cart count, quick-add sheet, product page, filter + sort, search, toasts.
 (function () {
   var screen = document.querySelector('.screen');
+  var page = (location.pathname.split('/').pop() || 'index.html').replace(/\?.*$/, '') || 'index.html';
+
+  // ---------- small helpers ----------
   var toastEl, toastTimer;
   function toast(msg) {
     if (!screen) return;
@@ -11,138 +16,95 @@
   }
   function read(key, fallback) { try { var v = sessionStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } }
   function write(key, value) { try { sessionStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+  function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function norm(s) {
+    return (s || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim();
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  // ---------- cart + favourites ----------
   var cart = read('outlet-cart', 3);
   var favs = read('outlet-favs', {});
-  function cartBadges() { return document.querySelectorAll('a[aria-label^="سلة التسوق"] > span'); }
   function paintCart(pop) {
-    cartBadges().forEach(function (b) {
+    document.querySelectorAll('a[aria-label^="سلة التسوق"] > span').forEach(function (b) {
       b.textContent = cart;
       b.parentNode.setAttribute('aria-label', 'سلة التسوق، ' + cart + ' قطع');
       if (pop) { b.classList.remove('proto-pop'); void b.offsetWidth; b.classList.add('proto-pop'); }
     });
   }
-  function favKey(btn) { var img = btn.parentNode.querySelector('img'); return img ? img.getAttribute('src') : ''; }
+  function addToCart() { cart += 1; write('outlet-cart', cart); paintCart(true); toast('اتضافت للسلة'); }
   function paintFav(btn, on) {
     var svg = btn.querySelector('svg');
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     btn.setAttribute('aria-label', on ? 'شيل من المفضلة' : 'أضف للمفضلة');
     if (svg) { svg.setAttribute('fill', on ? '#EA580C' : 'none'); svg.setAttribute('stroke', on ? '#EA580C' : 'currentColor'); }
   }
+  function toggleFav(key) {
+    var on = !favs[key];
+    if (on) favs[key] = 1; else delete favs[key];
+    write('outlet-favs', favs);
+    toast(on ? 'اتضافت للمفضلة' : 'اتشالت من المفضلة');
+    return on;
+  }
   paintCart(false);
-  document.querySelectorAll('button[aria-label="أضف للمفضلة"]').forEach(function (b) { paintFav(b, !!favs[favKey(b)]); });
 
-  // Quick-add bottom sheet: opened by the + on any product card
+  // ---------- product data (read from a card) ----------
   var sellers = [['خزانة لمى', '4.9', 'الرياض', 38], ['دولاب سارة', '4.8', 'جدة', 21], ['ركن هند', '5.0', 'الدمام', 54], ['ستايل نوف', '4.7', 'الخبر', 12]];
-  function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
-  var ICON_CLOSE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>';
-  var ICON_CHEV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 19.92L8.48 13.4c-.77-.77-.77-2.03 0-2.8L15 4.08"></path></svg>';
-  var ICON_HEART = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.62 20.81c-.34.12-.9.12-1.24 0C8.48 19.82 2 15.69 2 8.69 2 5.6 4.49 3.1 7.56 3.1c1.82 0 3.43.88 4.44 2.24a5.53 5.53 0 0 1 4.44-2.24C19.51 3.1 22 5.6 22 8.69c0 7-6.48 11.13-9.38 12.12Z"></path></svg>';
-  var ICON_BAG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 7.67V6.7c0-2.25 1.81-4.46 4.06-4.67a4.5 4.5 0 0 1 4.94 4.48v1.38M9 22h6c4.02 0 4.74-1.61 4.95-3.57l.75-6C20.97 9.99 20.27 8 16 8H8c-4.27 0-4.97 1.99-4.7 4.43l.75 6C4.26 20.39 4.98 22 9 22Z"></path></svg>';
-  var ICON_SHIELD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M10.49 2.23 5.5 4.11c-1.15.43-2.09 1.79-2.09 3.01v7.43c0 1.18.78 2.73 1.73 3.44l4.3 3.21c1.41 1.06 3.73 1.06 5.14 0l4.3-3.21c.95-.71 1.73-2.26 1.73-3.44V7.12c0-1.23-.94-2.59-2.09-3.02l-4.99-1.87c-.85-.31-2.21-.31-3.04 0Z"></path><path d="m9.05 11.87 1.61 1.61 4.3-4.3"></path></svg>';
-  var sheetOpen = null;
-  function openSheet(card, opener) {
-    if (!screen || sheetOpen) return;
+  var colors = [['أخضر', '#8FA68A'], ['أسود', '#1C1917'], ['أحمر', '#C0392B'], ['أبيض', '#F4F1EA'], ['بيج', '#D8C3A5'], ['كحلي', '#233A5E'], ['أزرق', '#8DB3D9'],
+                ['وردي', '#D9A3A8'], ['تراكوتا', '#B5583A'], ['الجمل', '#C19A6B'], ['جملي', '#C19A6B'], ['بني', '#A0703F'], ['كريمي', '#EFE6D2']];
+  function sizeOf(name) { return /حذاء/.test(name) ? '40' : /شنط/.test(name) ? 'مقاس واحد' : ['S', 'M', 'L', 'XL', 'M', 'XS', 'L'][hash(name) % 7]; }
+  function cardOf(el) { var b = el.querySelector ? el : null; return el.closest('div[style*="border-radius: 18px"]'); }
+  function productInfo(card) {
     var img = card.querySelector('img');
     var nameEl = card.querySelector('span[style*="ellipsis"]');
     var name = nameEl ? nameEl.textContent.trim() : '';
     var priceEl = card.querySelector('span[style*="font-size: 16px"]');
     var oldEl = card.querySelector('s');
     var badge = [].filter.call(card.querySelectorAll('span'), function (s) { return /^خصم/.test(s.textContent.trim()); })[0];
-    var h = hash(name);
-    var size = /حذاء/.test(name) ? '40' : /شنط/.test(name) ? 'مقاس واحد' : ['S', 'M', 'L'][h % 3];
+    var alt = img ? img.alt : name, h = hash(name), text = name + ' ' + alt;
+    var col = colors.filter(function (c) { return text.indexOf(c[0]) !== -1; })[0] || ['متعدد', 'conic-gradient(#C2410C, #233A5E, #EFE6D2, #C2410C)'];
     var cond = ['ممتازة', 'كالجديدة', 'ممتازة', 'جيدة جدًا'][h % 4];
-    var sel = sellers[h % sellers.length];
-    var src = img ? img.getAttribute('src') : '', alt = img ? img.alt : name;
-    function slide(tf, origin) {
-      return '<div style="flex: none; width: 232px; height: 296px; border-radius: 18px; background: #F7F3F0; overflow: hidden; scroll-snap-align: start"><img src="' + src + '" alt="' + alt + '" style="width: 100%; height: 100%; object-fit: contain; transform: ' + tf + '; transform-origin: ' + origin + '; mix-blend-mode: multiply"></div>';
-    }
-    var price = priceEl ? priceEl.outerHTML.replace('font-size: 16px', 'font-size: 24px').replace('gap: 4px', 'gap: 5px').replace('width="12" height="13"', 'width="17" height="19"').replace(/color: #[0-9A-F]{6}/i, 'color: #1C1917') : '';
-    var old = oldEl ? oldEl.outerHTML.replace('font-size: 12px', 'font-size: 14px').replace('width="9" height="10"', 'width="11" height="12"') : '';
-    var off = badge ? '<span style="height: 24px; padding: 0 9px; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center">' + badge.textContent.trim() + '</span>' : '';
-    var on = !!favs[src];
+    var size = sizeOf(name);
+    return {
+      src: img ? img.getAttribute('src') : '', alt: alt, name: name,
+      price: priceEl ? priceEl.innerHTML : '', priceNum: priceEl ? parseInt(priceEl.textContent.replace(/\D/g, ''), 10) : 0,
+      old: oldEl ? oldEl.innerHTML : '', off: badge ? badge.textContent.trim() : '',
+      size: size, cond: cond, color: col[0], colorDot: col[1], seller: sellers[h % sellers.length],
+      desc: alt + '. قطعة مستعملة بحالة ' + cond + '، نظيفة ومن غير عيوب ظاهرة، والمقاس ' + size + '. الصور للقطعة نفسها، وبتتشحن متطبّقة ومغلّفة بعناية.'
+    };
+  }
+  function openProduct(card) { write('outlet-product', productInfo(card)); location.href = 'product.html'; }
+
+  // ---------- bottom sheets ----------
+  var sheetOpen = null;
+  function mountSheet(html, onClick, opener) {
+    if (!screen || sheetOpen) return null;
     var wrap = document.createElement('div');
     wrap.className = 'proto-sheet-wrap';
-    wrap.innerHTML =
-      '<div class="proto-backdrop" data-act="close"></div>' +
-      '<section class="proto-sheet" role="dialog" aria-modal="true" aria-label="إضافة سريعة: ' + name + '" style="max-height: 86%; box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; font-family: inherit; color: #1C1917">' +
-        '<div class="proto-grab" style="flex: none; position: relative; height: 40px; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab">' +
-          '<span aria-hidden="true" style="width: 40px; height: 5px; border-radius: 999px; background: #E7DED6"></span>' +
-          '<button type="button" data-act="close" aria-label="إغلاق" style="position: absolute; top: 6px; left: 10px; width: 40px; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #1C1917; display: flex; align-items: center; justify-content: center; padding: 0">' + ICON_CLOSE + '</button>' +
-        '</div>' +
-        '<div class="noscroll" style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 8px">' +
-          '<div class="noscroll" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 18px; scroll-snap-type: x mandatory">' + slide('scale(1.05)', '50% 50%') + slide('scale(2.1)', '50% 28%') + slide('scale(2)', '50% 88%') + '</div>' +
-          '<div style="display: flex; flex-direction: column; gap: 14px; padding: 0 18px">' +
-            '<div style="display: flex; align-items: center; gap: 12px"><h2 style="flex: 1; min-width: 0; margin: 0; font-size: 18px; line-height: 26px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + name + '</h2>' +
-            '<a href="#product" data-act="soon" style="flex: none; display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500; color: #6B635D; text-decoration: none; padding: 8px 0">التفاصيل' + ICON_CHEV + '</a></div>' +
-            '<div style="display: flex; align-items: center; gap: 10px">' + price + old + off + '</div>' +
-            '<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">' +
-              '<div style="background: #F7F3F0; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; line-height: 16px; color: #6B635D">المقاس</span><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + size + '</span></div>' +
-              '<div style="background: #F7F3F0; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; line-height: 16px; color: #6B635D">الحالة</span><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + cond + '</span></div>' +
-            '</div>' +
-            '<a href="#seller" data-act="soon" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid #EFE6DE; border-bottom: 1px solid #EFE6DE; text-decoration: none; color: #1C1917">' +
-              '<span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FDEBDD; color: #9A3412; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">' + sel[0].split(' ').pop().charAt(0) + '</span>' +
-              '<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 700">' + sel[0] + '</span><span style="font-size: 12px; line-height: 16px; color: #6B635D">★ ' + sel[1] + ' · ' + sel[2] + ' · ' + sel[3] + ' قطعة مباعة</span></span>' +
-              '<span style="color: #6B635D; display: flex">' + ICON_CHEV + '</span></a>' +
-            '<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D">' + ICON_SHIELD + 'قطعة واحدة متاحة، والمبلغ محفوظ حتى استلامها</p>' +
-          '</div>' +
-        '</div>' +
-        '<div style="flex: none; display: flex; align-items: center; gap: 12px; padding: 12px 18px 28px; border-top: 1px solid #EFE6DE; background: #FFFFFF">' +
-          '<button type="button" data-act="fav" aria-pressed="' + on + '" aria-label="' + (on ? 'شيل من المفضلة' : 'أضف للمفضلة') + '" style="width: 52px; height: 52px; flex: none; border: 1px solid #EFE6DE; border-radius: 999px; background: #FFFFFF; color: ' + (on ? '#EA580C' : '#1C1917') + '; display: flex; align-items: center; justify-content: center; padding: 0">' + ICON_HEART + '</button>' +
-          '<button type="button" data-act="add" style="flex: 1; height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">' + ICON_BAG + 'أضف للسلة</button>' +
-        '</div>' +
-      '</section>';
+    wrap.innerHTML = '<div class="proto-backdrop" data-act="close"></div>' + html;
     screen.appendChild(wrap);
-    var sheet = wrap.querySelector('.proto-sheet');
-    var favBtn = wrap.querySelector('[data-act="fav"]');
-    if (on) favBtn.querySelector('svg').setAttribute('fill', '#EA580C');
+    var sheet = wrap.querySelector('section');
+    sheet.classList.add('proto-sheet');
     sheetOpen = { wrap: wrap, opener: opener };
-    void wrap.offsetHeight; // commit the closed state so the slide-up transition runs
+    void wrap.offsetHeight; // commit the closed state so the slide-up runs
     wrap.classList.add('open');
-    wrap.querySelector('[data-act="close"][aria-label]').focus({ preventScroll: true });
-
+    var closeBtn = wrap.querySelector('button[data-act="close"]');
+    if (closeBtn) closeBtn.focus({ preventScroll: true });
     wrap.addEventListener('click', function (e) {
       e.stopPropagation();
-      var b = e.target.closest('[data-act]');
-      if (!b) return;
-      var act = b.getAttribute('data-act');
-      if (act === 'close') closeSheet();
-      else if (act === 'soon') { e.preventDefault(); toast('الشاشة دي لسه بتتصمم'); }
-      else if (act === 'fav') {
-        var now = !favs[src];
-        if (now) favs[src] = 1; else delete favs[src];
-        write('outlet-favs', favs);
-        b.setAttribute('aria-pressed', now ? 'true' : 'false');
-        b.setAttribute('aria-label', now ? 'شيل من المفضلة' : 'أضف للمفضلة');
-        b.style.color = now ? '#EA580C' : '#1C1917';
-        b.querySelector('svg').setAttribute('fill', now ? '#EA580C' : 'none');
-        var cardFav = card.querySelector('button[aria-label="أضف للمفضلة"], button[aria-pressed]');
-        if (cardFav) paintFav(cardFav, now);
-        toast(now ? 'اتضافت للمفضلة' : 'اتشالت من المفضلة');
-      } else if (act === 'add') {
-        cart += 1; write('outlet-cart', cart);
-        closeSheet();
-        setTimeout(function () { paintCart(true); toast('اتضافت للسلة'); }, 200);
-      }
+      var b = e.target.closest('[data-act], [data-sort], [data-size]');
+      if (b && b.getAttribute('data-act') === 'close') { closeSheet(); return; }
+      onClick(e, b, wrap);
     });
-
     // drag the handle down to close
-    var grab = wrap.querySelector('.proto-grab'), startY = null, dy = 0;
-    grab.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('button')) return;
-      startY = e.clientY; dy = 0; sheet.classList.add('dragging'); grab.setPointerCapture(e.pointerId);
-    });
-    grab.addEventListener('pointermove', function (e) {
-      if (startY === null) return;
-      dy = Math.max(0, e.clientY - startY); sheet.style.transform = 'translateY(' + dy + 'px)';
-    });
-    function endDrag() {
-      if (startY === null) return;
-      startY = null; sheet.classList.remove('dragging'); sheet.style.transform = '';
-      if (dy > 90) closeSheet();
-    }
+    var grab = sheet.firstElementChild, startY = null, dy = 0;
+    grab.style.touchAction = 'none';
+    grab.addEventListener('pointerdown', function (e) { if (e.target.closest('button')) return; startY = e.clientY; dy = 0; sheet.classList.add('dragging'); grab.setPointerCapture(e.pointerId); });
+    grab.addEventListener('pointermove', function (e) { if (startY === null) return; dy = Math.max(0, e.clientY - startY); sheet.style.transform = 'translateY(' + dy + 'px)'; });
+    function endDrag() { if (startY === null) return; startY = null; sheet.classList.remove('dragging'); sheet.style.transform = ''; if (dy > 90) closeSheet(); }
     grab.addEventListener('pointerup', endDrag);
     grab.addEventListener('pointercancel', endDrag);
+    return wrap;
   }
   function closeSheet() {
     if (!sheetOpen) return;
@@ -153,55 +115,257 @@
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
 
-  // Search: filters the products and categories on the current screen as you type
-  function norm(s) {
-    return (s || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim();
+  var ICON_CLOSE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>';
+  var ICON_CHEV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 19.92L8.48 13.4c-.77-.77-.77-2.03 0-2.8L15 4.08"></path></svg>';
+  var ICON_HEART = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.62 20.81c-.34.12-.9.12-1.24 0C8.48 19.82 2 15.69 2 8.69 2 5.6 4.49 3.1 7.56 3.1c1.82 0 3.43.88 4.44 2.24a5.53 5.53 0 0 1 4.44-2.24C19.51 3.1 22 5.6 22 8.69c0 7-6.48 11.13-9.38 12.12Z"></path></svg>';
+  var ICON_BAG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 7.67V6.7c0-2.25 1.81-4.46 4.06-4.67a4.5 4.5 0 0 1 4.94 4.48v1.38M9 22h6c4.02 0 4.74-1.61 4.95-3.57l.75-6C20.97 9.99 20.27 8 16 8H8c-4.27 0-4.97 1.99-4.7 4.43l.75 6C4.26 20.39 4.98 22 9 22Z"></path></svg>';
+  var ICON_SHIELD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M10.49 2.23 5.5 4.11c-1.15.43-2.09 1.79-2.09 3.01v7.43c0 1.18.78 2.73 1.73 3.44l4.3 3.21c1.41 1.06 3.73 1.06 5.14 0l4.3-3.21c.95-.71 1.73-2.26 1.73-3.44V7.12c0-1.23-.94-2.59-2.09-3.02l-4.99-1.87c-.85-.31-2.21-.31-3.04 0Z"></path><path d="m9.05 11.87 1.61 1.61 4.3-4.3"></path></svg>';
+  var GRAB = '<div style="flex: none; position: relative; height: 40px; display: flex; align-items: center; justify-content: center; cursor: grab"><span aria-hidden="true" style="width: 40px; height: 5px; border-radius: 999px; background: #E7DED6"></span>' +
+    '<button type="button" data-act="close" aria-label="إغلاق" style="position: absolute; top: 6px; left: 10px; width: 40px; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #1C1917; display: flex; align-items: center; justify-content: center; padding: 0">' + ICON_CLOSE + '</button></div>';
+
+  // quick add (the + on a card)
+  function openQuickAdd(card, opener) {
+    var p = productInfo(card), on = !!favs[p.src];
+    var price = '<span style="direction: ltr; display: inline-flex; align-items: center; gap: 5px; font-size: 24px; font-weight: 700; color: #1C1917">' + p.price.replace('width="12" height="13"', 'width="17" height="19"') + '</span>';
+    var old = p.old ? '<s style="direction: ltr; display: inline-flex; align-items: center; gap: 3px; font-size: 14px; color: #78716C">' + p.old.replace('width="9" height="10"', 'width="11" height="12"') + '</s>' : '';
+    var off = p.off ? '<span style="height: 24px; padding: 0 9px; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center">' + esc(p.off) + '</span>' : '';
+    var html =
+      '<section role="dialog" aria-modal="true" aria-label="إضافة سريعة: ' + esc(p.name) + '" style="max-height: 92%; box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+        '<div style="flex: none; display: flex; flex-direction: column; gap: 16px; padding-bottom: 4px">' +
+          '<div style="padding: 0 18px"><div style="height: 252px; border-radius: 20px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 14px; box-sizing: border-box"><img src="' + p.src + '" alt="' + esc(p.alt) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></div></div>' +
+          '<div style="display: flex; flex-direction: column; gap: 14px; padding: 0 18px">' +
+            '<div style="display: flex; align-items: center; gap: 12px"><h2 style="flex: 1; min-width: 0; margin: 0; font-size: 18px; line-height: 26px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc(p.name) + '</h2>' +
+            '<a href="product.html" data-act="details" style="flex: none; display: flex; align-items: center; gap: 2px; font-size: 13px; color: #6B635D; text-decoration: none; padding: 8px 0"><span style="font-weight: 400">التفاصيل</span>' + ICON_CHEV + '</a></div>' +
+            '<div style="display: flex; align-items: center; gap: 10px">' + price + old + off + '</div>' +
+            '<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">' +
+              '<div style="background: #F7F3F0; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; line-height: 16px; color: #6B635D">المقاس</span><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + esc(p.size) + '</span></div>' +
+              '<div style="background: #F7F3F0; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; line-height: 16px; color: #6B635D">الحالة</span><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + esc(p.cond) + '</span></div>' +
+            '</div>' +
+            '<a href="#seller" data-act="soon" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; color: #1C1917">' +
+              '<span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FDEBDD; color: #9A3412; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">' + p.seller[0].split(' ').pop().charAt(0) + '</span>' +
+              '<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 700">' + p.seller[0] + '</span><span style="font-size: 12px; line-height: 16px; color: #6B635D">★ ' + p.seller[1] + ' · ' + p.seller[2] + ' · ' + p.seller[3] + ' قطعة مباعة</span></span>' +
+              '<span style="color: #6B635D; display: flex">' + ICON_CHEV + '</span></a>' +
+            '<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D">' + ICON_SHIELD + 'قطعة واحدة متاحة، والمبلغ محفوظ حتى استلامها</p>' +
+          '</div>' +
+        '</div>' +
+        '<div style="flex: none; display: flex; align-items: center; gap: 12px; padding: 12px 18px 28px; background: #FFFFFF">' +
+          '<button type="button" data-act="fav" aria-pressed="' + on + '" aria-label="' + (on ? 'شيل من المفضلة' : 'أضف للمفضلة') + '" style="width: 52px; height: 52px; flex: none; border: 1px solid #EFE6DE; border-radius: 999px; background: #FFFFFF; color: #1C1917; display: flex; align-items: center; justify-content: center; padding: 0">' + ICON_HEART + '</button>' +
+          '<button type="button" data-act="add" style="flex: 1; height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">' + ICON_BAG + 'أضف للسلة</button>' +
+        '</div>' +
+      '</section>';
+    var wrap = mountSheet(html, function (e, b) {
+      if (!b) return;
+      var act = b.getAttribute('data-act');
+      if (act === 'soon') { e.preventDefault(); toast('الشاشة دي لسه بتتصمم'); }
+      else if (act === 'details') { e.preventDefault(); openProduct(card); }
+      else if (act === 'fav') {
+        var now = toggleFav(p.src);
+        paintFav(b, now);
+        var cardFav = card.querySelector('button[aria-label="أضف للمفضلة"], button[aria-pressed]');
+        if (cardFav) paintFav(cardFav, now);
+      } else if (act === 'add') { closeSheet(); setTimeout(addToCart, 200); }
+    }, opener);
+    if (wrap && on) paintFav(wrap.querySelector('[data-act="fav"]'), true);
   }
+
+  // ---------- filter + sort (dresses page) ----------
+  var filterState = read('outlet-filter', { sort: 'new', sizes: [], min: 0, max: 600 });
+  var grid = document.querySelector('.screen div[style*="grid-template-columns: repeat(2"]');
+  var gridCards = grid && page === 'category.html' ? [].slice.call(grid.children) : [];
+  gridCards.forEach(function (c, i) { c._order = i; c._info = productInfo(c); });
+  function matches(c, st) {
+    var info = c._info;
+    return info.priceNum >= st.min && (st.max >= 600 || info.priceNum <= st.max) && (!st.sizes.length || st.sizes.indexOf(info.size) !== -1);
+  }
+  function applyFilter(st) {
+    var shown = 0;
+    gridCards.slice().sort(function (a, b) {
+      if (st.sort === 'asc') return a._info.priceNum - b._info.priceNum;
+      if (st.sort === 'desc') return b._info.priceNum - a._info.priceNum;
+      return a._order - b._order;
+    }).forEach(function (c) { grid.appendChild(c); var ok = matches(c, st); c.classList.toggle('proto-hide', !ok); if (ok) shown++; });
+    var active = (st.sizes.length ? 1 : 0) + (st.min > 0 || st.max < 600 ? 1 : 0);
+    var fBtn = document.querySelector('button[aria-label^="الفلاتر"]');
+    if (fBtn) {
+      var dot = fBtn.querySelector('.proto-count');
+      if (!dot) { dot = document.createElement('span'); dot.className = 'proto-count'; fBtn.appendChild(dot); }
+      dot.textContent = active; dot.style.display = active ? '' : 'none';
+      fBtn.setAttribute('aria-label', active ? 'الفلاتر، ' + active + ' مفعّلة' : 'الفلاتر');
+    }
+    var sBtn = document.querySelector('button[aria-label^="ترتيب حسب"]');
+    var label = { new: 'الأحدث', asc: 'الأقل سعرًا', desc: 'الأعلى سعرًا' }[st.sort];
+    if (sBtn) { var spans = sBtn.querySelectorAll('span'); if (spans[1]) spans[1].textContent = label; sBtn.setAttribute('aria-label', 'ترتيب حسب: ' + label); }
+    var empty = document.querySelector('.proto-empty-filter');
+    if (!empty && grid) { empty = document.createElement('div'); empty.className = 'proto-empty proto-empty-filter'; empty.innerHTML = 'مفيش قطع بالفلاتر دي<span>جرّب مقاس تاني أو وسّع نطاق السعر</span>'; grid.parentNode.appendChild(empty); }
+    if (empty) empty.classList.toggle('proto-hide', shown > 0);
+    return shown;
+  }
+  if (gridCards.length) applyFilter(filterState);
+  function openFilter(opener) {
+    var tpl = document.getElementById('tpl-filter');
+    if (!tpl) return;
+    var st = JSON.parse(JSON.stringify(filterState));
+    var wrap = mountSheet(tpl.innerHTML, function (e, b, w) {
+      if (!b) return;
+      var act = b.getAttribute('data-act');
+      if (b.hasAttribute('data-sort')) { st.sort = b.getAttribute('data-sort'); }
+      else if (b.hasAttribute('data-size')) { var s = b.getAttribute('data-size'), i = st.sizes.indexOf(s); if (i === -1) st.sizes.push(s); else st.sizes.splice(i, 1); }
+      else if (act === 'clear') { st = { sort: 'new', sizes: [], min: 0, max: 600 }; }
+      else if (act === 'apply') { filterState = st; write('outlet-filter', st); applyFilter(st); closeSheet(); grid.closest('[style*="overflow-y: auto"]').scrollTop = 0; return; }
+      paint(w);
+    }, opener);
+    if (!wrap) return;
+    function chipStyle(btn, on) {
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.style.background = on ? '#1C1917' : '#F7F3F0'; btn.style.color = on ? '#FFFFFF' : '#1C1917'; btn.style.fontWeight = on ? '700' : '500';
+    }
+    function paint(w) {
+      w.querySelectorAll('[data-sort]').forEach(function (b) { chipStyle(b, b.getAttribute('data-sort') === st.sort); });
+      w.querySelectorAll('[data-size]').forEach(function (b) { chipStyle(b, st.sizes.indexOf(b.getAttribute('data-size')) !== -1); });
+      var lo = w.querySelector('[data-price="min"]'), hi = w.querySelector('[data-price="max"]');
+      lo.value = st.min; hi.value = st.max;
+      var fill = w.querySelector('[data-price-fill]');
+      fill.style.right = (st.min / 6) + '%'; fill.style.left = (100 - st.max / 6) + '%';
+      var label = w.querySelector('[data-price-label]'), svg = label.querySelector('svg');
+      label.textContent = ''; label.appendChild(svg);
+      label.appendChild(document.createTextNode(st.min === 0 && st.max >= 600 ? 'كل الأسعار' : st.min + ' – ' + (st.max >= 600 ? '600+' : st.max)));
+      var n = gridCards.filter(function (c) { return matches(c, st); }).length;
+      w.querySelector('[data-act="apply"]').textContent = n ? 'اعرض ' + n + (n === 1 ? ' قطعة' : n === 2 ? ' قطعتين' : ' قطع') : 'مفيش نتايج';
+    }
+    ['min', 'max'].forEach(function (k) {
+      wrap.querySelector('[data-price="' + k + '"]').addEventListener('input', function (e) {
+        var v = parseInt(e.target.value, 10);
+        if (k === 'min') st.min = Math.min(v, st.max - 10); else st.max = Math.max(v, st.min + 10);
+        paint(wrap);
+      });
+    });
+    paint(wrap);
+  }
+
+  // ---------- product page ----------
+  if (page === 'product.html') {
+    var p = read('outlet-product', null);
+    var set = function (k, fn) { document.querySelectorAll('[data-p="' + k + '"]').forEach(fn); };
+    if (p) {
+      set('img', function (el) { el.src = p.src; el.alt = p.alt; });
+      set('name', function (el) { el.textContent = p.name; });
+      set('price', function (el) { el.innerHTML = p.price.replace('width="12" height="13"', 'width="18" height="20"'); });
+      set('old', function (el) { if (p.old) el.innerHTML = p.old.replace('width="9" height="10"', 'width="11" height="12"'); else el.remove(); });
+      set('off', function (el) { if (p.off) el.textContent = p.off; else el.remove(); });
+      set('size', function (el) { el.textContent = p.size; });
+      set('cond', function (el) { el.textContent = p.cond; });
+      set('color', function (el) { el.textContent = p.color; });
+      set('color-dot', function (el) { el.style.background = p.colorDot; if (p.color === 'أبيض' || p.color === 'كريمي') el.style.boxShadow = 'inset 0 0 0 1px #E7DED6'; });
+      set('seller', function (el) { el.textContent = p.seller[0]; });
+      set('seller-initial', function (el) { el.textContent = p.seller[0].split(' ').pop().charAt(0); });
+      set('rating', function (el) { el.textContent = p.seller[1]; });
+      set('sold', function (el) { el.textContent = p.seller[3] + ' قطعة مباعة'; });
+      set('desc', function (el) { el.textContent = p.desc; });
+      document.title = 'outlet · ' + p.name;
+    }
+    var heroImg = document.querySelector('[data-p="img"]');
+    var key = heroImg ? heroImg.getAttribute('src') : '';
+    var favBtn = document.querySelector('[data-p="fav"]');
+    if (favBtn) paintFav(favBtn, !!favs[key]);
+    var views = [['none', '50% 50%'], ['scale(1.9)', '50% 22%'], ['scale(1.8)', '50% 88%']], view = 0;
+    var showView = function () {
+      if (!heroImg) return;
+      heroImg.style.transformOrigin = views[view][1]; heroImg.style.transform = views[view][0];
+      var c = document.querySelector('[data-pager-count]'); if (c) c.textContent = (view + 1) + '/' + views.length;
+    };
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pager], [data-act], [data-p="fav"], [data-p="seller-link"]');
+      if (!b) return;
+      e.stopPropagation(); e.preventDefault();
+      if (b.hasAttribute('data-pager')) { view = (view + (b.getAttribute('data-pager') === 'next' ? 1 : views.length - 1)) % views.length; showView(); }
+      else if (b.getAttribute('data-p') === 'fav') { paintFav(b, toggleFav(key)); }
+      else if (b.getAttribute('data-p') === 'seller-link') { toast('صفحة البائع لسه بتتصمم'); }
+      else if (b.getAttribute('data-act') === 'more') {
+        var d = document.querySelector('[data-p="desc"]'), open = d.style.webkitLineClamp === 'unset';
+        d.style.webkitLineClamp = open ? '3' : 'unset'; d.style.display = open ? '-webkit-box' : 'block';
+        b.textContent = open ? 'اقرأ المزيد' : 'اقرأ أقل';
+      }
+      else if (b.getAttribute('data-act') === 'add') { addToCart(); }
+      else if (b.getAttribute('data-act') === 'buy') { cart += 1; write('outlet-cart', cart); toast('صفحة إتمام الطلب لسه بتتصمم'); }
+    }, true);
+  }
+
+  // ---------- search ----------
   var extra = { 'فساتين': 'فستان', 'قمصان': 'قميص بلوزه', 'بناطيل': 'بنطلون بنطال', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز', 'جواكيت': 'جاكيت معطف بالطو' };
-  var input = screen && screen.querySelector('input[type="search"]');
-  if (input) {
-    var items = [];
-    document.querySelectorAll('button[aria-label$=" للسلة"]').forEach(function (b) {
-      var card = b.closest('div[style*="border-radius: 18px"]');
-      if (card) items.push(card);
-    });
-    screen.querySelectorAll('a').forEach(function (a) {
-      if (a.querySelector('img') && !a.closest('nav')) items.push(a);
-    });
-    items.forEach(function (el) {
+  function indexItems(list) {
+    list.forEach(function (el) {
       var alts = [].map.call(el.querySelectorAll('img'), function (i) { return i.alt; }).join(' ');
       var txt = el.textContent + ' ' + alts + ' ' + (el.getAttribute('aria-label') || '');
       Object.keys(extra).forEach(function (k) { if (txt.indexOf(k) !== -1) txt += ' ' + extra[k]; });
       el._q = norm(txt);
     });
-    var scroller = items.length ? items[0].closest('[style*="overflow-y: auto"]') : null;
-    var sections = [].map.call(screen.querySelectorAll('h2'), function (h) { return h.parentNode.parentNode; });
-    var gradient = screen.querySelector('[style*="linear-gradient"]');
-    var banner = gradient ? gradient.parentNode : null;
-    var empty = document.createElement('div');
-    empty.className = 'proto-empty proto-hide';
-    if (scroller) scroller.appendChild(empty);
+  }
+  function hit(el, words) { return words.every(function (w) { return el._q.indexOf(w) !== -1; }); }
+  var input = screen && screen.querySelector('input[type="search"]');
+
+  if (page === 'index.html' && input) {
+    // the home search opens the search screen
+    var go = function (e) { e.preventDefault(); location.href = 'search.html'; };
+    input.addEventListener('focus', go);
+    input.addEventListener('pointerdown', go);
+    input.readOnly = true;
+    var homeFilter = input.closest('label') && input.closest('label').querySelector('button');
+    if (homeFilter) homeFilter.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); location.href = 'search.html'; });
+  } else if (page === 'search.html' && input) {
+    var idle = screen.querySelector('[data-search-idle]'), results = screen.querySelector('[data-search-results]');
+    var count = screen.querySelector('[data-search-count]');
+    var items = [].slice.call(results.querySelectorAll('div[style*="border-radius: 18px"]')).filter(function (c) { return c.querySelector('button[aria-label$=" للسلة"]'); });
+    indexItems(items);
+    var empty = document.createElement('div'); empty.className = 'proto-empty proto-hide'; results.appendChild(empty);
     var run = function () {
-      var q = norm(input.value), words = q ? q.split(' ') : [], shown = 0;
-      items.forEach(function (el) {
-        var ok = words.every(function (w) { return el._q.indexOf(w) !== -1; });
-        el.classList.toggle('proto-hide', !ok);
-        if (ok) shown++;
-      });
-      sections.forEach(function (s) {
-        var has = [].some.call(s.querySelectorAll('*'), function (c) { return items.indexOf(c) !== -1 && !c.classList.contains('proto-hide'); });
-        s.classList.toggle('proto-hide', !!q && !has);
-      });
-      if (banner) banner.classList.toggle('proto-hide', !!q);
-      empty.innerHTML = 'مفيش نتايج لـ «' + input.value.replace(/[<>&]/g, '') + '»<span>جرّب كلمة تانية، زي فستان أو شنطة أو جاكيت</span>';
-      empty.classList.toggle('proto-hide', !q || shown > 0);
-      if (scroller) scroller.scrollTop = 0;
+      var q = norm(input.value), words = q ? q.split(' ') : [], n = 0;
+      idle.style.display = q ? 'none' : 'flex';
+      results.style.display = q ? 'flex' : 'none';
+      items.forEach(function (c) { var ok = hit(c, words); c.classList.toggle('proto-hide', !ok); if (ok) n++; });
+      var word = n === 1 ? 'نتيجة واحدة' : n === 2 ? 'نتيجتين' : n <= 10 ? n + ' نتائج' : n + ' نتيجة';
+      count.textContent = n ? word + ' لـ «' + input.value.trim() + '»' : '';
+      empty.innerHTML = 'مفيش نتايج لـ «' + esc(input.value.trim()) + '»<span>جرّب كلمة تانية، زي فستان أو شنطة أو جاكيت</span>';
+      empty.classList.toggle('proto-hide', !q || n > 0);
     };
     input.addEventListener('input', run);
     input.addEventListener('search', run);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') input.blur(); });
+    screen.addEventListener('click', function (e) {
+      var q = e.target.closest('[data-q]'), f = e.target.closest('[data-act="forget"]'), c = e.target.closest('[data-act="clear-recent"]');
+      if (f) { e.stopPropagation(); f.parentNode.remove(); return; }
+      if (c) { e.stopPropagation(); var r = screen.querySelector('[data-recent]'); if (r) r.remove(); return; }
+      if (q) { e.stopPropagation(); input.value = q.getAttribute('data-q'); run(); }
+    }, true);
+    setTimeout(function () { input.focus(); }, 50);
+  } else if (input) {
+    // other screens: filter what is on the screen as you type
+    var list = [];
+    document.querySelectorAll('button[aria-label$=" للسلة"]').forEach(function (b) { var card = b.closest('div[style*="border-radius: 18px"]'); if (card) list.push(card); });
+    screen.querySelectorAll('a').forEach(function (a) { if (a.querySelector('img') && !a.closest('nav')) list.push(a); });
+    indexItems(list);
+    var scroller = list.length ? list[0].closest('[style*="overflow-y: auto"]') : null;
+    var emptyMsg = document.createElement('div'); emptyMsg.className = 'proto-empty proto-hide';
+    if (scroller) scroller.appendChild(emptyMsg);
+    var runLocal = function () {
+      var q = norm(input.value), words = q ? q.split(' ') : [], shown = 0;
+      list.forEach(function (el) { var ok = hit(el, words) && !(el._filtered); el.classList.toggle('proto-hide', !ok); if (ok) shown++; });
+      if (!q && gridCards.length) applyFilter(filterState);
+      emptyMsg.innerHTML = 'مفيش نتايج لـ «' + esc(input.value.trim()) + '»<span>جرّب كلمة تانية، زي فستان أو شنطة أو جاكيت</span>';
+      emptyMsg.classList.toggle('proto-hide', !q || shown > 0);
+      if (scroller) scroller.scrollTop = 0;
+    };
+    input.addEventListener('input', runLocal);
+    input.addEventListener('search', runLocal);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') input.blur(); });
   }
 
+  // favourites already saved
+  document.querySelectorAll('button[aria-label="أضف للمفضلة"]').forEach(function (b) {
+    var img = b.parentNode.querySelector('img');
+    if (img && favs[img.getAttribute('src')]) paintFav(b, true);
+  });
+
+  // ---------- clicks ----------
   document.addEventListener('click', function (e) {
     var t = e.target;
     var back = t.closest('a[aria-label="رجوع"]');
@@ -212,20 +376,17 @@
       return;
     }
     var fav = t.closest('button[aria-pressed], button[aria-label="أضف للمفضلة"]');
-    if (fav) {
-      var key = favKey(fav), on = !favs[key];
-      if (on) favs[key] = 1; else delete favs[key];
-      write('outlet-favs', favs);
-      paintFav(fav, on);
-      toast(on ? 'اتضافت للمفضلة' : 'اتشالت من المفضلة');
+    if (fav && !fav.closest('[role="dialog"]')) {
+      var img = fav.parentNode.querySelector('img');
+      paintFav(fav, toggleFav(img ? img.getAttribute('src') : ''));
       return;
     }
     var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"]');
-    if (add) {
-      var card = add.closest('div[style*="border-radius: 18px"]');
-      if (card) openSheet(card, add);
-      return;
-    }
+    if (add) { var c = cardOf(add); if (c) openQuickAdd(c, add); return; }
+    var opensFilter = t.closest('button[aria-label^="الفلاتر"], button[aria-label^="ترتيب حسب"]');
+    if (opensFilter && document.getElementById('tpl-filter')) { openFilter(opensFilter); return; }
+    var card = t.closest('div[style*="border-radius: 18px"]');
+    if (card && card.querySelector('button[aria-label$=" للسلة"]') && !t.closest('button')) { openProduct(card); return; }
     var chip = t.closest('nav[aria-label="التصنيفات"] a');
     if (chip && chip.getAttribute('href').charAt(0) === '#') { e.preventDefault(); toast('القسم ده لسه بيتصمم، جرّب فساتين'); return; }
     var dead = t.closest('a[href^="#"], button');

@@ -107,6 +107,53 @@ input::placeholder{color:#8E857F}
 </div>
 </div>
 </main>
+<template id="tpl-filter"><section role="dialog" aria-modal="true" aria-label="فلترة وترتيب" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column">
+<div style="flex: none; position: relative; height: 40px; display: flex; align-items: center; justify-content: center">
+<span aria-hidden="true" style="width: 40px; height: 5px; border-radius: 999px; background: #E7DED6"></span>
+<button type="button" data-act="close" aria-label="إغلاق" style="position: absolute; top: 6px; left: 10px; width: 40px; height: 40px; border: 0; border-radius: 999px; background: transparent; color: #1C1917; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 24px; padding: 0 18px 8px">
+<h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700; color: #1C1917">فلترة وترتيب</h2>
+
+<div role="radiogroup" aria-label="ترتيب حسب" style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 15px; line-height: 22px; font-weight: 700">ترتيب حسب</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" data-sort="new" aria-pressed="true" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 700">الأحدث</button>
+<button type="button" data-sort="asc" aria-pressed="false" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 13px; font-weight: 500">السعر: من الأقل</button>
+<button type="button" data-sort="desc" aria-pressed="false" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 13px; font-weight: 500">السعر: من الأعلى</button>
+</div>
+</div>
+
+<div role="group" aria-label="المقاس" style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 15px; line-height: 22px; font-weight: 700">المقاس</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; direction: ltr; justify-content: flex-end">
+<button type="button" data-size="XS" aria-pressed="false" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 13px; font-weight: 500">XS</button>
+<button type="button" data-size="S" aria-pressed="false" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 13px; font-weight: 500">S</button>
+<button type="button" data-size="M" aria-pressed="true" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 700">M</button>
+<button type="button" data-size="L" aria-pressed="false" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 13px; font-weight: 500">L</button>
+<button type="button" data-size="XL" aria-pressed="false" style="height: 40px; min-width: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 13px; font-weight: 500">XL</button>
+</div>
+</div>
+
+<div role="group" aria-label="السعر" style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 15px; line-height: 22px; font-weight: 700">السعر</span>
+<span data-price-label style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: #6B635D"><svg width="10" height="11" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>50 – 250</span>
+</div>
+<div class="dual" style="margin: 0 2px">
+<span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 12px; height: 4px; border-radius: 999px; background: #EFE6DE"></span>
+<span data-price-fill aria-hidden="true" style="position: absolute; top: 12px; height: 4px; border-radius: 999px; background: #1C1917; right: 8.33%; left: 58.33%"></span>
+<input type="range" data-price="min" aria-label="أقل سعر" min="0" max="600" step="10" value="50">
+<input type="range" data-price="max" aria-label="أعلى سعر" min="0" max="600" step="10" value="250">
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8E857F"><span>0</span><span>600+</span></div>
+</div>
+</div>
+<div style="flex: none; display: flex; align-items: center; gap: 12px; padding: 16px 18px 28px; background: #FFFFFF">
+<button type="button" data-act="clear" style="height: 52px; padding: 0 22px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">مسح الكل</button>
+<button type="button" data-act="apply" style="flex: 1; height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">اعرض 3 قطع</button>
+</div>
+</section></template>
 <script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
