@@ -5,7 +5,8 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 # canvas artboard -> prototype page (links between artboards are rewritten to these names)
 $pages = @(
   @('U06c-Home-Reference.dc.html', 'index.html', 'outlet · الرئيسية'),
-  @('U07-Category.dc.html', 'category.html', 'outlet · فساتين')
+  @('U07-Category.dc.html', 'category.html', 'outlet · فساتين'),
+  @('U07a-Categories.dc.html', 'categories.html', 'outlet · الأقسام')
 )
 
 New-Item -ItemType Directory -Force (Join-Path $Out 'assets') | Out-Null
@@ -76,6 +77,7 @@ $helmet
 $body
 </div>
 </main>
+<script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
@@ -114,6 +116,82 @@ html.standalone .device > .screen { width: 100% !important; height: 100% !import
 }
 '@
 
+$css += @'
+.proto-toast { position: absolute; left: 50%; bottom: 104px; transform: translate(-50%, 12px); max-width: calc(100% - 48px); box-sizing: border-box; padding: 10px 16px; border-radius: 999px; background: #1C1917; color: #FFFFFF; font: 500 13px/20px "Thmanyah Sans", system-ui, sans-serif; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 20; }
+.proto-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.proto-pop { animation: proto-pop .3s ease; }
+@keyframes proto-pop { 50% { transform: scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { .proto-toast, .proto-pop { transition: none; animation: none; } }
+'@
+
+# Prototype-only behaviour (the canvas stays static): back, favourites, add to cart, toasts for screens not designed yet
+$app = @'
+(function () {
+  var screen = document.querySelector('.screen');
+  var toastEl, toastTimer;
+  function toast(msg) {
+    if (!screen) return;
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'proto-toast'; toastEl.setAttribute('role', 'status'); screen.appendChild(toastEl); }
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+  }
+  function read(key, fallback) { try { var v = sessionStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } }
+  function write(key, value) { try { sessionStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+
+  var cart = read('outlet-cart', 3);
+  var favs = read('outlet-favs', {});
+  function cartBadges() { return document.querySelectorAll('a[aria-label^="سلة التسوق"] > span'); }
+  function paintCart(pop) {
+    cartBadges().forEach(function (b) {
+      b.textContent = cart;
+      b.parentNode.setAttribute('aria-label', 'سلة التسوق، ' + cart + ' قطع');
+      if (pop) { b.classList.remove('proto-pop'); void b.offsetWidth; b.classList.add('proto-pop'); }
+    });
+  }
+  function favKey(btn) { var img = btn.parentNode.querySelector('img'); return img ? img.getAttribute('src') : ''; }
+  function paintFav(btn, on) {
+    var svg = btn.querySelector('svg');
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.setAttribute('aria-label', on ? 'شيل من المفضلة' : 'أضف للمفضلة');
+    if (svg) { svg.setAttribute('fill', on ? '#EA580C' : 'none'); svg.setAttribute('stroke', on ? '#EA580C' : 'currentColor'); }
+  }
+  paintCart(false);
+  document.querySelectorAll('button[aria-label="أضف للمفضلة"]').forEach(function (b) { paintFav(b, !!favs[favKey(b)]); });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    var back = t.closest('a[aria-label="رجوع"]');
+    if (back) {
+      var fromHere = false;
+      try { fromHere = document.referrer && new URL(document.referrer).origin === location.origin; } catch (err) {}
+      if (fromHere && history.length > 1) { e.preventDefault(); history.back(); }
+      return;
+    }
+    var fav = t.closest('button[aria-pressed], button[aria-label="أضف للمفضلة"]');
+    if (fav) {
+      var key = favKey(fav), on = !favs[key];
+      if (on) favs[key] = 1; else delete favs[key];
+      write('outlet-favs', favs);
+      paintFav(fav, on);
+      toast(on ? 'اتضافت للمفضلة' : 'اتشالت من المفضلة');
+      return;
+    }
+    var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"]');
+    if (add) {
+      cart += 1; write('outlet-cart', cart); paintCart(true);
+      toast('اتضافت للسلة');
+      return;
+    }
+    var chip = t.closest('nav[aria-label="التصنيفات"] a');
+    if (chip && chip.getAttribute('href').charAt(0) === '#') { e.preventDefault(); toast('القسم ده لسه بيتصمم، جرّب فساتين'); return; }
+    var dead = t.closest('a[href^="#"], button');
+    if (dead && !dead.closest('label')) { e.preventDefault(); toast('الشاشة دي لسه بتتصمم'); }
+  });
+})();
+'@
+
 $manifest = @'
 {
   "name": "outlet · سوق الملابس المستعملة",
@@ -139,11 +217,13 @@ $manifest = @'
 $assetList = (Get-ChildItem (Join-Path $Out 'assets') -File | ForEach-Object { "  './assets/" + $_.Name + "'," }) -join "`n"
 $sw = @"
 // Network first, so every push shows up on the next open; the cache is only a fallback for offline.
-const CACHE = 'outlet-proto-v2';
+const CACHE = 'outlet-proto-v3';
 const CORE = [
   './',
   './index.html',
   './category.html',
+  './categories.html',
+  './app.js',
   './styles.css',
   './manifest.webmanifest',
   './favicon.svg',
@@ -244,6 +324,7 @@ No build step: Vercel serves the folder as-is.
 '@
 
 [System.IO.File]::WriteAllText((Join-Path $Out 'styles.css'), $css, $utf8)
+[System.IO.File]::WriteAllText((Join-Path $Out 'app.js'), $app, $utf8)
 [System.IO.File]::WriteAllText((Join-Path $Out 'favicon.svg'), $favicon, $utf8)
 [System.IO.File]::WriteAllText((Join-Path $Out 'README.md'), $readme, $utf8)
 [System.IO.File]::WriteAllText((Join-Path $Out 'manifest.webmanifest'), $manifest, $utf8)
