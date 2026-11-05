@@ -23,16 +23,50 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   // ---------- cart + favourites ----------
-  var cart = read('outlet-cart', 3);
+  var RIYAL_PATHS = '<path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path>';
+  function riyal(w, h) { return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي">' + RIYAL_PATHS + '</svg>'; }
+  function pieces(n) { return n === 1 ? 'قطعة واحدة' : n === 2 ? 'قطعتين' : n <= 10 ? n + ' قطع' : n + ' قطعة'; }
+  var SELLERS = [['خزانة لمى', '4.9', 'الرياض', 38], ['دولاب سارة', '4.8', 'جدة', 21], ['ركن هند', '5.0', 'الدمام', 54], ['ستايل نوف', '4.7', 'الخبر', 12]];
+  // The cart holds real items. One seller per cart (BRD). First visit starts with the three pieces shown in the design.
+  var cart = read('outlet-cart-v2', null);
+  if (!cart) {
+    cart = [
+      { src: 'assets/dress-pleated.jpg', alt: 'فستان شيفون وردي بليسيه بأكمام طويلة', name: 'فستان بليسيه طويل', size: 'L', cond: 'ممتازة', priceNum: 210, oldNum: 0, seller: SELLERS[0] },
+      { src: 'assets/dress-green.jpg', alt: 'فستان كتان أخضر هادي بتصميم لف وأكمام قصيرة', name: 'فستان لف أخضر', size: 'S', cond: 'ممتازة', priceNum: 145, oldNum: 220, seller: SELLERS[0] },
+      { src: 'assets/sweater.jpg', alt: 'كنزة صوف كريمي بألوان كحلي وأحمر', name: 'كنزة صوف ملونة', size: 'M', cond: 'ممتازة', priceNum: 98, oldNum: 0, seller: SELLERS[0] }
+    ];
+  }
   var favs = read('outlet-favs', {});
+  function saveCart() { write('outlet-cart-v2', cart); }
   function paintCart(pop) {
     document.querySelectorAll('a[aria-label^="سلة التسوق"] > span').forEach(function (b) {
-      b.textContent = cart;
-      b.parentNode.setAttribute('aria-label', 'سلة التسوق، ' + cart + ' قطع');
+      b.textContent = cart.length;
+      b.style.display = cart.length ? '' : 'none';
+      b.parentNode.setAttribute('aria-label', 'سلة التسوق، ' + pieces(cart.length));
       if (pop) { b.classList.remove('proto-pop'); void b.offsetWidth; b.classList.add('proto-pop'); }
     });
   }
-  function addToCart() { cart += 1; write('outlet-cart', cart); paintCart(true); toast('اتضافت للسلة'); }
+  function cartItem(p) { return { src: p.src, alt: p.alt, name: p.name, size: p.size, cond: p.cond, priceNum: p.priceNum, oldNum: p.oldNum || 0, seller: p.seller }; }
+  // adds p; when the cart belongs to another seller, asks first. then() runs once the piece is in the cart.
+  function addToCart(p, then) {
+    var done = function () { saveCart(); paintCart(true); if (then) then(); else toast('اتضافت للسلة'); };
+    if (cart.some(function (c) { return c.src === p.src && c.name === p.name; })) { toast('القطعة دي في السلة بالفعل'); if (then) then(); return; }
+    if (cart.length && cart[0].seller[0] !== p.seller[0]) {
+      var html = '<section role="dialog" aria-modal="true" aria-label="تبدأ سلة جديدة؟" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+        '<div style="padding: 4px 18px 8px; display: flex; flex-direction: column; gap: 8px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">تبدأ سلة جديدة؟</h2>' +
+        '<p style="margin: 0; font-size: 14px; line-height: 22px; color: #6B635D">السلة فيها قطع من «' + cart[0].seller[0] + '». كل طلب بيكون من بائع واحد، فإضافة القطعة دي هتبدأ سلة جديدة من «' + p.seller[0] + '».</p></div>' +
+        '<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 28px">' +
+        '<button type="button" data-act="replace" style="height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">ابدأ سلة جديدة</button>' +
+        '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">خليني في السلة الحالية</button></div></section>';
+      setTimeout(function () {
+        mountSheet(html, function (e, b) {
+          if (b && b.getAttribute('data-act') === 'replace') { cart = [cartItem(p)]; closeSheet(); setTimeout(done, 200); }
+        }, null);
+      }, sheetOpen ? 340 : 0);
+      return;
+    }
+    cart.push(cartItem(p)); done();
+  }
   function paintFav(btn, on) {
     var svg = btn.querySelector('svg');
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -69,7 +103,7 @@
     return {
       src: img ? img.getAttribute('src') : '', alt: alt, name: name,
       price: priceEl ? priceEl.innerHTML : '', priceNum: priceEl ? parseInt(priceEl.textContent.replace(/\D/g, ''), 10) : 0,
-      old: oldEl ? oldEl.innerHTML : '', off: badge ? badge.textContent.trim() : '',
+      old: oldEl ? oldEl.innerHTML : '', oldNum: oldEl ? parseInt(oldEl.textContent.replace(/\D/g, ''), 10) : 0, off: badge ? badge.textContent.trim() : '',
       size: size, cond: cond, color: col[0], colorDot: col[1], seller: sellers[h % sellers.length],
       desc: alt + '. قطعة مستعملة بحالة ' + cond + '، نظيفة ومن غير عيوب ظاهرة، والمقاس ' + size + '. الصور للقطعة نفسها، وبتتشحن متطبّقة ومغلّفة بعناية.'
     };
@@ -171,7 +205,7 @@
         paintFav(b, now);
         var cardFav = card.querySelector('button[aria-label="أضف للمفضلة"], button[aria-pressed]');
         if (cardFav) paintFav(cardFav, now);
-      } else if (act === 'add') { closeSheet(); setTimeout(addToCart, 200); }
+      } else if (act === 'add') { closeSheet(); setTimeout(function () { addToCart(p); }, 340); }
     }, opener);
     if (wrap && on) paintFav(wrap.querySelector('[data-act="fav"]'), true);
     if (wrap) {
@@ -263,6 +297,7 @@
   // ---------- product page ----------
   if (page === 'product.html') {
     var p = read('outlet-product', null);
+    var PAGE_DEFAULT = { src: 'assets/dress-green.jpg', alt: 'فستان كتان أخضر هادي بتصميم لف وأكمام قصيرة', name: 'فستان لف أخضر', size: 'S', cond: 'ممتازة', priceNum: 145, oldNum: 220, seller: SELLERS[0] };
     var set = function (k, fn) { document.querySelectorAll('[data-p="' + k + '"]').forEach(fn); };
     if (p) {
       set('img', function (el) { el.src = p.src; el.alt = p.alt; });
@@ -350,8 +385,58 @@
         d.style.webkitLineClamp = open ? '3' : 'unset'; d.style.display = open ? '-webkit-box' : 'block';
         b.textContent = open ? 'اقرأ المزيد' : 'اقرأ أقل';
       }
-      else if (b.getAttribute('data-act') === 'add') { addToCart(); }
-      else if (b.getAttribute('data-act') === 'buy') { cart += 1; write('outlet-cart', cart); toast('صفحة إتمام الطلب لسه بتتصمم'); }
+      else if (b.getAttribute('data-act') === 'add') { addToCart(p || PAGE_DEFAULT); }
+      else if (b.getAttribute('data-act') === 'buy') { addToCart(p || PAGE_DEFAULT, function () { location.href = 'cart.html'; }); }
+    }, true);
+  }
+
+  // ---------- cart page ----------
+  if (page === 'cart.html') {
+    var list = screen.querySelector('[data-cart-list]');
+    var tpl = list.querySelector('[data-cart-item]').cloneNode(true);
+    var renderCart = function () {
+      var full = screen.querySelector('[data-cart-full]'), empty = screen.querySelector('[data-cart-empty]'), bar = screen.querySelector('[data-cart-bar]');
+      screen.querySelector('[data-cart-count]').textContent = cart.length ? pieces(cart.length) : '';
+      full.style.display = cart.length ? 'flex' : 'none';
+      bar.style.display = cart.length ? '' : 'none';
+      empty.style.display = cart.length ? 'none' : 'flex';
+      if (!cart.length) return;
+      var s = cart[0].seller;
+      screen.querySelector('[data-cart-seller] [data-c="seller"]').textContent = s[0];
+      screen.querySelector('[data-cart-seller] [data-c="seller-initial"]').textContent = s[0].split(' ').pop().charAt(0);
+      screen.querySelector('[data-cart-seller] [data-c="seller-meta"]').textContent = '★ ' + s[1] + ' · ' + s[2];
+      list.innerHTML = '';
+      cart.forEach(function (it, i) {
+        var row = tpl.cloneNode(true);
+        row.querySelector('[data-c="img"]').src = it.src; row.querySelector('[data-c="img"]').alt = it.alt;
+        row.querySelector('[data-c="name"]').textContent = it.name;
+        row.querySelector('[data-c="meta"]').textContent = 'المقاس ' + it.size + ' · ' + it.cond;
+        row.querySelector('[data-c="price"]').innerHTML = riyal(12, 13) + it.priceNum;
+        var old = row.querySelector('[data-c="old"]');
+        if (it.oldNum) {
+          if (!old) { old = document.createElement('s'); old.setAttribute('data-c', 'old'); old.style.cssText = 'direction: ltr; display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #78716C'; row.querySelector('[data-c="price"]').after(old); }
+          old.innerHTML = riyal(9, 10) + it.oldNum;
+        } else if (old) old.remove();
+        var rm = row.querySelector('[data-act="remove"]'); rm.setAttribute('aria-label', 'احذف ' + it.name + ' من السلة'); rm.setAttribute('data-i', i);
+        list.appendChild(row);
+      });
+      var sub = cart.reduce(function (a, it) { return a + it.priceNum; }, 0), fee = 9;
+      var subEl = screen.querySelector('[data-sum-subtotal]');
+      subEl.innerHTML = riyal(10, 11) + sub;
+      subEl.previousElementSibling.textContent = 'المجموع (' + pieces(cart.length) + ')';
+      screen.querySelector('[data-sum-fee]').innerHTML = riyal(10, 11) + fee;
+      screen.querySelectorAll('[data-sum-total]').forEach(function (el, k) { el.innerHTML = (k === 0 ? riyal(14, 15) : riyal(12, 13)) + (sub + fee); });
+    };
+    renderCart();
+    saveCart();
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act="remove"], [data-act="checkout"], [data-cart-seller]');
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      if (b.getAttribute('data-act') === 'remove') {
+        cart.splice(parseInt(b.getAttribute('data-i'), 10), 1); saveCart(); paintCart(false); renderCart(); toast('اتشالت من السلة');
+      } else if (b.getAttribute('data-act') === 'checkout') { toast('صفحة إتمام الطلب لسه بتتصمم'); }
+      else { toast('صفحة البائع لسه بتتصمم'); }
     }, true);
   }
 
@@ -446,6 +531,8 @@
       paintFav(fav, toggleFav(img ? img.getAttribute('src') : ''));
       return;
     }
+    var cartLink = t.closest('a[aria-label^="سلة التسوق"]');
+    if (cartLink) { e.preventDefault(); location.href = 'cart.html'; return; }
     var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"]');
     if (add) { var c = cardOf(add); if (c) openQuickAdd(c, add); return; }
     var opensFilter = t.closest('button[aria-label^="الفلاتر"], button[aria-label^="ترتيب حسب"]');

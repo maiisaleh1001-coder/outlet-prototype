@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>outlet · السلة</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="outlet">
+<script>
+(function () {
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (standalone) document.documentElement.classList.add('standalone');
+})();
+</script>
+<link rel="stylesheet" href="styles.css">
+<style>
+body{margin:0}
+a{color:#1C1917}
+a:hover{color:#000000}
+input::placeholder{color:#8E857F}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}
+.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</head>
+<body>
+<main class="stage">
+<div class="device">
+<div class="screen" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Thmanyah Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #1C1917; direction: rtl; display: flex; flex-direction: column">
+
+<div style="flex: none; padding: 32px 18px 12px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; background: #FFFFFF">
+<a href="./" aria-label="رجوع" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #1C1917"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.43 5.93 20.5 12l-6.07 6.07M3.5 12h16.83" stroke-miterlimit="10"></path></svg></a>
+<div style="display: flex; flex-direction: column; align-items: center">
+<h1 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">السلة</h1>
+<span data-cart-count style="font-size: 12px; line-height: 16px; color: #6B635D">3 قطع</span>
+</div>
+<span aria-hidden="true"></span>
+</div>
+
+<div class="noscroll" style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 24px; display: flex; flex-direction: column; gap: 18px">
+
+<div data-cart-full style="display: flex; flex-direction: column; gap: 18px">
+<a href="#seller" data-cart-seller style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: #FFF9F4; text-decoration: none; color: #1C1917">
+<span data-c="seller-initial" aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FDEBDD; color: #9A3412; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">ل</span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 12px; line-height: 16px; color: #6B635D">الطلب من</span><span data-c="seller" style="font-size: 15px; line-height: 22px; font-weight: 700">خزانة لمى</span></span>
+<span data-c="seller-meta" style="font-size: 12px; color: #6B635D">★ 4.9 · الرياض</span>
+<span style="color: #6B635D; display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 19.92L8.48 13.4c-.77-.77-.77-2.03 0-2.8L15 4.08"></path></svg></span>
+</a>
+
+<div data-cart-list style="display: flex; flex-direction: column; gap: 16px">
+<article data-cart-item style="display: flex; gap: 12px; align-items: stretch">
+<div style="width: 92px; height: 112px; flex: none; border-radius: 16px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box"><img data-c="img" src="assets/dress-pleated.jpg" alt="فستان شيفون وردي بليسيه بأكمام طويلة" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 4px 0">
+<div style="display: flex; align-items: flex-start; gap: 8px">
+<h3 data-c="name" style="flex: 1; min-width: 0; margin: 0; font-size: 15px; line-height: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">فستان بليسيه طويل</h3>
+<button type="button" data-act="remove" aria-label="احذف فستان بليسيه طويل من السلة" style="width: 32px; height: 32px; flex: none; margin: -4px -6px 0 0; border: 0; border-radius: 999px; background: transparent; color: #8E857F; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 5.98c-3.33-.33-6.68-.5-10.02-.5-1.98 0-3.96.1-5.94.3L3 5.98M8.5 4.97l.22-1.31C8.88 2.71 9 2 10.69 2h2.62c1.69 0 1.82.75 1.97 1.67l.22 1.3M18.85 9.14l-.65 10.07C18.09 20.78 18 22 15.21 22H8.79C6 22 5.91 20.78 5.8 19.21L5.15 9.14"></path></svg></button>
+</div>
+<span data-c="meta" style="font-size: 12px; line-height: 18px; color: #6B635D">المقاس L · ممتازة</span>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 8px">
+<span data-c="price" style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 16px; font-weight: 700; color: #1C1917"><svg width="12" height="13" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>210</span>
+
+</div>
+</div>
+</article>
+<article data-cart-item style="display: flex; gap: 12px; align-items: stretch">
+<div style="width: 92px; height: 112px; flex: none; border-radius: 16px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box"><img data-c="img" src="assets/dress-green.jpg" alt="فستان كتان أخضر هادي بتصميم لف وأكمام قصيرة" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 4px 0">
+<div style="display: flex; align-items: flex-start; gap: 8px">
+<h3 data-c="name" style="flex: 1; min-width: 0; margin: 0; font-size: 15px; line-height: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">فستان لف أخضر</h3>
+<button type="button" data-act="remove" aria-label="احذف فستان لف أخضر من السلة" style="width: 32px; height: 32px; flex: none; margin: -4px -6px 0 0; border: 0; border-radius: 999px; background: transparent; color: #8E857F; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 5.98c-3.33-.33-6.68-.5-10.02-.5-1.98 0-3.96.1-5.94.3L3 5.98M8.5 4.97l.22-1.31C8.88 2.71 9 2 10.69 2h2.62c1.69 0 1.82.75 1.97 1.67l.22 1.3M18.85 9.14l-.65 10.07C18.09 20.78 18 22 15.21 22H8.79C6 22 5.91 20.78 5.8 19.21L5.15 9.14"></path></svg></button>
+</div>
+<span data-c="meta" style="font-size: 12px; line-height: 18px; color: #6B635D">المقاس S · ممتازة</span>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 8px">
+<span data-c="price" style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 16px; font-weight: 700; color: #1C1917"><svg width="12" height="13" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>145</span>
+<s data-c="old" style="direction: ltr; display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #78716C"><svg width="9" height="10" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>220</s>
+</div>
+</div>
+</article>
+<article data-cart-item style="display: flex; gap: 12px; align-items: stretch">
+<div style="width: 92px; height: 112px; flex: none; border-radius: 16px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box"><img data-c="img" src="assets/sweater.jpg" alt="كنزة صوف كريمي بألوان كحلي وأحمر" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 4px 0">
+<div style="display: flex; align-items: flex-start; gap: 8px">
+<h3 data-c="name" style="flex: 1; min-width: 0; margin: 0; font-size: 15px; line-height: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">كنزة صوف ملونة</h3>
+<button type="button" data-act="remove" aria-label="احذف كنزة صوف ملونة من السلة" style="width: 32px; height: 32px; flex: none; margin: -4px -6px 0 0; border: 0; border-radius: 999px; background: transparent; color: #8E857F; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 5.98c-3.33-.33-6.68-.5-10.02-.5-1.98 0-3.96.1-5.94.3L3 5.98M8.5 4.97l.22-1.31C8.88 2.71 9 2 10.69 2h2.62c1.69 0 1.82.75 1.97 1.67l.22 1.3M18.85 9.14l-.65 10.07C18.09 20.78 18 22 15.21 22H8.79C6 22 5.91 20.78 5.8 19.21L5.15 9.14"></path></svg></button>
+</div>
+<span data-c="meta" style="font-size: 12px; line-height: 18px; color: #6B635D">المقاس M · ممتازة</span>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 8px">
+<span data-c="price" style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 16px; font-weight: 700; color: #1C1917"><svg width="12" height="13" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>98</span>
+
+</div>
+</div>
+</article>
+</div>
+
+<p style="margin: 0; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10ZM12 8v5M11.995 16h.009"></path></svg>كل طلب بيكون من بائع واحد، علشان القطع كلها تتشحن مع بعض من نفس العنوان.</p>
+
+<div style="padding: 16px; border-radius: 18px; background: #F7F3F0; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 20px"><span style="color: #6B635D">المجموع (3 قطع)</span><span data-sum-subtotal style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: #1C1917"><svg width="10" height="11" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>453</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 20px"><span style="color: #6B635D">رسوم الخدمة</span><span data-sum-fee style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: #1C1917"><svg width="10" height="11" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>9</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 20px"><span style="color: #6B635D">التوصيل</span><span data-sum-delivery style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: #6B635D">بيتحسب حسب منطقتك في الخطوة الجاية</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between; padding-top: 6px">
+<span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 22px; font-weight: 700">الإجمالي</span><span style="font-size: 11px; line-height: 16px; color: #8E857F">شامل ضريبة القيمة المضافة</span></span>
+<span data-sum-total style="direction: ltr; display: inline-flex; align-items: center; gap: 5px; font-size: 20px; font-weight: 700"><svg width="14" height="15" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>462</span>
+</div>
+</div>
+</div>
+
+<div data-cart-empty style="display: none; flex-direction: column; align-items: center; gap: 10px; padding: 80px 24px; text-align: center">
+<span aria-hidden="true" style="width: 72px; height: 72px; border-radius: 999px; background: #FFF9F4; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 7.67V6.7c0-2.25 1.81-4.46 4.06-4.67a4.5 4.5 0 0 1 4.94 4.48v1.38M9 22h6c4.02 0 4.74-1.61 4.95-3.57l.75-6C20.97 9.99 20.27 8 16 8H8c-4.27 0-4.97 1.99-4.7 4.43l.75 6C4.26 20.39 4.98 22 9 22Z"></path></svg></span>
+<h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 700">سلتك فاضية</h2>
+<p style="margin: 0; font-size: 13px; line-height: 20px; color: #6B635D">القطع المضافة هتظهر هنا.</p>
+<a href="./" style="margin-top: 8px; height: 48px; padding: 0 28px; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none">تسوق الآن</a>
+</div>
+</div>
+
+<div data-cart-bar style="flex: none; padding: 14px 18px 28px; background: #FFFFFF; box-shadow: 0 -8px 24px rgba(28,25,23,0.06)">
+<button type="button" data-act="checkout" style="width: 100%; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px"><span>إتمام الطلب</span><span aria-hidden="true" style="width: 4px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.5)"></span><span data-sum-total style="direction: ltr; display: inline-flex; align-items: center; gap: 4px"><svg width="12" height="13" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>462</span></button>
+</div>
+</div>
+</div>
+</main>
+
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
