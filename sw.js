@@ -22,6 +22,7 @@ const CORE = [
   './assets/dress-green.jpg',
   './assets/dress-ivory.jpg',
   './assets/dress-pink.jpg',
+  './assets/dress-pleated.jpg',
   './assets/dress-polka.jpg',
   './assets/dress-terracotta.jpg',
   './assets/dress.jpg',

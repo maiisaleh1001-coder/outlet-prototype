@@ -27,6 +27,7 @@ $map = [ordered]@{
   'c1ed37366ee47f2955f5accde48c7c74' = @('img6\dress-terracotta.jpg', 'dress-terracotta.jpg')
   '6031353edae23690855de7662cc619b2' = @('img6\dress-ivory.jpg', 'dress-ivory.jpg')
   '6ff2f52077bcc2ac6b030c6858f5cded' = @('img6\dress-pink.jpg', 'dress-pink.jpg')
+  '0c6822045e8fd422a348d4459bb4def9' = @('img6\dress-pleated.jpg', 'dress-pleated.jpg')
 }
 foreach ($k in $map.Keys) {
   $from = Join-Path (Join-Path $Scratch 'outlet-canvas') $map[$k][0]
@@ -120,6 +121,9 @@ $css += @'
 .proto-toast { position: absolute; left: 50%; bottom: 104px; transform: translate(-50%, 12px); max-width: calc(100% - 48px); box-sizing: border-box; padding: 10px 16px; border-radius: 999px; background: #1C1917; color: #FFFFFF; font: 500 13px/20px "Thmanyah Sans", system-ui, sans-serif; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 20; }
 .proto-toast.show { opacity: 1; transform: translate(-50%, 0); }
 .proto-pop { animation: proto-pop .3s ease; }
+.proto-hide { display: none !important; }
+.proto-empty { padding: 48px 24px; text-align: center; font: 700 16px/24px "Thmanyah Sans", system-ui, sans-serif; color: #1C1917; }
+.proto-empty span { display: block; margin-top: 4px; font-weight: 400; font-size: 13px; line-height: 20px; color: #6B635D; }
 @keyframes proto-pop { 50% { transform: scale(1.25); } }
 @media (prefers-reduced-motion: reduce) { .proto-toast, .proto-pop { transition: none; animation: none; } }
 '@
@@ -159,6 +163,55 @@ $app = @'
   }
   paintCart(false);
   document.querySelectorAll('button[aria-label="أضف للمفضلة"]').forEach(function (b) { paintFav(b, !!favs[favKey(b)]); });
+
+  // Search: filters the products and categories on the current screen as you type
+  function norm(s) {
+    return (s || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim();
+  }
+  var extra = { 'فساتين': 'فستان', 'قمصان': 'قميص بلوزه', 'بناطيل': 'بنطلون بنطال', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز', 'جواكيت': 'جاكيت معطف بالطو' };
+  var input = screen && screen.querySelector('input[type="search"]');
+  if (input) {
+    var items = [];
+    document.querySelectorAll('button[aria-label$=" للسلة"]').forEach(function (b) {
+      var card = b.closest('div[style*="border-radius: 18px"]');
+      if (card) items.push(card);
+    });
+    screen.querySelectorAll('a').forEach(function (a) {
+      if (a.querySelector('img') && !a.closest('nav')) items.push(a);
+    });
+    items.forEach(function (el) {
+      var alts = [].map.call(el.querySelectorAll('img'), function (i) { return i.alt; }).join(' ');
+      var txt = el.textContent + ' ' + alts + ' ' + (el.getAttribute('aria-label') || '');
+      Object.keys(extra).forEach(function (k) { if (txt.indexOf(k) !== -1) txt += ' ' + extra[k]; });
+      el._q = norm(txt);
+    });
+    var scroller = items.length ? items[0].closest('[style*="overflow-y: auto"]') : null;
+    var sections = [].map.call(screen.querySelectorAll('h2'), function (h) { return h.parentNode.parentNode; });
+    var gradient = screen.querySelector('[style*="linear-gradient"]');
+    var banner = gradient ? gradient.parentNode : null;
+    var empty = document.createElement('div');
+    empty.className = 'proto-empty proto-hide';
+    if (scroller) scroller.appendChild(empty);
+    var run = function () {
+      var q = norm(input.value), words = q ? q.split(' ') : [], shown = 0;
+      items.forEach(function (el) {
+        var ok = words.every(function (w) { return el._q.indexOf(w) !== -1; });
+        el.classList.toggle('proto-hide', !ok);
+        if (ok) shown++;
+      });
+      sections.forEach(function (s) {
+        var has = [].some.call(s.querySelectorAll('*'), function (c) { return items.indexOf(c) !== -1 && !c.classList.contains('proto-hide'); });
+        s.classList.toggle('proto-hide', !!q && !has);
+      });
+      if (banner) banner.classList.toggle('proto-hide', !!q);
+      empty.innerHTML = 'مفيش نتايج لـ «' + input.value.replace(/[<>&]/g, '') + '»<span>جرّب كلمة تانية، زي فستان أو شنطة أو جاكيت</span>';
+      empty.classList.toggle('proto-hide', !q || shown > 0);
+      if (scroller) scroller.scrollTop = 0;
+    };
+    input.addEventListener('input', run);
+    input.addEventListener('search', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') input.blur(); });
+  }
 
   document.addEventListener('click', function (e) {
     var t = e.target;
