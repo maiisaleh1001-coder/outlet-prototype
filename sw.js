@@ -1,8 +1,9 @@
 // Network first, so every push shows up on the next open; the cache is only a fallback for offline.
-const CACHE = 'outlet-proto-v1';
+const CACHE = 'outlet-proto-v2';
 const CORE = [
   './',
   './index.html',
+  './category.html',
   './styles.css',
   './manifest.webmanifest',
   './favicon.svg',
@@ -15,6 +16,12 @@ const CORE = [
   './fonts/thmanyahsans-Bold.otf',
   './assets/bag.jpg',
   './assets/banner-coat.jpg',
+  './assets/dress-black.jpg',
+  './assets/dress-green.jpg',
+  './assets/dress-ivory.jpg',
+  './assets/dress-pink.jpg',
+  './assets/dress-polka.jpg',
+  './assets/dress-terracotta.jpg',
   './assets/dress.jpg',
   './assets/pants.jpg',
   './assets/shirt.jpg',

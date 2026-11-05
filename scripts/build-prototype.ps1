@@ -1,7 +1,12 @@
 ﻿param([string]$Scratch, [string]$Out)
 $ErrorActionPreference = 'Stop'
 $af = Join-Path $Scratch 'artifact-files\44f285b3-1103-4b3c-a16a-c076fa70c113\project'
-$src = [System.IO.File]::ReadAllText((Join-Path $af 'U06c-Home-Reference.dc.html'), [System.Text.Encoding]::UTF8)
+$utf8 = New-Object System.Text.UTF8Encoding $false
+# canvas artboard -> prototype page (links between artboards are rewritten to these names)
+$pages = @(
+  @('U06c-Home-Reference.dc.html', 'index.html', 'outlet · الرئيسية'),
+  @('U07-Category.dc.html', 'category.html', 'outlet · فساتين')
+)
 
 New-Item -ItemType Directory -Force (Join-Path $Out 'assets') | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $Out 'fonts') | Out-Null
@@ -15,18 +20,28 @@ $map = [ordered]@{
   'cb0d93e90438c4bd0d7b6daaf7ca9b4f' = @('img5\sweater.jpg', 'sweater.jpg')
   '98cf40bd51847362c41ebd26839dcf59' = @('img5\trench.jpg', 'trench.jpg')
   '512d40ccda81f29e7193f44bd2822edb' = @('img4\bag.jpg', 'bag.jpg')
+  'f25034e4b13b6ea69f44b3cd323805fb' = @('img6\dress-black.jpg', 'dress-black.jpg')
+  '9bf41d72be4fe463a878d02b3bdd7580' = @('img6\dress-green.jpg', 'dress-green.jpg')
+  'b87942df371354176ea99ac913a1d058' = @('img6\dress-polka.jpg', 'dress-polka.jpg')
+  'c1ed37366ee47f2955f5accde48c7c74' = @('img6\dress-terracotta.jpg', 'dress-terracotta.jpg')
+  '6031353edae23690855de7662cc619b2' = @('img6\dress-ivory.jpg', 'dress-ivory.jpg')
+  '6ff2f52077bcc2ac6b030c6858f5cded' = @('img6\dress-pink.jpg', 'dress-pink.jpg')
 }
 foreach ($k in $map.Keys) {
   $from = Join-Path (Join-Path $Scratch 'outlet-canvas') $map[$k][0]
   Copy-Item $from (Join-Path $Out ('assets\' + $map[$k][1])) -Force
-  $src = $src.Replace('/_blob/' + $k, 'assets/' + $map[$k][1])
 }
-if ($src -match '/_blob/') { throw 'unmapped blob left' }
 
 foreach ($w in 'Regular','Medium','Bold') {
   Copy-Item (Join-Path $af "ds\outlet\fonts\thmanyahsans-$w.otf") (Join-Path $Out "fonts\thmanyahsans-$w.otf") -Force
 }
 
+foreach ($pg in $pages) {
+$src = [System.IO.File]::ReadAllText((Join-Path $af $pg[0]), [System.Text.Encoding]::UTF8)
+foreach ($k in $map.Keys) { $src = $src.Replace('/_blob/' + $k, 'assets/' + $map[$k][1]) }
+if ($src -match '/_blob/') { throw "unmapped blob left in $($pg[0])" }
+foreach ($p2 in $pages) { $src = $src.Replace('href="' + $p2[0] + '"', 'href="' + $(if ($p2[1] -eq 'index.html') { './' } else { $p2[1] }) + '"') }
+$title = $pg[2]
 $helmet = [regex]::Match($src, '(?s)<helmet>(.*?)</helmet>').Groups[1].Value.Trim()
 $body = [regex]::Match($src, '(?s)</helmet>(.*?)</x-dc>').Groups[1].Value.Trim()
 $body = $body -replace '^<div style="width: 390px; height: 844px;', '<div class="screen" style="width: 390px; height: 844px;'
@@ -38,7 +53,7 @@ $html = @"
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
-<title>outlet · الرئيسية</title>
+<title>$title</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
@@ -69,6 +84,8 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 </body>
 </html>
 "@
+[System.IO.File]::WriteAllText((Join-Path $Out $pg[1]), $html, $utf8)
+}
 
 $css = @'
 @font-face { font-family: "Thmanyah Sans"; src: url("fonts/thmanyahsans-Regular.otf") format("opentype"); font-weight: 400; font-display: swap; }
@@ -122,10 +139,11 @@ $manifest = @'
 $assetList = (Get-ChildItem (Join-Path $Out 'assets') -File | ForEach-Object { "  './assets/" + $_.Name + "'," }) -join "`n"
 $sw = @"
 // Network first, so every push shows up on the next open; the cache is only a fallback for offline.
-const CACHE = 'outlet-proto-v1';
+const CACHE = 'outlet-proto-v2';
 const CORE = [
   './',
   './index.html',
+  './category.html',
   './styles.css',
   './manifest.webmanifest',
   './favicon.svg',
@@ -217,6 +235,7 @@ $readme = @'
 Static, clickable prototype of the outlet home screen (Arabic, RTL), exported from the design canvas.
 
 - `index.html` — the home screen (scrollable inside a phone frame on desktop, full screen on phones)
+- `category.html` — the category product list (فساتين), opened from the home categories
 - `styles.css` — device frame and fonts
 - `assets/` — placeholder product and campaign photos (AI-generated stand-ins)
 - `fonts/` — Thmanyah Sans (licence for client/commercial use still to be confirmed)
@@ -224,8 +243,6 @@ Static, clickable prototype of the outlet home screen (Arabic, RTL), exported fr
 No build step: Vercel serves the folder as-is.
 '@
 
-$utf8 = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText((Join-Path $Out 'index.html'), $html, $utf8)
 [System.IO.File]::WriteAllText((Join-Path $Out 'styles.css'), $css, $utf8)
 [System.IO.File]::WriteAllText((Join-Path $Out 'favicon.svg'), $favicon, $utf8)
 [System.IO.File]::WriteAllText((Join-Path $Out 'README.md'), $readme, $utf8)
