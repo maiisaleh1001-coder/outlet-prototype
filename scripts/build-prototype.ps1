@@ -8,13 +8,13 @@ New-Item -ItemType Directory -Force (Join-Path $Out 'fonts') | Out-Null
 
 $map = [ordered]@{
   'a562e12c89fe0ec9d355bd86ce804687' = @('img3\coat.jpg', 'banner-coat.jpg')
-  '2f9eb8be64d8e7228f59c496a3e037ff' = @('img5\dress.jpg', 'dress.jpg')
-  'fb14fa60fc18da751ce8e31dcfddac30' = @('img5\shirt.jpg', 'shirt.jpg')
-  'fd8bad367c92206fc7a1419a41e2f86a' = @('img5\pants.jpg', 'pants.jpg')
+  '504966b45d09937eeada81b732f2b221' = @('img5\dress.jpg', 'dress.jpg')
+  'de703db850f57b79578101f2154c8772' = @('img5\shirt.jpg', 'shirt.jpg')
+  'daa22da475bb4b44e57d364dcc0d5c08' = @('img5\pants.jpg', 'pants.jpg')
   'fe8f5727b39dcfc42f3a684cface7857' = @('img5\sneakers.jpg', 'sneakers.jpg')
-  '4397f189a88043a43f0c2dbf582f0a8c' = @('img5\sweater.jpg', 'sweater.jpg')
-  '93e0ce1ef08d24bc2048e504702dd9aa' = @('img5\trench.jpg', 'trench.jpg')
-  '223942797a623099adc6f3ddc4c92dab' = @('img4\bag.jpg', 'bag.jpg')
+  'cb0d93e90438c4bd0d7b6daaf7ca9b4f' = @('img5\sweater.jpg', 'sweater.jpg')
+  '98cf40bd51847362c41ebd26839dcf59' = @('img5\trench.jpg', 'trench.jpg')
+  '512d40ccda81f29e7193f44bd2822edb' = @('img4\bag.jpg', 'bag.jpg')
 }
 foreach ($k in $map.Keys) {
   $from = Join-Path (Join-Path $Scratch 'outlet-canvas') $map[$k][0]
