@@ -284,23 +284,39 @@
     var key = heroImg ? heroImg.getAttribute('src') : '';
     var favBtn = document.querySelector('[data-p="fav"]');
     if (favBtn) paintFav(favBtn, !!favs[key]);
-    // Photos change in place with a card flip (no sliding or zooming out of the frame); the arrows loop round.
-    var views = [['none', '50% 50%'], ['scale(1.9)', '50% 22%'], ['scale(1.8)', '50% 88%']], view = 0, flipping = false;
-    var frame = null;
+    // Photos change in place with a card flip; the arrows loop round.
+    // View 1: transparent cut-out on the platform. View 2: someone wearing it (when we have that photo). View 3: a gentle close-up.
+    var base = key.replace(/^.*\//, '').replace(/\.(jpg|png)$/, '').replace(/-cut$/, '');
+    var cut = 'assets/' + base + '-cut.png';
+    var WORN = {}; // products that have an on-model photo, e.g. { 'dress-green': 1 } -> assets/worn-dress-green.jpg
+    var worn = WORN[base] ? 'assets/worn-' + base + '.jpg' : null;
+    var views = [{ src: cut, t: 'none', o: '50% 50%' }];
+    if (worn) views.push({ src: worn, worn: true });
+    views.push({ src: cut, t: 'scale(1.35)', o: '50% 22%' });
+    if (views.length < 3) views.push({ src: cut, t: 'scale(1.35)', o: '50% 85%' });
+    var view = 0, flipping = false, frame = null;
     if (heroImg) {
+      heroImg.src = cut;
       frame = document.createElement('div');
       ['position', 'top', 'left', 'width', 'height', 'marginLeft'].forEach(function (k) { frame.style[k] = heroImg.style[k]; });
       frame.style.overflow = 'hidden';
-      frame.style.mixBlendMode = 'multiply';        // the white photo background still disappears into the page
       frame.style.transformStyle = 'preserve-3d';
       frame.style.willChange = 'transform';
+      frame.style.transition = 'border-radius .2s';
       heroImg.parentNode.insertBefore(frame, heroImg);
       frame.appendChild(heroImg);
-      heroImg.style.cssText = 'display: block; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal';
+      heroImg.style.cssText = 'display: block; width: 100%; height: 100%; object-fit: contain';
+      views.forEach(function (v) { var i = new Image(); i.src = v.src; }); // warm the cache so the flip never shows a blank
     }
     var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var setView = function () {
-      heroImg.style.transformOrigin = views[view][1]; heroImg.style.transform = views[view][0];
+      var v = views[view];
+      heroImg.src = v.src;
+      heroImg.style.objectFit = v.worn ? 'cover' : 'contain';
+      heroImg.style.objectPosition = v.worn ? '50% 30%' : '50% 50%';
+      heroImg.style.transformOrigin = v.o || '50% 50%'; heroImg.style.transform = v.t || 'none';
+      frame.style.borderRadius = v.worn ? '22px' : '0';
+      frame.style.boxShadow = v.worn ? '0 12px 28px rgba(28,25,23,0.12)' : 'none';
       var c = document.querySelector('[data-pager-count]'); if (c) c.textContent = (view + 1) + '/' + views.length;
     };
     var flipTo = function (dir) { // dir: 1 = next, -1 = previous

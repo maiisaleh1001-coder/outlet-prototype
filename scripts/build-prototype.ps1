@@ -34,7 +34,12 @@ $map = [ordered]@{
   '6031353edae23690855de7662cc619b2' = @('img6\dress-ivory.jpg', 'dress-ivory.jpg')
   '6ff2f52077bcc2ac6b030c6858f5cded' = @('img6\dress-pink.jpg', 'dress-pink.jpg')
   '0c6822045e8fd422a348d4459bb4def9' = @('img6\dress-pleated.jpg', 'dress-pleated.jpg')
+  'ba18cb3dd8dc3bbfa3155fd553126d1e' = @('cut\dress-green-cut.png', 'dress-green-cut.png')
 }
+# transparent cut-outs for the product page (no colour taken from the platform) and on-model photos when present
+Get-ChildItem (Join-Path $Scratch 'outlet-canvas\cut') -Filter '*-cut.png' | ForEach-Object { Copy-Item $_.FullName (Join-Path $Out ('assets\' + $_.Name)) -Force }
+$wornDir = Join-Path $Scratch 'outlet-canvas\worn'
+if (Test-Path $wornDir) { Get-ChildItem $wornDir -Filter 'worn-*.jpg' | ForEach-Object { Copy-Item $_.FullName (Join-Path $Out ('assets\' + $_.Name)) -Force } }
 foreach ($k in $map.Keys) {
   $from = Join-Path (Join-Path $Scratch 'outlet-canvas') $map[$k][0]
   Copy-Item $from (Join-Path $Out ('assets\' + $map[$k][1])) -Force
