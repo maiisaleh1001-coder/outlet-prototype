@@ -62,7 +62,8 @@
     var oldEl = card.querySelector('s');
     var badge = [].filter.call(card.querySelectorAll('span'), function (s) { return /^خصم/.test(s.textContent.trim()); })[0];
     var alt = img ? img.alt : name, h = hash(name), text = name + ' ' + alt;
-    var col = colors.filter(function (c) { return text.indexOf(c[0]) !== -1; })[0] || ['متعدد', 'conic-gradient(#C2410C, #233A5E, #EFE6D2, #C2410C)'];
+    var findCol = function (s) { return colors.filter(function (c) { return s.indexOf(c[0]) !== -1; })[0]; };
+    var col = findCol(name) || findCol(alt) || ['متعدد', 'conic-gradient(#C2410C, #233A5E, #EFE6D2, #C2410C)'];
     var cond = ['ممتازة', 'كالجديدة', 'ممتازة', 'جيدة جدًا'][h % 4];
     var size = sizeOf(name);
     return {
