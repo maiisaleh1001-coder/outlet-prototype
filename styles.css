@@ -1,0 +1,13 @@
+@font-face { font-family: "Thmanyah Sans"; src: url("fonts/thmanyahsans-Regular.otf") format("opentype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Thmanyah Sans"; src: url("fonts/thmanyahsans-Medium.otf") format("opentype"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Thmanyah Sans"; src: url("fonts/thmanyahsans-Bold.otf") format("opentype"); font-weight: 700; font-display: swap; }
+* { -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: #EFE9E4; }
+.stage { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 32px 16px; box-sizing: border-box; }
+.device { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; background: #FFFFFF; box-shadow: 0 0 0 10px #1C1917, 0 30px 80px rgba(28,25,23,0.35); }
+@media (max-width: 500px), (max-height: 700px) and (max-width: 900px) {
+  html, body { background: #FFFFFF; }
+  .stage { padding: 0; display: block; }
+  .device { width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+  .device > .screen { width: 100vw !important; height: 100vh !important; height: 100dvh !important; }
+}
