@@ -14,6 +14,7 @@ const CORE = [
   './payment-failed.html',
   './orders.html',
   './order.html',
+  './account.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

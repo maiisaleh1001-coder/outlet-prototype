@@ -689,6 +689,27 @@
     }, true);
   }
 
+  if (page === 'account.html') {
+    var orders = allOrders();
+    var current = orders.filter(function (x) { return CURRENT[x.status || 'preparing']; }).length;
+    var waiting = orders.filter(function (x) { return x.status === 'arrived' || x.status === 'handover'; }).length;
+    var walletBal = orders.filter(function (x) { return x.status === 'cancelled'; }).reduce(function (s, x) { return s + x.total; }, 0);
+    screen.querySelector('[data-tile="orders"] [data-tile-value]').textContent = current;
+    screen.querySelector('[data-tile="favorites"] [data-tile-value]').textContent = Object.keys(favs).length;
+    screen.querySelector('[data-tile="wallet"] [data-tile-value]').innerHTML = riyal(14, 15) + walletBal;
+    screen.querySelector('[data-wallet-row]').innerHTML = riyal(10, 11) + walletBal;
+    var badge = screen.querySelector('[data-orders-badge]');
+    if (waiting) badge.textContent = waiting + ' بانتظار تأكيدك'; else badge.style.display = 'none';
+    screen.addEventListener('click', function (e) {
+      var r = e.target.closest('[data-row], [data-tile]');
+      if (!r) return;
+      var key = r.getAttribute('data-row') || r.getAttribute('data-tile');
+      if (key === 'orders') return; // real link to طلباتي
+      e.preventDefault(); e.stopPropagation();
+      toast(key === 'logout' ? 'تسجيل الخروج متاح في النسخة النهائية' : 'الشاشة دي لسه بتتصمم');
+    }, true);
+  }
+
   if (page === 'order.html') {
     var viewNo = read('outlet-order-view', 'OUT-24790');
     var o = allOrders().filter(function (x) { return x.no === viewNo; })[0] || demoOrders()[0];
@@ -866,8 +887,8 @@
       paintFav(fav, toggleFav(img ? img.getAttribute('src') : ''));
       return;
     }
-    // until the account screen is designed, "حسابي" in the bottom bar opens طلباتي
-    if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'orders.html'; return; }
+    // "حسابي" in the bottom bar (pages built before the account screen still link to #profile)
+    if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'account.html'; return; }
     var cartLink = t.closest('a[aria-label^="سلة التسوق"]');
     if (cartLink) { e.preventDefault(); location.href = 'cart.html'; return; }
     var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"]');
