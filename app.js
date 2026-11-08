@@ -566,7 +566,10 @@
         // demo rule for showing the failure screen: a card number ending in 0002 is declined
         if (payMethod !== 'apple' && /0002$/.test(digits)) { location.href = 'payment-failed.html'; return; }
         var s = orderSums();
-        var order = { no: 'OUT-' + (24000 + Math.floor(Math.random() * 900)), items: cart.slice(), seller: cart[0].seller, method: s.method, addr: s.addr.label, total: s.total, pay: PAY_LABEL[payMethod] };
+        var now = new Date();
+        var order = { no: 'OUT-' + (24818 + Math.floor(Math.random() * 180)), date: fmtDate(now), status: s.method === 'direct' ? 'handover' : 'preparing',
+          items: cart.slice(), seller: cart[0].seller, method: s.method, addr: s.addr.label, addrLine: s.addr.line,
+          sub: s.sub, fee: s.fee, delivery: s.delivery, total: s.total, pay: PAY_LABEL[payMethod], times: { paid: fmtDate(now, true) } };
         write('outlet-last-order', order);
         var orders = read('outlet-orders', []); orders.unshift(order); write('outlet-orders', orders);
         cart = []; saveCart();
@@ -596,7 +599,179 @@
       var b = e.target.closest('[data-act="track"], [data-act="invoice"]');
       if (!b) return;
       e.preventDefault(); e.stopPropagation();
-      toast(b.getAttribute('data-act') === 'track' ? 'صفحة متابعة الطلب لسه بتتصمم' : 'الفاتورة الضريبية لسه بتتصمم');
+      if (b.getAttribute('data-act') === 'track' && ord) { write('outlet-order-view', ord.no); location.href = 'order.html'; }
+      else toast('الفاتورة الضريبية لسه بتتصمم');
+    }, true);
+  }
+
+  // ---------- orders (طلباتي + تفاصيل الطلب) ----------
+  function fmtDate(d, withTime) {
+    var months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    var s = d.getDate() + ' ' + months[d.getMonth()] + (withTime ? '' : ' ' + d.getFullYear());
+    if (withTime) { var h = d.getHours(), m = ('0' + d.getMinutes()).slice(-2); s += ' · ' + ((h % 12) || 12) + ':' + m + (h < 12 ? ' ص' : ' م'); }
+    return s;
+  }
+  var STATUS = {
+    preparing: { label: 'قيد التجهيز', bg: '#F7F3F0', fg: '#6B635D', card: '#F7F3F093', title: 'البائع بيجهز طلبك', sub: 'هنبعت إشعار أول ما المندوب يستلم القطع. الإلغاء متاح لحد ما الشحن يبدأ.' },
+    shipping: { label: 'قيد التوصيل', bg: '#FFF4EC', fg: '#C2410C', card: '#FFF4EC', title: 'طلبك في الطريق', sub: 'المندوب استلم القطع من البائع وجاي على عنوانك.' },
+    arrived: { label: 'وصل المندوب', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'المندوب سلّم الطلب', sub: 'راجع القطع وأكّد الاستلام، أو بلّغ عن مشكلة لو فيه حاجة مش مظبوطة.' },
+    handover: { label: 'بانتظار التسليم', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'اتفقوا على التسليم', sub: 'كلّم البائع في محادثة الطلب واتفقوا على المكان والوقت، وبعد الاستلام أكّد من هنا.' },
+    completed: { label: 'مكتمل', bg: '#ECF6EF', fg: '#1F7A4D', card: '#ECF6EF', title: 'الطلب اكتمل', sub: 'المبلغ اتحوّل للبائع، وتقييم البائع متاح دلوقتي.' },
+    cancelled: { label: 'ملغى', bg: '#F2F2F2', fg: '#6B635D', card: '#F7F3F093', title: 'الطلب اتلغى', sub: 'المبلغ المدفوع رجع للمحفظة.' }
+  };
+  var CURRENT = { preparing: 1, shipping: 1, arrived: 1, handover: 1 };
+  function demoOrders() {
+    var d = read('outlet-demo-orders', null);
+    if (d) return d;
+    d = [
+      { no: 'OUT-24790', date: '6 نوفمبر 2026', status: 'arrived', hoursLeft: 18,
+        items: [{ src: 'assets/sneakers.jpg', alt: 'حذاء رياضي جلد أبيض', name: 'حذاء أبيض', size: '40', cond: 'ممتازة', priceNum: 150 }],
+        seller: SELLERS[0], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 150, fee: 9, delivery: 25, total: 184, pay: 'بطاقة مدى',
+        times: { paid: '6 نوفمبر · 3:20 م', preparing: '6 نوفمبر · 6:05 م', shipping: '7 نوفمبر · 11:40 ص', arrived: '8 نوفمبر · 1:15 م' } },
+      { no: 'OUT-24611', date: '28 أكتوبر 2026', status: 'completed',
+        items: [{ src: 'assets/pants.jpg', alt: 'بنطلون واسع بيج', name: 'بنطلون بيج', size: 'M', cond: 'كالجديدة', priceNum: 85 }],
+        seller: SELLERS[3], method: 'direct', addr: '', addrLine: '', sub: 85, fee: 9, delivery: 0, total: 94, pay: 'Apple Pay',
+        times: { paid: '28 أكتوبر · 9:10 م', handover: '29 أكتوبر · 5:30 م', completed: '29 أكتوبر · 7:02 م' } },
+      { no: 'OUT-24502', date: '20 أكتوبر 2026', status: 'cancelled',
+        items: [{ src: 'assets/bag.jpg', alt: 'شنطة يد جلد بلون بني فاتح', name: 'شنطة جلد كلاسيكية', size: 'مقاس واحد', cond: 'ممتازة', priceNum: 320 }],
+        seller: SELLERS[2], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 320, fee: 9, delivery: 25, total: 354, pay: 'بطاقة ائتمانية',
+        times: { paid: '20 أكتوبر · 2:45 م', cancelled: '20 أكتوبر · 4:10 م' } }
+    ];
+    write('outlet-demo-orders', d);
+    return d;
+  }
+  function allOrders() { return read('outlet-orders', []).concat(demoOrders()); }
+  function saveOrder(o) {
+    ['outlet-orders', 'outlet-demo-orders'].forEach(function (k) {
+      var list = read(k, []), i = list.findIndex(function (x) { return x.no === o.no; });
+      if (i !== -1) { list[i] = o; write(k, list); }
+    });
+  }
+  function statusPill(st) { var s = STATUS[st] || STATUS.preparing; return '<span style="height: 26px; padding: 0 10px; border-radius: 999px; background: ' + s.bg + '; color: ' + s.fg + '; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; flex: none">' + s.label + '</span>'; }
+
+  if (page === 'orders.html') {
+    var listEl = screen.querySelector('[data-orders-list]');
+    var cardTpl = listEl.querySelector('[data-order-card]').cloneNode(true);
+    var emptyEl = screen.querySelector('[data-orders-empty]');
+    var filter = 'all';
+    var renderOrders = function () {
+      listEl.querySelectorAll('[data-order-card]').forEach(function (c) { c.remove(); });
+      var shown = 0;
+      allOrders().forEach(function (o) {
+        var st = o.status || 'preparing', group = CURRENT[st] ? 'current' : 'past';
+        if (filter !== 'all' && filter !== group) return;
+        var c = cardTpl.cloneNode(true);
+        c.setAttribute('data-no', o.no);
+        c.querySelector('b').textContent = o.no;
+        c.querySelector('b').nextElementSibling.textContent = o.date;
+        var pillEl = c.firstElementChild.lastElementChild; pillEl.outerHTML = statusPill(st);
+        var row = c.children[1], thumbs = row.firstElementChild, t0 = thumbs.firstElementChild.cloneNode(true);
+        thumbs.innerHTML = '';
+        o.items.slice(0, 3).forEach(function (it) { var t = t0.cloneNode(true), im = t.querySelector('img'); im.src = it.src; im.alt = it.name; thumbs.appendChild(t); });
+        var note = st === 'arrived' || st === 'handover' ? ' · أكّد الاستلام' : st === 'cancelled' ? ' · المبلغ رجع للمحفظة' : '';
+        row.lastElementChild.textContent = pieces(o.items.length) + ' من ' + o.seller[0] + note;
+        c.children[2].firstElementChild.innerHTML = riyal(12, 13) + o.total;
+        listEl.insertBefore(c, emptyEl);
+        shown++;
+      });
+      emptyEl.style.display = shown ? 'none' : 'flex';
+      screen.querySelectorAll('[data-filter]').forEach(function (b) {
+        var on = b.getAttribute('data-filter') === filter;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500';
+      });
+    };
+    renderOrders();
+    screen.addEventListener('click', function (e) {
+      var f = e.target.closest('[data-filter]'), card = e.target.closest('[data-order-card]');
+      if (f) { e.preventDefault(); e.stopPropagation(); filter = f.getAttribute('data-filter'); renderOrders(); return; }
+      if (card) { e.preventDefault(); e.stopPropagation(); write('outlet-order-view', card.getAttribute('data-no')); location.href = 'order.html'; }
+    }, true);
+  }
+
+  if (page === 'order.html') {
+    var viewNo = read('outlet-order-view', 'OUT-24790');
+    var o = allOrders().filter(function (x) { return x.no === viewNo; })[0] || demoOrders()[0];
+    var itemsBox = screen.querySelector('[data-od-items]'), itemTpl = itemsBox.firstElementChild.cloneNode(true);
+    var CLOCK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10Z"></path><path d="m15.71 15.18-3.1-1.85c-.54-.32-.98-1.09-.98-1.72v-4.1"></path></svg>';
+    var TICK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+    var stepHTML = function (title, time, state, last) {
+      var dot = state === 'done' ? '<span style="width: 22px; height: 22px; border-radius: 999px; background: #C2410C; display: flex; align-items: center; justify-content: center">' + TICK + '</span>'
+        : state === 'now' ? '<span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid #C2410C; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span></span>'
+        : '<span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid #E7DED6; background: #FFFFFF"></span>';
+      var conn = last ? '' : '<span aria-hidden="true" style="width: 2px; flex: 1; min-height: 14px; margin: 2px 0; border-radius: 2px; background: ' + (state === 'done' ? '#F3C9A9' : '#EFE6DE') + '"></span>';
+      var todo = state === 'todo';
+      return '<li style="display: flex; gap: 12px"><span style="display: flex; flex-direction: column; align-items: center; flex: none">' + dot + conn + '</span><span style="display: flex; flex-direction: column; padding-bottom: 10px"><span style="font-size: 14px; line-height: 22px; font-weight: ' + (todo ? 500 : 700) + '; color: ' + (todo ? '#8E857F' : '#1C1917') + '">' + title + '</span><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + (time || '') + '</span></span></li>';
+    };
+    var renderOrder = function () {
+      var st = o.status || 'preparing', S = STATUS[st];
+      screen.querySelector('[data-od-no]').textContent = o.no;
+      screen.querySelector('[data-od-date]').textContent = o.date;
+      var extra = st === 'arrived' ? '<span style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A5800">' + CLOCK + 'باقي ' + (o.hoursLeft || 24) + ' ساعة، وبعدها الطلب بيكتمل تلقائيًا</span>'
+        : st === 'handover' ? '<span style="margin-top: 4px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A5800">التسليم المباشر ما بيكتملش تلقائيًا، لازم تأكيد الاستلام.</span>' : '';
+      var box = screen.querySelector('[data-od-status]');
+      box.style.background = S.card;
+      box.innerHTML = statusPill(st).replace('background: ' + S.bg, 'background: #FFFFFF; align-self: flex-start') +
+        '<span style="font-size: 18px; line-height: 26px; font-weight: 700">' + S.title + '</span><span style="font-size: 13px; line-height: 20px; color: #6B635D">' + S.sub + '</span>' + extra;
+      var steps = o.method === 'courier' ? [['paid', 'تم الدفع'], ['preparing', 'قيد التجهيز'], ['shipping', 'قيد التوصيل'], ['arrived', 'وصل المندوب'], ['completed', 'مكتمل']]
+        : [['paid', 'تم الدفع'], ['handover', 'بانتظار التسليم'], ['completed', 'مكتمل']];
+      if (st === 'cancelled') steps = [['paid', 'تم الدفع'], ['cancelled', 'ملغى']];
+      var cur = steps.findIndex(function (s) { return s[0] === st; });
+      if (st === 'preparing' && o.method !== 'courier') cur = 1;
+      var t = o.times || {};
+      screen.querySelector('[data-od-timeline]').innerHTML = steps.map(function (s, i) {
+        var state = i < cur || (st === 'completed' || st === 'cancelled') && i === cur ? 'done' : i === cur ? 'now' : 'todo';
+        var time = t[s[0]] || (s[0] === 'completed' && state === 'todo' ? 'بعد تأكيد الاستلام' : '');
+        return stepHTML(s[1], time, state, i === steps.length - 1);
+      }).join('');
+      screen.querySelector('[data-od-seller]').innerHTML = 'من <b style="color: #1C1917">' + esc(o.seller[0]) + '</b>';
+      itemsBox.innerHTML = '';
+      o.items.forEach(function (it) {
+        var r = itemTpl.cloneNode(true), im = r.querySelector('img'); im.src = it.src; im.alt = it.alt || it.name;
+        var info = r.children[1]; info.firstElementChild.textContent = it.name; info.lastElementChild.textContent = 'المقاس ' + it.size + ' · ' + it.cond;
+        r.lastElementChild.innerHTML = riyal(11, 12) + it.priceNum;
+        itemsBox.appendChild(r);
+      });
+      screen.querySelector('[data-od-method]').textContent = o.method === 'courier' ? 'توصيل بالمندوب' : 'تسليم مباشر مع البائع';
+      screen.querySelector('[data-od-address]').textContent = o.method === 'courier' ? o.addr + ' · ' + o.addrLine : 'المكان والوقت بيتحددوا في محادثة الطلب';
+      screen.querySelector('[data-od-sub]').innerHTML = riyal(10, 11) + (o.sub || o.total);
+      screen.querySelector('[data-od-fee]').innerHTML = riyal(10, 11) + (o.fee || 0);
+      screen.querySelector('[data-od-delivery]').innerHTML = o.delivery ? riyal(10, 11) + o.delivery : 'مجانًا';
+      screen.querySelector('[data-od-total]').innerHTML = riyal(14, 15) + o.total;
+      screen.querySelector('[data-act="chat"]').style.visibility = st === 'cancelled' ? 'hidden' : 'visible';
+      var light = 'flex: 1; height: 54px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700';
+      var dark = 'flex: 1.3; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700';
+      var bar = screen.querySelector('[data-od-bar]'), btn = function (act, label, style) { return '<button type="button" data-act="' + act + '" style="' + style + '">' + label + '</button>'; };
+      bar.style.display = 'flex';
+      bar.innerHTML = st === 'preparing' ? btn('cancel', 'إلغاء الطلب', light) + btn('chat', 'تواصل مع البائع', dark)
+        : st === 'shipping' ? btn('chat', 'تواصل مع البائع', dark.replace('flex: 1.3', 'flex: 1'))
+        : st === 'arrived' || st === 'handover' ? btn('report', 'بلّغ عن مشكلة', light) + btn('confirm', 'تأكيد الاستلام', dark)
+        : st === 'completed' ? btn('rate', 'قيّم البائع', dark.replace('flex: 1.3', 'flex: 1'))
+        : '';
+      if (!bar.innerHTML) bar.style.display = 'none';
+    };
+    var ask = function (title, text, yes, no, onYes) {
+      mountSheet('<section role="dialog" aria-modal="true" aria-label="' + title + '" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+        '<div style="padding: 4px 18px 8px; display: flex; flex-direction: column; gap: 8px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + title + '</h2><p style="margin: 0; font-size: 14px; line-height: 22px; color: #6B635D">' + text + '</p></div>' +
+        '<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 28px"><button type="button" data-act="yes" style="height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">' + yes + '</button>' +
+        '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">' + no + '</button></div></section>',
+        function (e, b) { if (b && b.getAttribute('data-act') === 'yes') { closeSheet(); setTimeout(onYes, 250); } }, null);
+    };
+    renderOrder();
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]');
+      if (!b || !screen.contains(b) || b.closest('.proto-sheet-wrap')) return;
+      var act = b.getAttribute('data-act');
+      e.preventDefault(); e.stopPropagation();
+      var stamp = fmtDate(new Date(), true);
+      if (act === 'confirm') ask('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل والمبلغ بيتحوّل للبائع، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
+        o.status = 'completed'; o.times = o.times || {}; o.times.completed = stamp; saveOrder(o); renderOrder(); toast('تم تأكيد الاستلام، شكرًا!'); });
+      else if (act === 'cancel') ask('إلغاء الطلب؟', 'الطلب هيتلغي والمبلغ المدفوع هيرجع للمحفظة.', 'إلغاء الطلب', 'رجوع', function () {
+        o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o); renderOrder(); toast('اتلغى الطلب والمبلغ رجع للمحفظة'); });
+      else if (act === 'chat') toast('محادثة الطلب لسه بتتصمم');
+      else if (act === 'report') toast('شاشة الإبلاغ عن مشكلة لسه بتتصمم');
+      else if (act === 'rate') toast('شاشة التقييم لسه بتتصمم');
+      else if (act === 'invoice') toast('الفاتورة الضريبية لسه بتتصمم');
     }, true);
   }
 
@@ -691,6 +866,8 @@
       paintFav(fav, toggleFav(img ? img.getAttribute('src') : ''));
       return;
     }
+    // until the account screen is designed, "حسابي" in the bottom bar opens طلباتي
+    if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'orders.html'; return; }
     var cartLink = t.closest('a[aria-label^="سلة التسوق"]');
     if (cartLink) { e.preventDefault(); location.href = 'cart.html'; return; }
     var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"]');

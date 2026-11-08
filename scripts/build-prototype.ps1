@@ -13,7 +13,9 @@ $pages = @(
   @('U12-Checkout.dc.html', 'checkout.html', 'outlet · إتمام الطلب'),
   @('U13-Payment.dc.html', 'payment.html', 'outlet · الدفع'),
   @('U14-Success.dc.html', 'payment-success.html', 'outlet · تم الدفع'),
-  @('U14b-Failed.dc.html', 'payment-failed.html', 'outlet · الدفع ما تمش')
+  @('U14b-Failed.dc.html', 'payment-failed.html', 'outlet · الدفع ما تمش'),
+  @('U15-Orders.dc.html', 'orders.html', 'outlet · طلباتي'),
+  @('U16-OrderDetails.dc.html', 'order.html', 'outlet · تفاصيل الطلب')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
 $filterSrc = [System.IO.File]::ReadAllText((Join-Path $af 'U07c-Filter.dc.html'), [System.Text.Encoding]::UTF8)
@@ -204,6 +206,8 @@ const CORE = [
   './payment.html',
   './payment-success.html',
   './payment-failed.html',
+  './orders.html',
+  './order.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
