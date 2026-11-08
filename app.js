@@ -648,6 +648,13 @@
     });
   }
   function statusPill(st) { var s = STATUS[st] || STATUS.preparing; return '<span style="height: 26px; padding: 0 10px; border-radius: 999px; background: ' + s.bg + '; color: ' + s.fg + '; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; flex: none">' + s.label + '</span>'; }
+  function askSheet(title, text, yes, no, onYes) {
+    mountSheet('<section role="dialog" aria-modal="true" aria-label="' + title + '" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+    '<div style="padding: 4px 18px 8px; display: flex; flex-direction: column; gap: 8px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + title + '</h2><p style="margin: 0; font-size: 14px; line-height: 22px; color: #6B635D">' + text + '</p></div>' +
+    '<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 28px"><button type="button" data-act="yes" style="height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">' + yes + '</button>' +
+    '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">' + no + '</button></div></section>',
+    function (e, b) { if (b && b.getAttribute('data-act') === 'yes') { closeSheet(); setTimeout(onYes, 250); } }, null);
+  }
 
   if (page === 'orders.html') {
     var listEl = screen.querySelector('[data-orders-list]');
@@ -690,24 +697,61 @@
   }
 
   if (page === 'account.html') {
-    var orders = allOrders();
-    var current = orders.filter(function (x) { return CURRENT[x.status || 'preparing']; }).length;
-    var waiting = orders.filter(function (x) { return x.status === 'arrived' || x.status === 'handover'; }).length;
-    var walletBal = orders.filter(function (x) { return x.status === 'cancelled'; }).reduce(function (s, x) { return s + x.total; }, 0);
-    screen.querySelector('[data-tile="orders"] [data-tile-value]').textContent = current;
-    screen.querySelector('[data-tile="favorites"] [data-tile-value]').textContent = Object.keys(favs).length;
-    screen.querySelector('[data-tile="wallet"] [data-tile-value]').innerHTML = riyal(14, 15) + walletBal;
-    screen.querySelector('[data-wallet-row]').innerHTML = riyal(10, 11) + walletBal;
-    var badge = screen.querySelector('[data-orders-badge]');
-    if (waiting) badge.textContent = waiting + ' بانتظار تأكيدك'; else badge.style.display = 'none';
+    var mode = read('outlet-acc-mode', 'buy');
+    var setMode = function (m) {
+      mode = m; write('outlet-acc-mode', m);
+      screen.querySelectorAll('[data-mode]').forEach(function (t) {
+        var on = t.getAttribute('data-mode') === m;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.style.background = on ? '#FFFFFF' : 'transparent'; t.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none';
+        t.style.fontWeight = on ? '700' : '500'; t.style.color = on ? '#1C1917' : '#6B635D';
+      });
+      screen.querySelectorAll('[data-panel]').forEach(function (p) { p.style.display = p.getAttribute('data-panel') === m ? 'flex' : 'none'; });
+    };
+    var note = screen.querySelector('[data-acc-note]'); if (note) note.remove();
+    var renderAcc = function () {
+      var orders = allOrders();
+      var current = orders.filter(function (x) { return CURRENT[x.status || 'preparing']; }).length;
+      var walletBal = orders.filter(function (x) { return x.status === 'cancelled'; }).reduce(function (s, x) { return s + x.total; }, 0);
+      var val = function (k) { return screen.querySelector('[data-row="' + k + '"] [data-row-value]'); };
+      val('orders').textContent = current ? current + ' حالية' : orders.length + ' طلبات';
+      val('favorites').textContent = Object.keys(favs).length || '';
+      val('wallet').innerHTML = riyal(10, 11) + walletBal;
+      var pend = orders.filter(function (x) { return x.status === 'arrived' || x.status === 'handover'; })[0];
+      var card = screen.querySelector('[data-acc-pending]');
+      card.style.display = pend ? 'flex' : 'none';
+      if (!pend) return;
+      card.setAttribute('data-no', pend.no);
+      screen.querySelector('[data-acc-no]').textContent = pend.no;
+      var im = screen.querySelector('[data-acc-thumb] img'); im.src = pend.items[0].src; im.alt = pend.items[0].alt || pend.items[0].name;
+      screen.querySelector('[data-acc-title]').textContent = STATUS[pend.status].title;
+      screen.querySelector('[data-acc-sub]').textContent = pend.status === 'arrived' ? 'باقي ' + (pend.hoursLeft || 24) + ' ساعة، وبعدها بيكتمل تلقائيًا' : 'أكّد بعد ما تستلم القطع من البائع';
+    };
+    setMode(mode); renderAcc();
+    var SOON = { favorites: 'شاشة المفضلة لسه بتتصمم', addresses: 'شاشة العناوين لسه بتتصمم', wallet: 'شاشة المحفظة لسه بتتصمم', language: 'تغيير اللغة لسه بيتصمم', policies: 'الشروط والسياسات لسه بتتصمم',
+      withdraw: 'شاشة سحب الأرباح لسه بتتصمم', incoming: 'شاشة الطلبات الواردة لسه بتتصمم', listings: 'شاشة منتجاتي لسه بتتصمم', pickup: 'عنوان الاستلام لسه بيتصمم', bank: 'البيانات البنكية لسه بتتصمم',
+      logout: 'تسجيل الخروج متاح في النسخة النهائية' };
     screen.addEventListener('click', function (e) {
-      var r = e.target.closest('[data-row], [data-tile]');
-      if (!r) return;
-      var key = r.getAttribute('data-row') || r.getAttribute('data-tile');
-      if (key === 'orders') return; // real link to طلباتي
+      var t = e.target.closest('[data-mode], [data-pending], [data-row], a[href="#edit-profile"], a[href="#notifications"]');
+      if (!t || !screen.contains(t) || t.closest('.proto-sheet-wrap')) return;
       e.preventDefault(); e.stopPropagation();
-      toast(key === 'logout' ? 'تسجيل الخروج متاح في النسخة النهائية' : 'الشاشة دي لسه بتتصمم');
+      if (t.hasAttribute('data-mode')) return setMode(t.getAttribute('data-mode'));
+      var pa = t.getAttribute('data-pending'), no = screen.querySelector('[data-acc-pending]').getAttribute('data-no');
+      if (pa === 'report') return toast('شاشة الإبلاغ عن مشكلة لسه بتتصمم');
+      if (pa === 'confirm') return askSheet('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل والمبلغ بيتحوّل للبائع، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
+        var o = allOrders().filter(function (x) { return x.no === no; })[0]; if (!o) return;
+        o.status = 'completed'; o.times = o.times || {}; o.times.completed = fmtDate(new Date(), true); saveOrder(o); renderAcc(); toast('تم تأكيد الاستلام، شكرًا!'); });
+      var key = t.getAttribute('data-row');
+      if (key === 'orders') { location.href = 'orders.html'; return; }
+      if (!key) return toast(t.getAttribute('href') === '#notifications' ? 'الإشعارات لسه بتتصمم' : 'تعديل الملف لسه بيتصمم');
+      toast(SOON[key] || 'الشاشة دي لسه بتتصمم');
     }, true);
+    // tapping the pending card body opens the order
+    screen.querySelector('[data-acc-pending]').addEventListener('click', function (e) {
+      if (e.target.closest('[data-pending]')) return;
+      write('outlet-order-view', this.getAttribute('data-no')); location.href = 'order.html';
+    });
+    window.addEventListener('pageshow', renderAcc);
   }
 
   if (page === 'order.html') {
@@ -771,13 +815,7 @@
         : '';
       if (!bar.innerHTML) bar.style.display = 'none';
     };
-    var ask = function (title, text, yes, no, onYes) {
-      mountSheet('<section role="dialog" aria-modal="true" aria-label="' + title + '" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
-        '<div style="padding: 4px 18px 8px; display: flex; flex-direction: column; gap: 8px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + title + '</h2><p style="margin: 0; font-size: 14px; line-height: 22px; color: #6B635D">' + text + '</p></div>' +
-        '<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 28px"><button type="button" data-act="yes" style="height: 52px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">' + yes + '</button>' +
-        '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">' + no + '</button></div></section>',
-        function (e, b) { if (b && b.getAttribute('data-act') === 'yes') { closeSheet(); setTimeout(onYes, 250); } }, null);
-    };
+    var ask = askSheet;
     renderOrder();
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]');

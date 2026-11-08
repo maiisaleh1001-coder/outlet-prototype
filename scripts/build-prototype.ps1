@@ -16,7 +16,7 @@ $pages = @(
   @('U14b-Failed.dc.html', 'payment-failed.html', 'outlet · الدفع ما تمش'),
   @('U15-Orders.dc.html', 'orders.html', 'outlet · طلباتي'),
   @('U16-OrderDetails.dc.html', 'order.html', 'outlet · تفاصيل الطلب'),
-  @('U35-Account.dc.html', 'account.html', 'outlet · حسابي')
+  @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
 $filterSrc = [System.IO.File]::ReadAllText((Join-Path $af 'U07c-Filter.dc.html'), [System.Text.Encoding]::UTF8)
@@ -62,6 +62,7 @@ $src = [System.IO.File]::ReadAllText((Join-Path $af $pg[0]), [System.Text.Encodi
 foreach ($k in $map.Keys) { $src = $src.Replace('/_blob/' + $k, 'assets/' + $map[$k][1]) }
 if ($src -match '/_blob/') { throw "unmapped blob left in $($pg[0])" }
 foreach ($p2 in $pages) { $src = $src.Replace('href="' + $p2[0] + '"', 'href="' + $(if ($p2[1] -eq 'index.html') { './' } else { $p2[1] }) + '"') }
+$src = $src.Replace('href="U35-Account.dc.html"', 'href="account.html"')  # option A link from older boards
 $title = $pg[2]
 $helmet = [regex]::Match($src, '(?s)<helmet>(.*?)</helmet>').Groups[1].Value.Trim()
 $body = [regex]::Match($src, '(?s)</helmet>(.*?)</x-dc>').Groups[1].Value.Trim()
