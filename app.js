@@ -1577,7 +1577,7 @@
   function products() {
     return read('outlet-products', null) || [
       { id: 1, src: 'assets/dress-terracotta.jpg', alt: 'فستان تيراكوتا', name: 'فستان تيراكوتا ميدي', price: 190, st: 'منشور', sub: 'ظاهر للمشترين من 3 نوفمبر' },
-      { id: 2, src: 'assets/shirt.jpg', alt: 'قميص كتان أبيض', name: 'قميص كتان أبيض', price: 95, st: 'قيد المراجعة', sub: 'فريق outlet بيراجعه، ومش ظاهر للمشترين لسه' },
+      { id: 2, src: 'assets/shirt.jpg', alt: 'قميص كتان سماوي', name: 'قميص كتان سماوي', price: 95, st: 'قيد المراجعة', sub: 'فريق outlet بيراجعه، ومش ظاهر للمشترين لسه' },
       { id: 3, src: 'assets/dress-ivory.jpg', alt: 'فستان عاجي طويل', name: 'فستان عاجي طويل', price: 220, st: 'مرفوض', sub: 'سبب الرفض: الصور مش واضحة، صوّر القطعة في ضوء النهار' },
       { id: 4, src: 'assets/dress-black.jpg', alt: 'فستان أسود', name: 'فستان أسود كلاسيك', price: 210, st: 'مخفي', sub: 'مش ظاهر للمشترين، وتقدر ترجّعه من غير مراجعة' },
       { id: 5, src: 'assets/sweater.jpg', alt: 'سويتر مخطط', name: 'سويتر مخطط', price: 120, st: 'مباع', sub: 'الطلب OUT-24833 قيد التجهيز', order: 'OUT-24833' },
@@ -1598,7 +1598,7 @@
           : p.st === 'مخفي' ? '<button type="button" data-p-act="show" style="' + linkBtn + '; color: #1C1917">إعادة إظهار</button><button type="button" data-p-act="edit" style="' + linkBtn + '; color: #C2410C">تعديل</button>'
           : p.st === 'مرفوض' ? '<button type="button" data-p-act="resubmit" style="' + linkBtn + '; color: #C2410C">تعديل وإعادة إرسال</button>'
           : p.order ? '<button type="button" data-p-act="order" style="' + linkBtn + '; color: #C2410C">عرض الطلب</button>' : '';
-        return '<div data-prod="' + p.id + '" style="padding: 12px; border-radius: 18px; background: #F7F3F093; display: flex; gap: 12px"><span style="width: 64px; height: 76px; flex: none; border-radius: 12px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box"><img src="' + p.src + '" alt="' + esc(p.alt) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></span>' +
+        return '<div data-prod="' + p.id + '" style="cursor: pointer; padding: 12px; border-radius: 18px; background: #F7F3F093; display: flex; gap: 12px"><span style="width: 64px; height: 76px; flex: none; border-radius: 12px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box"><img src="' + p.src + '" alt="' + esc(p.alt) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></span>' +
           '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span style="display: flex; align-items: flex-start; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 14px; line-height: 20px; font-weight: 700">' + esc(p.name) + '</span>' + ppill(p.st) + '</span>' +
           '<span style="direction: ltr; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700">' + riyal(10, 11) + p.price + '</span>' +
           (p.sub ? '<span style="font-size: 12px; line-height: 18px; color: ' + (p.st === 'مرفوض' ? '#B42318' : '#6B635D') + '">' + esc(p.sub) + '</span>' : '') +
@@ -1616,7 +1616,7 @@
       var f = e.target.closest('[data-p-filter]');
       if (f) { e.preventDefault(); e.stopPropagation(); pf = f.getAttribute('data-p-filter'); renderP(); return; }
       if (e.target.closest('[data-p-add]')) { e.preventDefault(); e.stopPropagation(); location.href = 'add-product.html'; return; }
-      var a = e.target.closest('[data-p-act]'); if (!a) return;
+      var a = e.target.closest('[data-p-act]'); if (!a) { var pc = e.target.closest('[data-prod]'); if (pc) { e.preventDefault(); e.stopPropagation(); write('outlet-pd-id', +pc.getAttribute('data-prod')); location.href = 'product-status.html'; } return; }
       e.preventDefault(); e.stopPropagation();
       var p = PR.filter(function (x) { return x.id === +a.closest('[data-prod]').getAttribute('data-prod'); })[0], act = a.getAttribute('data-p-act');
       if (act === 'hide') askSheet('إخفاء المنتج؟', 'مش هيظهر للمشترين لحد ما ترجّعه. بياناته مش هتتمسح، والرجوع مش محتاج مراجعة.', 'إخفاء', 'رجوع', function () { p.st = 'مخفي'; p.sub = 'مش ظاهر للمشترين، وتقدر ترجّعه من غير مراجعة'; renderP(); toast('اتخفى المنتج'); });
@@ -2087,6 +2087,82 @@
         if (navigator.share) navigator.share({ title: 'فاتورة outlet ' + iv.no, text: 'فاتورة ضريبية مبسطة · ' + iv.no }).catch(function () {});
         else toast('المشاركة متاحة من الموبايل');
       }
+    }, true);
+  }
+
+  // ---------- U-23 seller product details & review status ----------
+  var PD_SEED = {
+    1: { cat: 'فساتين', size: 'M', color: 'تيراكوتا', brand: 'Zara', cond: 'ممتازة', uses: 2, desc: 'فستان ميدي بقصّة واسعة وأكمام طويلة، القماش خفيف ومناسب للمشاوير. اتلبس مرتين بس ومفيهوش أي عيوب.', date: '3 نوفمبر', views: 128, favs: 9 },
+    2: { cat: 'ملابس', size: 'L', color: 'سماوي', brand: 'Massimo Dutti', cond: 'جديدة بالتيكت', uses: 0, desc: 'قميص كتان سماوي بقصّة واسعة، لسه بالتيكت وما اتلبسش. مناسب للصيف.', date: '7 نوفمبر' },
+    3: { cat: 'فساتين', size: 'S', color: 'أبيض', brand: 'بدون ماركة', cond: 'جيدة', uses: 4, desc: 'فستان طويل بلون عاجي وأكمام طويلة. فيه علامة خفيفة عند الطرف من تحت، وباينة في الصورة التالتة.', date: '6 نوفمبر' },
+    4: { cat: 'فساتين', size: 'M', color: 'أسود', brand: 'Mango', cond: 'ممتازة', uses: 1, desc: 'فستان أسود كلاسيك بطول الركبة، اتلبس مرة واحدة في مناسبة.', date: '28 أكتوبر' },
+    5: { cat: 'ملابس', size: 'M', color: 'كحلي وأبيض', brand: 'H&M', cond: 'ممتازة', uses: 3, desc: 'سويتر قطن مخطط، دافي ومش تقيل.', date: '20 أكتوبر' },
+    6: { cat: 'ملابس', size: 'M', color: 'بيج', brand: 'بدون ماركة', cond: 'جيدة', uses: 5, desc: 'بنطلون واسع بخصر عالي، القماش مريح.', date: '18 أكتوبر' },
+    7: { cat: 'فساتين', size: 'S', color: 'وردي', brand: 'بدون ماركة', cond: 'كالجديدة', uses: 1, desc: 'فستان سهرة وردي طويل، اتلبس مرة واحدة.', date: '2 أكتوبر' },
+    8: { cat: 'فساتين', size: 'M', color: 'كحلي', brand: 'بدون ماركة', cond: 'ممتازة', uses: 2, desc: 'فستان منقّط بأكمام قصيرة.', date: '25 سبتمبر' }
+  };
+  if (page === 'product-status.html') {
+    var pdId = read('outlet-pd-id', 1), PDL = products(), pd = PDL.filter(function (x) { return x.id === pdId; })[0];
+    if (!pd) { location.replace('my-products.html'); return; }
+    var pdBody = screen.querySelector('.noscroll'), pdBar = pdBody.nextElementSibling;
+    var PDC = { 'منشور': ['#ECF6EF', '#1F7A4D'], 'قيد المراجعة': ['#FEF6E7', '#9A5800'], 'مرفوض': ['#FEF3F2', '#B42318'], 'مخفي': ['#F2F2F2', '#4A4440'], 'مباع': ['#FDEBDD', '#9A3412'] };
+    var usesTxt = function (n) { n = +n || 0; return n === 0 ? 'ما اتلبسش' : n === 1 ? 'مرة واحدة' : n === 2 ? 'مرتين' : n <= 10 ? n + ' مرات' : n + ' مرة'; };
+    var pdNote = function (t) { return '<div style="padding: 12px 14px; border-radius: 16px; background: #F7F3F093; display: flex; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D"><span style="display: flex; flex: none; margin-top: 1px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10ZM12 8v5M11.995 16h.009"></path></svg></span><span>' + t + '</span></div>'; };
+    var pdStep = function (t, s, state) {
+      var dot = state === 'done' ? '<span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 999px; background: #9A5800; color: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>'
+        : state === 'now' ? '<span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF; box-shadow: inset 0 0 0 5px #9A5800; flex: none"></span>'
+        : '<span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF; flex: none"></span>';
+      return '<div style="display: flex; align-items: center; gap: 10px">' + dot + '<span style="flex: 1; font-size: 13px; line-height: 20px; font-weight: ' + (state === 'todo' ? '500; color: #8E857F' : '700; color: #1C1917') + '">' + t + '</span><span style="font-size: 12px; color: #8E857F">' + s + '</span></div>';
+    };
+    var btnL = 'height: 54px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: 1';
+    var btnD = 'height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: 1.3';
+    var renderPD = function () {
+      var d = {}, k, seed = PD_SEED[pd.id] || {};
+      for (k in seed) d[k] = seed[k];
+      for (k in pd) if (pd[k] != null && pd[k] !== '') d[k] = pd[k];
+      var st = pd.st, c = PDC[st] || PDC['مخفي'];
+      var orderNo = pd.order || ((pd.sub || '').match(/OUT-\d+/) || [])[0];
+      var activeOrder = st === 'مباع' && !/اكتمل/.test(pd.sub || '');
+      var reason = d.reason || (pd.sub || '').replace(/^سبب الرفض: /, '');
+      var isData = pd.src.indexOf('data:') === 0;
+      var S = st === 'منشور' ? ['منشور وظاهر للمشترين', 'فريق outlet وافق عليه' + (d.date ? ' يوم ' + d.date : '') + '. أي تعديل بيخفيه ويرجّعه للمراجعة.', '']
+        : st === 'قيد المراجعة' ? ['المنتج قيد المراجعة', 'مش ظاهر للمشترين لحد ما فريق outlet يوافق عليه. اعتماد المنتج من الفريق بس.',
+          '<div style="margin-top: 4px; padding: 12px; border-radius: 14px; background: #FFFFFF; display: flex; flex-direction: column; gap: 10px">' + pdStep('اتبعت للمراجعة', pd.sent || (pd.sub && /دلوقتي/.test(pd.sub) ? 'اليوم' : d.date || 'اليوم'), 'done') + pdStep('فريق outlet بيراجعه', 'دلوقتي', 'now') + pdStep('القرار', 'هيوصلك إشعار', 'todo') + '</div>']
+        : st === 'مرفوض' ? ['المنتج اترفض', 'مش ظاهر للمشترين. عدّل اللي في السبب وابعته تاني، وهيرجع للمراجعة.',
+          '<div style="margin-top: 4px; padding: 12px; border-radius: 14px; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; line-height: 16px; font-weight: 700; color: #B42318">سبب الرفض</span><span style="font-size: 14px; line-height: 22px; font-weight: 700">' + esc(reason) + '</span></div>']
+        : st === 'مخفي' ? ['مخفي عن المشترين', 'المنتج معتمد بس مش ظاهر. تقدر ترجّعه من غير مراجعة جديدة طالما ما عدّلتش فيه.', '']
+        : ['اتباع', orderNo ? (activeOrder ? 'القطعة اتباعت في الطلب <span style="direction: ltr; display: inline-block">' + orderNo + '</span>، والطلب لسه شغال. مينفعش تعدّل أو تخفي المنتج لحد ما الطلب يخلص.' : 'القطعة اتباعت في الطلب <span style="direction: ltr; display: inline-block">' + orderNo + '</span>، والطلب اكتمل.') : 'القطعة اتباعت.', ''];
+      var net = Math.round(pd.price * 0.85 * 10) / 10;
+      var rows = [['التصنيف', d.cat], ['المقاس', d.size], ['اللون', d.color], ['الماركة', d.brand], ['حالة المنتج', d.cond], ['مرات الاستخدام', d.uses != null ? usesTxt(d.uses) : ''], ['أصلية أو تقليد', d.auth || 'أصلية'], ['مدينة الاستلام', d.city || profile().city]].filter(function (r) { return r[1]; });
+      var tile = 'width: 36px; height: 36px; flex: none; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #C2410C';
+      var statT = function (path, n, l) { return '<div style="padding: 12px; border-radius: 16px; background: #F7F3F093; display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="' + tile + '"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></span><span style="display: flex; flex-direction: column"><b style="font-size: 16px; line-height: 22px">' + n + '</b><span style="font-size: 12px; line-height: 16px; color: #6B635D">' + l + '</span></span></div>'; };
+      pdBody.innerHTML =
+        '<div style="position: relative; height: 300px; flex: none; border-radius: 24px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: ' + (isData ? '0' : '18px') + '; box-sizing: border-box"><img src="' + pd.src + '" alt="' + esc(pd.alt || pd.name) + '" style="width: 100%; height: 100%; object-fit: ' + (isData ? 'cover' : 'contain') + '; mix-blend-mode: ' + (isData ? 'normal' : 'multiply') + '; opacity: ' + (st === 'مخفي' ? '0.55' : '1') + '">' +
+        '<span style="position: absolute; top: 12px; right: 12px; height: 26px; padding: 0 10px; border-radius: 999px; background: #FFFFFF; color: ' + c[1] + '; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: ' + c[1] + '"></span>' + st + '</span></div>' +
+        '<section aria-label="حالة المراجعة" style="padding: 14px; border-radius: 20px; background: ' + c[0] + '; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 16px; line-height: 24px; font-weight: 700; color: ' + c[1] + '">' + S[0] + '</span><span style="font-size: 13px; line-height: 20px; color: #4A4440">' + S[1] + '</span>' + S[2] + '</section>' +
+        '<div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + esc(pd.name) + '</h2><span style="direction: ltr; flex: none; display: inline-flex; align-items: center; gap: 5px; font-size: 20px; line-height: 28px; font-weight: 700">' + riyal(14, 15) + pd.price + '</span></div><span style="font-size: 12px; line-height: 18px; color: #6B635D">' + (st === 'مباع' ? 'صافي أرباحك ' + net + ' ريال بعد عمولة المنصة (15%)' : 'هيوصلك ' + net + ' ريال بعد عمولة المنصة (15%)') + '</span></div>' +
+        (st === 'منشور' ? '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">' + statT('<path d="M15.58 12c0 1.98-1.6 3.58-3.58 3.58S8.42 13.98 8.42 12 10.02 8.42 12 8.42s3.58 1.6 3.58 3.58Z"></path><path d="M12 20.27c3.53 0 6.82-2.08 9.11-5.68.9-1.41.9-3.78 0-5.19-2.29-3.6-5.58-5.68-9.11-5.68-3.53 0-6.82 2.08-9.11 5.68-.9 1.41-.9 3.78 0 5.19 2.29 3.6 5.58 5.68 9.11 5.68Z"></path>', d.views || 0, 'مشاهدة') + statT('<path d="M12.62 20.81c-.34.12-.9.12-1.24 0C8.48 19.82 2 15.69 2 8.69 2 5.6 4.49 3.1 7.56 3.1c1.82 0 3.43.88 4.44 2.24a5.53 5.53 0 0 1 4.44-2.24C19.51 3.1 22 5.6 22 8.69c0 7-6.48 11.13-9.38 12.12Z"></path>', d.favs || 0, 'في المفضلة') + '</div>' : '') +
+        '<section style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 700">البيانات</h3><div style="padding: 4px 14px; border-radius: 20px; background: #F7F3F093; display: flex; flex-direction: column">' + rows.map(function (r) { return '<div style="display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 14px; line-height: 20px"><span style="color: #6B635D">' + r[0] + '</span><b style="font-weight: 700; text-align: left">' + esc(String(r[1])) + '</b></div>'; }).join('') + '</div></section>' +
+        (d.desc ? '<section style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 700">الوصف</h3><p style="margin: 0; font-size: 14px; line-height: 23px; color: #4A4440">' + esc(d.desc) + '</p></section>' : '') +
+        (st === 'منشور' ? pdNote('الإخفاء بيوقف ظهور المنتج بس، ومش بيمسح بياناته. وتقدر ترجّعه من غير مراجعة جديدة لو ما عدّلتش فيه.')
+          : st === 'مخفي' ? pdNote('إعادة الإظهار مش بتحتاج مراجعة. لو عدّلت المنتج، هيرجع للمراجعة الأول.')
+          : st === 'مباع' ? pdNote('المنتج بيفضل في سجلاتك، وبيانات الطلب المدفوع مش بتتغير.') : '');
+      var bar = st === 'منشور' ? '<button type="button" data-pd-act="hide" style="' + btnL + '">إخفاء المنتج</button><button type="button" data-pd-act="edit" style="' + btnD + '">تعديل</button>'
+        : st === 'مخفي' ? '<button type="button" data-pd-act="edit" style="' + btnL + '">تعديل</button><button type="button" data-pd-act="show" style="' + btnD + '">إعادة إظهار المنتج</button>'
+        : st === 'مرفوض' ? '<button type="button" data-pd-act="edit" style="' + btnD + '">تعديل وإعادة إرسال</button>'
+        : st === 'مباع' && orderNo ? '<button type="button" data-pd-act="order" style="' + btnD + '">عرض الطلب</button>' : '';
+      if (pdBar) { pdBar.innerHTML = bar; pdBar.style.display = bar ? 'flex' : 'none'; }
+    };
+    renderPD();
+    screen.addEventListener('click', function (e) {
+      var a = e.target.closest('[data-pd-act]'); if (!a) return;
+      e.preventDefault(); e.stopPropagation();
+      var act = a.getAttribute('data-pd-act');
+      var save = function () { write('outlet-products', PDL); renderPD(); };
+      if (act === 'hide') askSheet('إخفاء المنتج؟', 'مش هيظهر للمشترين لحد ما ترجّعه. بياناته مش هتتمسح، والرجوع مش محتاج مراجعة.', 'إخفاء', 'رجوع', function () { pd.st = 'مخفي'; pd.sub = 'مش ظاهر للمشترين، وتقدر ترجّعه من غير مراجعة'; save(); toast('اتخفى المنتج'); });
+      else if (act === 'show') { pd.st = 'منشور'; pd.sub = 'رجع ظاهر للمشترين'; save(); toast('المنتج رجع ظاهر للمشترين'); }
+      else if (act === 'edit') { write('outlet-edit-id', pd.id); location.href = 'edit-product.html'; }
+      else if (act === 'order') { write('outlet-inc-view', pd.order || (pd.sub.match(/OUT-\d+/) || [])[0]); location.href = 'incoming-order.html'; }
     }, true);
   }
 

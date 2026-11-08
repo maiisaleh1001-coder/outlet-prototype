@@ -47,6 +47,7 @@ $pages = @(
   @('U19-TaxInvoice.dc.html', 'invoice.html', 'outlet · الفاتورة الضريبية'),
   @('U24-EditProduct.dc.html', 'edit-product.html', 'outlet · تعديل المنتج'),
   @('U09-SellerProfile.dc.html', 'seller.html', 'outlet · صفحة البائع'),
+  @('U23-ProductStatus.dc.html', 'product-status.html', 'outlet · تفاصيل المنتج'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
@@ -273,6 +274,7 @@ const CORE = [
   './invoice.html',
   './edit-product.html',
   './seller.html',
+  './product-status.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
