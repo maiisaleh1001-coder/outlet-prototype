@@ -45,6 +45,7 @@ const CORE = [
   './notifications.html',
   './invoice.html',
   './edit-product.html',
+  './seller.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

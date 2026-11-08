@@ -117,8 +117,8 @@
       desc: (alt || name) + '. قطعة مستعملة بحالة ' + cond + '، نظيفة ومن غير عيوب ظاهرة، والمقاس ' + size + '.' };
   }
   if (read('outlet-favs', null) === null) {
-    [infoFor('assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر بتصميم لف', 145, 1), infoFor('assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160, 2), infoFor('assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320, 2),
-     infoFor('assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520, 1, 'اتباعت'), infoFor('assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60, 3, 'مش متاح دلوقتي')].forEach(function (p) { favs[p.src] = p; });
+    [infoFor('assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر بتصميم لف', 145, 0), infoFor('assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160, 0), infoFor('assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320, 2),
+     infoFor('assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520, 1, 'اتباعت'), infoFor('assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60, 2, 'مش متاح دلوقتي')].forEach(function (p) { favs[p.src] = p; });
     write('outlet-favs', favs);
   }
 
@@ -391,7 +391,7 @@
       e.stopPropagation(); e.preventDefault();
       if (b.hasAttribute('data-pager')) { flipTo(b.getAttribute('data-pager') === 'next' ? 1 : -1); }
       else if (b.getAttribute('data-p') === 'fav') { paintFav(b, toggleFav(key, p || null)); }
-      else if (b.getAttribute('data-p') === 'seller-link') { toast('صفحة البائع لسه بتتصمم'); }
+      else if (b.getAttribute('data-p') === 'seller-link') { write('outlet-seller-view', p && p.seller ? p.seller[0] : 'خزانة لمى'); location.href = 'seller.html'; }
       else if (b.getAttribute('data-act') === 'more') {
         var d = document.querySelector('[data-p="desc"]'), open = d.style.webkitLineClamp === 'unset';
         d.style.webkitLineClamp = open ? '3' : 'unset'; d.style.display = open ? '-webkit-box' : 'block';
@@ -1926,7 +1926,7 @@
     rq('[data-rate-name]').textContent = rt.name;
     rq('[data-rate-sub]').innerHTML = rt.who + ' · طلب <span style="direction: ltr; display: inline-block">' + rt.o.no + '</span> · ' + esc(rt.o.items[0].name);
     var rimg = rq('[data-rate-thumb]'); rimg.src = rt.o.items[0].src; rimg.alt = rt.o.items[0].alt || rt.o.items[0].name;
-    var note = rq('[data-rate-text]').closest('div').nextElementSibling; if (note) note.lastElementChild.textContent = 'التقييم بيتنشر على طول في صفحة ' + rt.who + '، ومينفعش يتعدّل بعد الإرسال.';
+    var note = rq('[data-rate-text]').closest('div').nextElementSibling; if (note) note.lastElementChild.textContent = rv.role === 'sell' ? 'تقييمك للمشتري بيوصل لفريق outlet ومش بيظهر للعامة، ومينفعش يتعدّل بعد الإرسال.' : 'التقييم بيتنشر على طول في صفحة البائع، ومينفعش يتعدّل بعد الإرسال.';
     var stars = 0, txt = rq('[data-rate-text]'), cnt = rq('[data-rate-count]'), send = rq('[data-rate-send]');
     txt.value = ''; cnt.textContent = '0 / 300';
     var paintStars = function () {
@@ -1961,7 +1961,7 @@
       var cm = screen.querySelector('[data-rs-comment]');
       if (rr.text) cm.textContent = '«' + rr.text + '»'; else cm.remove();
       screen.querySelector('[data-rs-meta]').innerHTML = 'طلب <span style="direction: ltr; display: inline-block">' + sv.no + '</span> · ' + rr.date;
-      screen.querySelector('[data-rs-text]').textContent = 'تقييمك اتنشر في صفحة ' + st2.who + ' ومينفعش يتعدّل.';
+      screen.querySelector('[data-rs-text]').textContent = sv.role === 'sell' ? 'تقييمك اتسجل. تقييمات المشترين مش بتظهر للعامة، ومينفعش تتعدّل.' : 'تقييمك اتنشر في صفحة البائع ومينفعش يتعدّل.';
     }
     var rsBack = screen.querySelector('[data-rs-back]');
     rsBack.addEventListener('click', function (e) {
@@ -2087,6 +2087,73 @@
         if (navigator.share) navigator.share({ title: 'فاتورة outlet ' + iv.no, text: 'فاتورة ضريبية مبسطة · ' + iv.no }).catch(function () {});
         else toast('المشاركة متاحة من الموبايل');
       }
+    }, true);
+  }
+
+  // ---------- U-09 seller public profile ----------
+  var CATALOG = [
+    ['assets/dress-pleated.jpg', 'فستان بليسيه طويل', 'فستان شيفون وردي بليسيه بأكمام طويلة', 210], ['assets/dress-terracotta.jpg', 'فستان تريكو طويل', 'فستان تريكو طويل', 175],
+    ['assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160], ['assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر هادي بتصميم لف وأكمام قصيرة', 145],
+    ['assets/banner-coat.jpg', 'كنزة صوف ملونة', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن مريح', 'قميص قطن مريح', 76], ['assets/sneakers.jpg', 'حذاء أبيض', 'حذاء رياضي جلد أبيض', 150],
+    ['assets/dress-ivory.jpg', 'فستان قطن أبيض', 'فستان قطن أبيض', 95], ['assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520],
+    ['assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320], ['assets/dress-polka.jpg', 'فستان منقّط كحلي', 'فستان منقّط كحلي', 120], ['assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60],
+    ['assets/pants.jpg', 'بنطلون بيج', 'بنطلون واسع بيج', 85], ['assets/dress.jpg', 'فستان أحمر', 'فستان أحمر', 120]
+  ];
+  var REV_POOL = [[5, 'نورة', '6 نوفمبر', 'القطعة زي الصور بالظبط، والتغليف كان حلو.'], [5, 'ريم', '2 نوفمبر', 'تعامل محترم والتسليم كان في ميعاده.'], [4, 'جود', '28 أكتوبر', 'حلوة، بس المقاس أصغر شوية من المكتوب.'], [5, 'هيا', '20 أكتوبر', ''], [5, 'سلمى', '14 أكتوبر', 'رد بسرعة في المحادثة والقطعة نضيفة.'], [4, 'دانة', '9 أكتوبر', 'الحالة كويسة جدًا، فيه علامة بسيطة اتذكرت في الوصف.']];
+
+  if (page === 'seller.html') {
+    var sName = read('outlet-seller-view', 'خزانة لمى');
+    var sIdx = Math.max(0, sellers.map(function (x) { return x[0]; }).indexOf(sName)), sInfo = sellers[sIdx];
+    var q4 = function (s) { return screen.querySelector(s); };
+    var soldSrc = {}; allOrders().forEach(function (o) { if (o.seller && o.seller[0] === sName && o.status !== 'cancelled') o.items.forEach(function (it) { soldSrc[it.src] = 1; }); });
+    var items = CATALOG.filter(function (c) { return sellers[hash(c[1]) % sellers.length][0] === sName && !soldSrc[c[0]]; });
+    q4('[data-sp-initial]').textContent = sName.charAt(0);
+    q4('[data-sp-name]').textContent = sName;
+    q4('[data-sp-meta]').textContent = sInfo[2] + ' · على outlet من 2025';
+    q4('[data-sp-avg]').textContent = sInfo[1];
+    q4('[data-sp-count]').textContent = sInfo[3] + ' تقييم';
+    q4('[data-sp-items]').textContent = items.length;
+    var HEART = 'M12.62 20.81c-.34.12-.9.12-1.24 0C8.48 19.82 2 15.69 2 8.69 2 5.6 4.49 3.1 7.56 3.1c1.82 0 3.43.88 4.44 2.24a5.53 5.53 0 0 1 4.44-2.24C19.51 3.1 22 5.6 22 8.69c0 7-6.48 11.13-9.38 12.12Z';
+    var body = q4('[data-sp-initial]').closest('.noscroll');
+    var tabs = body.querySelector('[role="tablist"]');
+    var panel = document.createElement('div'); tabs.after(panel);
+    [].forEach.call(body.querySelectorAll('[data-sp-panel]'), function (p) { p.remove(); });
+    var tab = 'items';
+    // reviews: the buyer's own published rating for this seller first, then the rest
+    var mine = [], rs = ratings();
+    allOrders().forEach(function (o) { var r = rs[o.no + '|buy']; if (r && o.seller && o.seller[0] === sName) mine.push([r.stars, 'تقييمك', r.date.split(' · ')[0], r.text]); });
+    var pool = REV_POOL.slice(hash(sName) % 2).slice(0, 4);
+    var revs = mine.concat(pool);
+    var render = function () {
+      [].forEach.call(tabs.querySelectorAll('[data-sp-tab]'), function (b) {
+        var on = b.getAttribute('data-sp-tab') === tab;
+        b.setAttribute('aria-selected', on ? 'true' : 'false'); b.style.background = on ? '#FFFFFF' : 'transparent'; b.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none'; b.style.fontWeight = on ? '700' : '500'; b.style.color = on ? '#1C1917' : '#6B635D';
+      });
+      tabs.querySelector('[data-sp-tab-n]').textContent = items.length;
+      tabs.querySelector('[data-sp-tab-r]').textContent = sInfo[3] + mine.length;
+      if (tab === 'items') {
+        panel.innerHTML = items.length ? '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px 10px">' + items.map(function (c) {
+          var on = !!favs[c[0]];
+          return '<div data-sp-card data-src="' + c[0] + '" style="display: flex; flex-direction: column; gap: 6px; min-width: 0; cursor: pointer"><span style="position: relative; aspect-ratio: 3 / 4; border-radius: 18px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box"><img src="' + c[0] + '" alt="' + esc(c[2]) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply">' +
+            '<button type="button" data-sp-fav aria-pressed="' + on + '" aria-label="' + (on ? 'شيل من المفضلة' : 'أضف للمفضلة') + '" style="position: absolute; top: 8px; left: 8px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #FFFFFF; color: ' + (on ? '#EA580C' : '#1C1917') + '; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="' + (on ? '#EA580C' : 'none') + '" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="' + HEART + '"></path></svg></button></span>' +
+            '<span style="font-size: 14px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc(c[1]) + '</span><span style="direction: ltr; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700">' + riyal(10, 11) + c[3] + '</span></div>';
+        }).join('') + '</div>' : '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">مفيش قطع معروضة دلوقتي.</p>';
+      } else {
+        var dist = [5, 4, 3, 2, 1].map(function (n) { return [n, n === 5 ? Math.round(sInfo[3] * 0.84) : n === 4 ? sInfo[3] - Math.round(sInfo[3] * 0.84) - 1 : n === 3 ? 1 : 0]; });
+        panel.innerHTML = '<div style="display: flex; flex-direction: column; gap: 10px"><div style="padding: 14px; border-radius: 18px; background: #FFF4EC; display: flex; align-items: center; gap: 16px"><span style="display: flex; flex-direction: column; align-items: center; gap: 2px; flex: none"><span style="font-size: 34px; line-height: 40px; font-weight: 700">' + sInfo[1] + '</span><span style="display: flex; gap: 1px; direction: ltr">' + starsHTML(Math.round(+sInfo[1]), 12) + '</span><span style="font-size: 11px; color: #6B635D">' + (sInfo[3] + mine.length) + ' تقييم</span></span>' +
+          '<span style="flex: 1; display: flex; flex-direction: column; gap: 4px; direction: ltr">' + dist.map(function (d) { return '<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B635D"><span style="width: 10px; text-align: center">' + d[0] + '</span><span style="flex: 1; height: 6px; border-radius: 999px; background: #F7F3F0; overflow: hidden; display: flex"><span style="width: ' + Math.round(d[1] / sInfo[3] * 100) + '%; height: 100%; border-radius: 999px; background: #EA580C"></span></span><span style="width: 20px; text-align: left">' + d[1] + '</span></div>'; }).join('') + '</span></div>' +
+          revs.map(function (r) { return '<div style="padding: 14px; border-radius: 18px; background: ' + (r[1] === 'تقييمك' ? '#FFF4EC' : '#F7F3F093') + '; display: flex; flex-direction: column; gap: 6px"><div style="display: flex; align-items: center; justify-content: space-between"><span style="display: flex; gap: 2px; direction: ltr">' + starsHTML(r[0], 15) + '</span><span style="font-size: 12px; color: #8E857F">' + esc(r[1]) + ' · ' + r[2] + '</span></div>' + (r[3] ? '<p style="margin: 0; font-size: 14px; line-height: 22px">' + esc(r[3]) + '</p>' : '') + '</div>'; }).join('') + '</div>';
+      }
+    };
+    render();
+    screen.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-sp-tab]');
+      if (t) { e.preventDefault(); e.stopPropagation(); tab = t.getAttribute('data-sp-tab'); render(); return; }
+      var card = e.target.closest('[data-sp-card]'); if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      var c = CATALOG.filter(function (x) { return x[0] === card.getAttribute('data-src'); })[0], info = infoFor(c[0], c[1], c[2], c[3], sIdx);
+      if (e.target.closest('[data-sp-fav]')) { toggleFav(c[0], info); render(); return; }
+      write('outlet-product', info); location.href = 'product.html';
     }, true);
   }
 
