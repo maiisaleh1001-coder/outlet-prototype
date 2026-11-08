@@ -455,7 +455,7 @@
     var paintRadio = function (btn, on, disabled) {
       btn.setAttribute('aria-checked', on ? 'true' : 'false');
       btn.disabled = !!disabled; btn.style.opacity = disabled ? '0.45' : '1';
-      btn.style.background = on ? '#FFF4EC' : '#F7F3F0';
+      btn.style.background = on ? '#FFF4EC' : '#F7F3F093';
       var ring = btn.firstElementChild;
       ring.style.borderColor = on ? '#C2410C' : '#C9BFB7';
       ring.innerHTML = on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '';
