@@ -1601,7 +1601,7 @@
     screen.addEventListener('click', function (e) {
       var f = e.target.closest('[data-p-filter]');
       if (f) { e.preventDefault(); e.stopPropagation(); pf = f.getAttribute('data-p-filter'); renderP(); return; }
-      if (e.target.closest('[data-p-add]')) { e.preventDefault(); e.stopPropagation(); toast('شاشة إضافة منتج لسه بتتصمم'); return; }
+      if (e.target.closest('[data-p-add]')) { e.preventDefault(); e.stopPropagation(); location.href = 'add-product.html'; return; }
       var a = e.target.closest('[data-p-act]'); if (!a) return;
       e.preventDefault(); e.stopPropagation();
       var p = PR.filter(function (x) { return x.id === +a.closest('[data-prod]').getAttribute('data-prod'); })[0], act = a.getAttribute('data-p-act');
@@ -1719,6 +1719,152 @@
     });
   }
 
+  // ---------- U-22 add product, U-20 seller setup ----------
+  var SIZES = { 'فساتين': ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'ملابس': ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'أحذية': ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'], 'شنط': ['مقاس واحد'] };
+  var chipPaint = function (b, on) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500'; };
+  var chipH = function (attr, v) { return '<button type="button" ' + attr + '="' + v + '" aria-pressed="false" style="height: 38px; padding: 0 14px; flex: none; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-weight: 500; font-family: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px">' + v + '</button>'; };
+
+  if (page === 'add-product.html') {
+    if (!read('outlet-seller-ok', true)) { location.replace('seller-setup.html'); return; }
+    var $a = function (s) { return screen.querySelector(s); }, $$a = function (s) { return [].slice.call(screen.querySelectorAll(s)); };
+    var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلية', nobrand: false };
+    // start empty: the board shows a filled example
+    var phBox = $a('[data-ap-photos]'), phTpl = $a('[data-ap-photo]'), addBtn = $a('[data-ap-add]');
+    phTpl.remove();
+    var nameIn = $a('[data-ap-name]'), brandIn = $a('[data-ap-brand]'), priceIn = $a('[data-ap-price]'), usesIn = $a('[data-ap-uses]'), descIn = $a('[data-ap-desc]');
+    nameIn.value = ''; brandIn.value = ''; priceIn.value = ''; usesIn.value = '0'; descIn.value = '';
+    $a('[data-ap-desc-count]').textContent = '0 / 500';
+    $a('[data-ap-city-value]').textContent = profile().city;
+    var colorOther = null;
+    var paintAll = function () {
+      $$a('[data-ap-cat]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-cat') === st.cat); });
+      $$a('[data-ap-size]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-size') === st.size); });
+      $$a('[data-ap-color]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-color') === st.color); });
+      $$a('[data-ap-cond]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-cond') === st.cond); });
+      $$a('[data-ap-auth]').forEach(function (b) { var on = b.getAttribute('data-ap-auth') === st.auth; b.setAttribute('aria-checked', on ? 'true' : 'false'); b.style.background = on ? '#FFFFFF' : 'transparent'; b.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none'; b.style.fontWeight = on ? '700' : '500'; b.style.color = on ? '#1C1917' : '#6B635D'; });
+      var nb = $a('[data-ap-nobrand]'), box = nb.firstElementChild;
+      nb.setAttribute('aria-checked', st.nobrand ? 'true' : 'false');
+      box.style.background = st.nobrand ? '#C2410C' : '#FFFFFF'; box.style.border = st.nobrand ? '0' : '2px solid #C9BFB7';
+      box.innerHTML = st.nobrand ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: block; margin: 4px"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>' : '';
+      brandIn.disabled = st.nobrand; brandIn.parentNode.style.opacity = st.nobrand ? '0.45' : '1';
+      var sizeField = $a('[data-ap-field="size"]');
+      sizeField.style.display = st.cat ? 'flex' : 'none';
+      sizeField.firstElementChild.innerHTML = 'المقاس ' + (st.cat === 'شنط' ? '<span style="font-weight: 500; color: #8E857F">(اختياري)</span>' : '<span style="color: #C2410C">*</span>');
+      if (st.cond === 'جديدة بالتيكت') { usesIn.value = '0'; usesIn.disabled = true; } else usesIn.disabled = false;
+      var p = parseInt(priceIn.value.replace(/\D/g, ''), 10) || 0;
+      $a('[data-ap-net]').textContent = p ? 'هيوصلك ' + (Math.round(p * 0.85 * 10) / 10) + ' ريال بعد عمولة المنصة (15%)' : 'عمولة المنصة 15% بتتخصم من السعر لما القطعة تتباع.';
+    };
+    var renderSizes = function () {
+      $a('[data-ap-sizes]').innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px">' + (SIZES[st.cat] || []).map(function (s) { return chipH('data-ap-size', s); }).join('') + '</div>';
+    };
+    renderSizes(); paintAll();
+    var clearErr = function (k) { var f = $a('[data-ap-field="' + k + '"]'), e = f && f.querySelector('[data-ap-err]'); if (e) e.remove(); };
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-ap-cat], [data-ap-size], [data-ap-color], [data-ap-cond], [data-ap-auth], [data-ap-nobrand], [data-ap-dec], [data-ap-inc], [data-ap-city], [data-ap-add], [data-ap-remove], [data-ap-submit], [data-ap-rules]');
+      if (!b || b.closest('.proto-sheet-wrap')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (b.hasAttribute('data-ap-cat')) { var c = b.getAttribute('data-ap-cat'); if (c !== st.cat) { st.cat = c; st.size = c === 'شنط' ? 'مقاس واحد' : ''; renderSizes(); } clearErr('cat'); }
+      else if (b.hasAttribute('data-ap-size')) { st.size = b.getAttribute('data-ap-size'); clearErr('size'); }
+      else if (b.hasAttribute('data-ap-color')) {
+        st.color = b.getAttribute('data-ap-color'); clearErr('color');
+        if (st.color === 'تاني' && !colorOther) { colorOther = document.createElement('span'); colorOther.style.cssText = fieldBox; colorOther.innerHTML = '<input data-ap-color-other type="text" maxlength="20" placeholder="اكتب اللون" aria-label="لون تاني" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 15px; color: #1C1917">'; b.parentNode.after(colorOther); colorOther.querySelector('input').focus(); }
+        else if (st.color !== 'تاني' && colorOther) { colorOther.remove(); colorOther = null; }
+      }
+      else if (b.hasAttribute('data-ap-cond')) { st.cond = b.getAttribute('data-ap-cond'); clearErr('cond'); }
+      else if (b.hasAttribute('data-ap-auth')) st.auth = b.getAttribute('data-ap-auth');
+      else if (b.hasAttribute('data-ap-nobrand')) { st.nobrand = !st.nobrand; if (st.nobrand) brandIn.value = ''; clearErr('brand'); }
+      else if (b.hasAttribute('data-ap-dec') || b.hasAttribute('data-ap-inc')) { if (usesIn.disabled) return; var n = (parseInt(usesIn.value, 10) || 0) + (b.hasAttribute('data-ap-inc') ? 1 : -1); usesIn.value = Math.max(0, Math.min(99, n)); }
+      else if (b.hasAttribute('data-ap-city')) { pickSheet('المدينة', CITIES.map(function (x) { return x[0]; }), $a('[data-ap-city-value]').textContent, function (v) { $a('[data-ap-city-value]').textContent = v; }); }
+      else if (b.hasAttribute('data-ap-rules')) { write('outlet-policy', 'prohibited'); location.href = 'policy.html'; return; }
+      else if (b.hasAttribute('data-ap-add')) { picker.click(); return; }
+      else if (b.hasAttribute('data-ap-remove')) { b.closest('[data-ap-photo]').remove(); paintPhotos(); return; }
+      else if (b.hasAttribute('data-ap-submit')) { submit(); return; }
+      paintAll();
+    }, true);
+    priceIn.addEventListener('input', function () { priceIn.value = priceIn.value.replace(/\D/g, '').slice(0, 6); clearErr('price'); paintAll(); });
+    usesIn.addEventListener('input', function () { usesIn.value = usesIn.value.replace(/\D/g, '').slice(0, 2); });
+    nameIn.addEventListener('input', function () { clearErr('name'); });
+    brandIn.addEventListener('input', function () { clearErr('brand'); });
+    descIn.addEventListener('input', function () { $a('[data-ap-desc-count]').textContent = descIn.value.length + ' / 500'; });
+    // photos: real picker, previews kept small so they fit in the session
+    var picker = document.createElement('input'); picker.type = 'file'; picker.accept = 'image/*'; picker.multiple = true; picker.hidden = true; screen.appendChild(picker);
+    var tiles = function () { return [].slice.call(phBox.querySelectorAll('[data-ap-photo]')); };
+    var paintPhotos = function () {
+      tiles().forEach(function (t, i) { t.querySelector('[data-ap-cover]').style.display = i === 0 ? 'flex' : 'none'; });
+      var n = tiles().length; addBtn.style.display = n >= 5 ? 'none' : 'flex';
+      $a('[data-ap-count]').textContent = n + ' من 5';
+      if (n) clearErr('photos');
+    };
+    picker.addEventListener('change', function () {
+      [].slice.call(picker.files).forEach(function (f) {
+        if (tiles().length >= 5) { toast('أقصى حاجة 5 صور'); return; }
+        var t = phTpl.cloneNode(true), im = t.querySelector('img');
+        im.style.objectFit = 'cover'; im.style.mixBlendMode = 'normal'; im.style.padding = '0'; im.alt = 'صورة المنتج';
+        phBox.insertBefore(t, addBtn);
+        var raw = new Image(); raw.onload = function () { var k = Math.min(1, 600 / Math.max(raw.width, raw.height)), cv = document.createElement('canvas'); cv.width = Math.round(raw.width * k); cv.height = Math.round(raw.height * k); cv.getContext('2d').drawImage(raw, 0, 0, cv.width, cv.height); im.src = cv.toDataURL('image/jpeg', 0.75); URL.revokeObjectURL(raw.src); };
+        raw.src = URL.createObjectURL(f);
+      });
+      picker.value = ''; paintPhotos();
+    });
+    paintPhotos();
+    var fail = function (k, msg) {
+      var f = $a('[data-ap-field="' + k + '"]'); clearErr(k);
+      f.insertAdjacentHTML('beforeend', '<span data-ap-err style="font-size: 12px; line-height: 18px; font-weight: 700; color: #B42318">' + msg + '</span>');
+      f.scrollIntoView({ behavior: 'smooth', block: 'center' }); toast(msg); return false;
+    };
+    var submit = function () {
+      var name = nameIn.value.trim(), price = parseInt(priceIn.value, 10) || 0, uses = usesIn.value === '' ? NaN : parseInt(usesIn.value, 10);
+      var color = st.color === 'تاني' ? (colorOther && colorOther.querySelector('input').value.trim()) : st.color;
+      if (!tiles().length) return fail('photos', 'ارفع صورة واحدة على الأقل');
+      if (name.length < 3) return fail('name', 'اكتب اسم المنتج');
+      if (!st.cat) return fail('cat', 'اختار التصنيف');
+      if (!st.size && st.cat !== 'شنط') return fail('size', 'اختار المقاس');
+      if (!color) return fail('color', 'اختار اللون');
+      if (!st.nobrand && !brandIn.value.trim()) return fail('brand', 'اكتب الماركة أو اختار «بدون ماركة»');
+      if (!st.cond) return fail('cond', 'اختار حالة المنتج');
+      if (isNaN(uses) || uses < 0) return fail('uses', 'اكتب عدد مرات الاستخدام');
+      if (price <= 0) return fail('price', 'اكتب سعر صحيح');
+      var PRL = products(), id = Date.now();
+      PRL.unshift({ id: id, src: tiles()[0].querySelector('img').src, alt: name, name: name, price: price, st: 'قيد المراجعة', sub: 'اتبعت للمراجعة دلوقتي، ومش ظاهر للمشترين لسه',
+        cat: st.cat, size: st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : brandIn.value.trim(), cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
+      write('outlet-products', PRL); write('outlet-ap-last', id);
+      location.replace('add-product-sent.html');
+    };
+  }
+
+  if (page === 'add-product-sent.html') {
+    var lastId = read('outlet-ap-last', 0), lp = products().filter(function (x) { return x.id === lastId; })[0];
+    if (lp) {
+      var li = screen.querySelector('[data-aps-img]'); li.src = lp.src; li.alt = lp.name;
+      if (lp.src.indexOf('data:') === 0) { li.style.objectFit = 'cover'; li.style.mixBlendMode = 'normal'; li.parentNode.style.padding = '0'; }
+      screen.querySelector('[data-aps-name]').textContent = lp.name;
+      screen.querySelector('[data-aps-price]').innerHTML = riyal(10, 11) + lp.price;
+    }
+  }
+
+  if (page === 'seller-setup.html') {
+    var ssAddr = (ADDRS.filter(function (a) { return a.pickup; })[0] || ADDRS[0]);
+    var ssV = screen.querySelector('[data-ss-addr-value]');
+    ssV.textContent = ssAddr ? ssAddr.label + ' · ' + ssAddr.line : 'اختار عنوان';
+    screen.querySelector('[data-ss-addr]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      pickSheet('عنوان الاستلام', ADDRS.map(function (a) { return a.label + ' · ' + a.line; }), ssV.textContent, function (v) { ssV.textContent = v; ssAddr = ADDRS.filter(function (a) { return a.label + ' · ' + a.line === v; })[0]; });
+    });
+    var ibanIn = screen.querySelector('[data-ss-iban]');
+    ibanIn.addEventListener('input', function () { var d = ibanIn.value.replace(/\D/g, '').slice(0, 22); ibanIn.value = d.replace(/(.{2})(.{0,4})(.{0,4})(.{0,4})(.{0,4})(.{0,4})/, function () { return [].slice.call(arguments, 1, 7).filter(Boolean).join(' '); }); });
+    screen.querySelector('[data-ss-save]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var id = screen.querySelector('[data-ss-id]').value.replace(/\D/g, ''), ib = ibanIn.value.replace(/\D/g, '');
+      if (!/^[12]\d{9}$/.test(id)) { toast('رقم الهوية 10 أرقام ويبدأ بـ 1 أو 2'); return; }
+      if (!ssAddr) { toast('اختار عنوان الاستلام'); return; }
+      if (ssAddr.fee == null) { toast('المندوب مش بيستلم من ' + ssAddr.city + ' لسه، اختار عنوان تاني'); return; }
+      if (ib.length !== 22) { toast('الآيبان لازم يكون SA و22 رقم'); return; }
+      ADDRS.forEach(function (a) { a.pickup = a === ssAddr; }); write('outlet-addrs', ADDRS);
+      write('outlet-bank', { name: profile().name, iban: ib }); write('outlet-seller-ok', true);
+      toast('تمام، تقدر تضيف منتجك'); setTimeout(function () { location.replace('add-product.html'); }, 600);
+    });
+  }
+
   // ---------- search ----------
   var extra = { 'فساتين': 'فستان', 'قمصان': 'قميص بلوزه', 'بناطيل': 'بنطلون بنطال', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز', 'جواكيت': 'جاكيت معطف بالطو' };
   function indexItems(list) {
@@ -1811,6 +1957,7 @@
       return;
     }
     // "حسابي" in the bottom bar (pages built before the account screen still link to #profile)
+    if (t.closest('nav a[href="#sell"]')) { e.preventDefault(); location.href = 'add-product.html'; return; }
     if (t.closest('nav a[href="#messages"]')) { e.preventDefault(); location.href = 'messages.html'; return; }
     if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'account.html'; return; }
     var cartLink = t.closest('a[aria-label^="سلة التسوق"]');

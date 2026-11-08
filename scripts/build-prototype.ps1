@@ -37,6 +37,9 @@ $pages = @(
   @('U25-Incoming.dc.html', 'incoming.html', 'outlet · الطلبات الواردة'),
   @('U26-IncomingOrder.dc.html', 'incoming-order.html', 'outlet · طلب وارد'),
   @('U42-Support.dc.html', 'support.html', 'outlet · تواصل معنا'),
+  @('U22-AddProduct.dc.html', 'add-product.html', 'outlet · إضافة منتج'),
+  @('U22c-AddProductSent.dc.html', 'add-product-sent.html', 'outlet · اتبعت للمراجعة'),
+  @('U20-SellerSetup.dc.html', 'seller-setup.html', 'outlet · قبل أول بيعة'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
@@ -253,6 +256,9 @@ const CORE = [
   './incoming.html',
   './incoming-order.html',
   './support.html',
+  './add-product.html',
+  './add-product-sent.html',
+  './seller-setup.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

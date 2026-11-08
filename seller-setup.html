@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>outlet · قبل أول بيعة</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="outlet">
+<script>
+(function () {
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (standalone) document.documentElement.classList.add('standalone');
+})();
+</script>
+<link rel="stylesheet" href="styles.css">
+<style>
+body{margin:0}
+a{color:#1C1917}
+a:hover{color:#000000}
+input::placeholder,textarea::placeholder{color:#8E857F}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}
+.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</head>
+<body>
+<main class="stage">
+<div class="device">
+<div class="screen" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Thmanyah Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #1C1917; direction: rtl; display: flex; flex-direction: column">
+<div style="flex: none; padding: 32px 18px 12px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; background: #FFFFFF">
+<a href="U35c2-Account-Selling.dc.html" aria-label="رجوع" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #1C1917"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.43 5.93 20.5 12l-6.07 6.07M3.5 12h16.83" stroke-miterlimit="10"></path></svg></a>
+<h1 style="margin: 0; text-align: center; font-size: 20px; line-height: 28px; font-weight: 700">قبل أول بيعة</h1>
+<span aria-hidden="true"></span>
+</div>
+<div class="noscroll" style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 24px; display: flex; flex-direction: column; gap: 18px">
+<div style="padding: 16px; border-radius: 20px; background: #FFF4EC; display: flex; gap: 12px; align-items: center"><span aria-hidden="true" style="width: 36px; height: 36px; flex: none; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: #9A3412"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z"></path><path d="M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26"></path></svg></span><span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 22px; font-weight: 700">3 بيانات مرة واحدة بس</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">عشان نستلم منك القطع ونحوّل أرباحك. مش بتظهر لأي حد.</span></span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="ss-id" style="font-size: 13px; line-height: 20px; font-weight: 700; color: #6B635D">رقم الهوية الوطنية أو الإقامة</label><span style="min-height: 52px; border-radius: 16px; background: #F7F3F0; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box"><input id="ss-id" data-ss-id type="text" inputmode="numeric" maxlength="10" placeholder="10 أرقام" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 15px; color: #1C1917; direction: ltr; text-align: right; letter-spacing: 1px"></span><span style="font-size: 12px; line-height: 18px; color: #8E857F">بيبدأ بـ 1 للمواطن أو 2 للمقيم.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="ss-addr" style="font-size: 13px; line-height: 20px; font-weight: 700; color: #6B635D">عنوان استلام المبيعات</label><button id="ss-addr" type="button" data-ss-addr style="min-height: 52px; border-radius: 16px; background: #F7F3F0; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box; border: 0; width: 100%; font-family: inherit; font-size: 15px; color: #1C1917; text-align: right"><span data-ss-addr-value style="flex: 1">البيت · حي النرجس، الرياض</span><span style="color: #8E857F; display: flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.92 8.95 13.4 15.47c-.77.77-2.03.77-2.8 0L4.08 8.95"></path></svg></span></button><span style="font-size: 12px; line-height: 18px; color: #8E857F">المندوب بيستلم القطع اللي بتبيعها من العنوان ده.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="ss-iban" style="font-size: 13px; line-height: 20px; font-weight: 700; color: #6B635D">رقم الآيبان</label><span style="min-height: 52px; border-radius: 16px; background: #F7F3F0; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box; direction: ltr"><span style="font-size: 15px; font-weight: 700; color: #6B635D">SA</span><input id="ss-iban" data-ss-iban type="text" inputmode="numeric" placeholder="00 0000 0000 0000 0000 0000" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 15px; color: #1C1917; direction: ltr; text-align: left"></span><span style="font-size: 12px; line-height: 18px; color: #8E857F">لازم يكون باسمك. أرباحك بتتحوّل عليه لما تطلب سحب.</span></div>
+<div style="padding: 12px 14px; border-radius: 16px; background: #F7F3F093; display: flex; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D"><span style="display: flex; flex: none; margin-top: 1px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10ZM12 8v5M11.995 16h.009"></path></svg></span><span>إرسال البيانات دي معناه الموافقة على شروط البيع وقائمة المنتجات الممنوعة.</span></div>
+</div>
+<div style="flex: none; padding: 14px 18px 28px; background: #FFFFFF; box-shadow: 0 -8px 24px rgba(28,25,23,0.06); display: flex; gap: 10px"><button type="button" data-ss-save style="flex: 1; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px">حفظ ومتابعة لإضافة المنتج</button></div>
+</div>
+</div>
+</main>
+
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
