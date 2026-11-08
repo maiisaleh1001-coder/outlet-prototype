@@ -846,7 +846,7 @@
         : st === 'shipping' ? btn('report', 'بلّغ عن مشكلة', light) + btn('chat', 'تواصل مع البائع', dark)
         : st === 'disputed' ? btn('dispute', 'تفاصيل البلاغ', light) + btn('chat', 'تواصل مع البائع', dark)
         : st === 'arrived' || st === 'handover' ? btn('report', 'بلّغ عن مشكلة', light) + btn('confirm', 'تأكيد الاستلام', dark)
-        : st === 'completed' ? btn('rate', 'قيّم البائع', dark.replace('flex: 1.3', 'flex: 1'))
+        : st === 'completed' ? (ratings()[o.no + '|buy'] ? btn('rated', 'قيّمت البائع · ' + ratings()[o.no + '|buy'].stars + ' من 5', light) : btn('rate', 'قيّم البائع', dark.replace('flex: 1.3', 'flex: 1')))
         : '';
       if (!bar.innerHTML) bar.style.display = 'none';
     };
@@ -866,7 +866,8 @@
       else if (act === 'chat') { write('outlet-chat-view', o.no); location.href = 'chat.html'; }
       else if (act === 'report') { write('outlet-order-view', o.no); location.href = 'report.html'; }
       else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'dispute.html'; }
-      else if (act === 'rate') toast('شاشة التقييم لسه بتتصمم');
+      else if (act === 'rate') { write('outlet-rate-view', { no: o.no, role: 'buy' }); location.href = 'rate.html'; }
+      else if (act === 'rated') toast('قيّمت الطلب ده خلاص، والتقييم مينفعش يتعدّل');
       else if (act === 'invoice') toast('الفاتورة الضريبية لسه بتتصمم');
     }, true);
   }
@@ -1684,10 +1685,13 @@
       var bar = q2('[data-io-chat]').parentNode;
       bar.innerHTML = (st === 'handover' && !io.sellerDelivered && !io.cancelReq)
         ? '<a href="#chat" data-io-chat style="flex: 1; ' + light + '">محادثة المشتري</a><button type="button" data-io-delivered style="flex: 1.3; ' + dark + '">تم التسليم</button>'
+        : st === 'completed' ? '<a href="#chat" data-io-chat style="flex: 1; ' + light + '">محادثة المشتري</a>' + (ratings()[io.no + '|sell'] ? '<button type="button" data-io-rated style="flex: 1.3; ' + light + '">قيّمت المشتري · ' + ratings()[io.no + '|sell'].stars + ' من 5</button>' : '<button type="button" data-io-rate style="flex: 1.3; ' + dark + '">قيّم المشتري</button>')
         : '<a href="#chat" data-io-chat style="flex: 1; ' + dark + '">محادثة المشتري</a>';
     };
     renderIO();
     screen.addEventListener('click', function (e) {
+      if (e.target.closest('[data-io-rate]')) { e.preventDefault(); e.stopPropagation(); write('outlet-rate-view', { no: io.no, role: 'sell' }); location.href = 'rate.html'; return; }
+      if (e.target.closest('[data-io-rated]')) { e.preventDefault(); e.stopPropagation(); toast('قيّمت المشتري خلاص، والتقييم مينفعش يتعدّل'); return; }
       if (e.target.closest('[data-io-chat]')) { e.preventDefault(); e.stopPropagation(); write('outlet-chat-view', io.no); location.href = 'chat.html'; return; }
       if (e.target.closest('[data-io-delivered]')) {
         e.preventDefault(); e.stopPropagation();
@@ -1863,6 +1867,72 @@
       write('outlet-bank', { name: profile().name, iban: ib }); write('outlet-seller-ok', true);
       toast('تمام، تقدر تضيف منتجك'); setTimeout(function () { location.replace('add-product.html'); }, 600);
     });
+  }
+
+  // ---------- U-33 rating (one per party per completed order, final once sent) ----------
+  var RATE_LABELS = ['', 'سيئ', 'مش كويس', 'كويس', 'كويس جدًا', 'ممتاز'];
+  var STAR_D = 'M13.73 3.51l1.76 3.52c.24.49.88.96 1.42 1.05l3.19.53c2.04.34 2.52 1.82 1.05 3.28l-2.48 2.48c-.42.42-.65 1.23-.52 1.81l.71 3.07c.56 2.43-.73 3.37-2.88 2.1l-2.99-1.77c-.54-.32-1.43-.32-1.98 0l-2.99 1.77c-2.14 1.27-3.44.32-2.88-2.1l.71-3.07c.13-.58-.1-1.39-.52-1.81l-2.48-2.48c-1.46-1.46-.99-2.94 1.05-3.28l3.19-.53c.53-.09 1.17-.56 1.41-1.05l1.76-3.52c.96-1.91 2.52-1.91 3.47 0Z';
+  var starsHTML = function (n, sz) { var h = ''; for (var i = 1; i <= 5; i++) { var on = i <= n; h += '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="' + (on ? '#EA580C' : 'none') + '" stroke="' + (on ? '#EA580C' : '#D6CEC7') + '" stroke-width="1.4" aria-hidden="true"><path d="' + STAR_D + '"></path></svg>'; } return h; };
+  function ratings() { return read('outlet-ratings', {}); }
+  function rateTarget(v) {
+    var o = v.role === 'sell' ? SELL_ORDERS.filter(function (x) { return x.no === v.no; })[0] : allOrders().filter(function (x) { return x.no === v.no; })[0];
+    return o ? { o: o, name: v.role === 'sell' ? o.buyer : o.seller[0], who: v.role === 'sell' ? 'المشتري' : 'البائع' } : null;
+  }
+
+  if (page === 'rate.html') {
+    var rv = read('outlet-rate-view', { no: 'OUT-24611', role: 'buy' }), rt = rateTarget(rv), rkey = rv.no + '|' + rv.role;
+    var backTo = rv.role === 'sell' ? 'incoming-order.html' : 'order.html';
+    if (!rt || rt.o.status !== 'completed') { toast('التقييم بيتفتح بعد ما الطلب يكتمل بس'); setTimeout(function () { location.replace(backTo); }, 900); return; }
+    if (ratings()[rkey]) { location.replace('rate-sent.html'); return; }
+    var rq = function (s) { return screen.querySelector(s); };
+    rq('h1').textContent = 'تقييم ' + rt.who;
+    rq('[data-rate-q]').textContent = 'كانت التجربة مع ' + rt.who + ' عاملة إزاي؟';
+    rq('[data-rate-initial]').textContent = rt.name.charAt(0);
+    rq('[data-rate-name]').textContent = rt.name;
+    rq('[data-rate-sub]').innerHTML = rt.who + ' · طلب <span style="direction: ltr; display: inline-block">' + rt.o.no + '</span> · ' + esc(rt.o.items[0].name);
+    var rimg = rq('[data-rate-thumb]'); rimg.src = rt.o.items[0].src; rimg.alt = rt.o.items[0].alt || rt.o.items[0].name;
+    var note = rq('[data-rate-text]').closest('div').nextElementSibling; if (note) note.lastElementChild.textContent = 'التقييم بيتنشر على طول في صفحة ' + rt.who + '، ومينفعش يتعدّل بعد الإرسال.';
+    var stars = 0, txt = rq('[data-rate-text]'), cnt = rq('[data-rate-count]'), send = rq('[data-rate-send]');
+    txt.value = ''; cnt.textContent = '0 / 300';
+    var paintStars = function () {
+      [].forEach.call(screen.querySelectorAll('[data-rate-star]'), function (b) {
+        var on = +b.getAttribute('data-rate-star') <= stars, svg = b.querySelector('svg');
+        b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.color = on ? '#EA580C' : '#D6CEC7'; svg.setAttribute('fill', on ? '#EA580C' : 'none');
+      });
+      rq('[data-rate-label]').textContent = stars ? RATE_LABELS[stars] : 'دوس على النجوم';
+      rq('[data-rate-label]').style.color = stars ? '#C2410C' : '#8E857F';
+      send.style.opacity = stars ? '1' : '0.4';
+    };
+    paintStars();
+    screen.addEventListener('click', function (e) {
+      var s = e.target.closest('[data-rate-star]');
+      if (s) { e.preventDefault(); e.stopPropagation(); stars = +s.getAttribute('data-rate-star'); paintStars(); return; }
+      if (e.target.closest('[data-rate-send]')) {
+        e.preventDefault(); e.stopPropagation();
+        if (!stars) { toast('اختار عدد النجوم الأول'); return; }
+        var all = ratings(); if (all[rkey]) { location.replace('rate-sent.html'); return; }
+        all[rkey] = { stars: stars, text: txt.value.trim(), date: fmtDate(new Date(), true) };
+        write('outlet-ratings', all); location.replace('rate-sent.html');
+      }
+    }, true);
+    txt.addEventListener('input', function () { cnt.textContent = txt.value.length + ' / 300'; });
+  }
+
+  if (page === 'rate-sent.html') {
+    var sv = read('outlet-rate-view', { no: 'OUT-24611', role: 'buy' }), st2 = rateTarget(sv), rr = ratings()[sv.no + '|' + sv.role];
+    if (st2 && rr) {
+      screen.querySelector('[data-rs-name]').textContent = st2.name;
+      screen.querySelector('[data-rs-stars]').innerHTML = starsHTML(rr.stars, 18);
+      var cm = screen.querySelector('[data-rs-comment]');
+      if (rr.text) cm.textContent = '«' + rr.text + '»'; else cm.remove();
+      screen.querySelector('[data-rs-meta]').innerHTML = 'طلب <span style="direction: ltr; display: inline-block">' + sv.no + '</span> · ' + rr.date;
+      screen.querySelector('[data-rs-text]').textContent = 'تقييمك اتنشر في صفحة ' + st2.who + ' ومينفعش يتعدّل.';
+    }
+    var rsBack = screen.querySelector('[data-rs-back]');
+    rsBack.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (sv.role === 'sell') { write('outlet-inc-view', sv.no); location.href = 'incoming-order.html'; } else { write('outlet-order-view', sv.no); location.href = 'order.html'; }
+    }, true);
   }
 
   // ---------- search ----------

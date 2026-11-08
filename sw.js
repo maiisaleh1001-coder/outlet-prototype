@@ -39,6 +39,8 @@ const CORE = [
   './add-product.html',
   './add-product-sent.html',
   './seller-setup.html',
+  './rate.html',
+  './rate-sent.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
