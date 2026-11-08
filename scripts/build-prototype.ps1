@@ -10,7 +10,10 @@ $pages = @(
   @('U07d-Search.dc.html', 'search.html', 'outlet · البحث'),
   @('U08-Product.dc.html', 'product.html', 'outlet · تفاصيل المنتج'),
   @('U11-Cart.dc.html', 'cart.html', 'outlet · السلة'),
-  @('U12-Checkout.dc.html', 'checkout.html', 'outlet · إتمام الطلب')
+  @('U12-Checkout.dc.html', 'checkout.html', 'outlet · إتمام الطلب'),
+  @('U13-Payment.dc.html', 'payment.html', 'outlet · الدفع'),
+  @('U14-Success.dc.html', 'payment-success.html', 'outlet · تم الدفع'),
+  @('U14b-Failed.dc.html', 'payment-failed.html', 'outlet · الدفع ما تمش')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
 $filterSrc = [System.IO.File]::ReadAllText((Join-Path $af 'U07c-Filter.dc.html'), [System.Text.Encoding]::UTF8)
@@ -148,6 +151,8 @@ $css += @'
 .proto-empty { padding: 48px 24px; text-align: center; font: 700 16px/24px "Thmanyah Sans", system-ui, sans-serif; color: #1C1917; }
 .proto-empty span { display: block; margin-top: 4px; font-weight: 400; font-size: 13px; line-height: 20px; color: #6B635D; }
 @keyframes proto-pop { 50% { transform: scale(1.25); } }
+.proto-spin { width: 40px; height: 40px; box-sizing: border-box; border-radius: 999px; border: 3px solid #FDEBDD; border-top-color: #C2410C; animation: proto-spin .8s linear infinite; }
+@keyframes proto-spin { to { transform: rotate(360deg); } }
 .proto-count { min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
 .dual { position: relative; height: 28px; }
 .dual input[type=range] { position: absolute; left: 0; right: 0; top: 0; width: 100%; height: 28px; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
@@ -196,6 +201,9 @@ const CORE = [
   './product.html',
   './cart.html',
   './checkout.html',
+  './payment.html',
+  './payment-success.html',
+  './payment-failed.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

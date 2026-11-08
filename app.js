@@ -440,15 +440,26 @@
     }, true);
   }
 
+  // ---------- order maths shared by checkout, payment and the result ----------
+  // saved addresses; delivery fee is set by region (null = courier does not cover that region)
+  var ADDRS = [
+    { label: 'البيت', line: 'حي النرجس، شارع الأمير سعود بن عبدالله، الرياض', fee: 25 },
+    { label: 'الشغل', line: 'حي الروضة، طريق الأمير سلطان، جدة', fee: 30 },
+    { label: 'بيت العيلة', line: 'حي الخالدية، القريات', fee: null }
+  ];
+  var SERVICE_FEE = 9;
+  function orderSums() {
+    var c = read('outlet-checkout', { addr: 0, method: 'courier' }), a = ADDRS[c.addr] || ADDRS[0];
+    var method = a.fee === null ? 'direct' : c.method;
+    var sub = cart.reduce(function (s, it) { return s + it.priceNum; }, 0);
+    var delivery = method === 'courier' ? a.fee : 0;
+    return { addr: a, method: method, sub: sub, fee: SERVICE_FEE, delivery: delivery, total: sub + SERVICE_FEE + delivery };
+  }
+  var PAY_LABEL = { apple: 'Apple Pay', mada: 'بطاقة مدى', credit: 'بطاقة ائتمانية' };
+
   // ---------- checkout ----------
   if (page === 'checkout.html') {
     if (!cart.length) { location.replace('cart.html'); return; }
-    // saved addresses; delivery fee is set by region (null = courier does not cover that region)
-    var ADDRS = [
-      { label: 'البيت', line: 'حي النرجس، شارع الأمير سعود بن عبدالله، الرياض', fee: 25 },
-      { label: 'الشغل', line: 'حي الروضة، طريق الأمير سلطان، جدة', fee: 30 },
-      { label: 'بيت العيلة', line: 'حي الخالدية، القريات', fee: null }
-    ];
     var co = read('outlet-checkout', { addr: 0, method: 'courier' });
     var thumbsBox = screen.querySelector('[data-co-thumbs]');
     var thumbTpl = thumbsBox.firstElementChild.cloneNode(true);
@@ -506,7 +517,86 @@
       e.preventDefault(); e.stopPropagation();
       if (b.hasAttribute('data-method')) { if (!b.disabled) { co.method = b.getAttribute('data-method'); renderCheckout(); } }
       else if (b.getAttribute('data-act') === 'change-address') openAddresses(b);
-      else toast('شاشة الدفع لسه بتتصمم');
+      else location.href = 'payment.html';
+    }, true);
+  }
+
+  // ---------- payment ----------
+  if (page === 'payment.html') {
+    if (!cart.length) { location.replace('cart.html'); return; }
+    var sums = orderSums();
+    var payMethod = read('outlet-pay-method', 'mada');
+    screen.querySelectorAll('[data-pay-amount]').forEach(function (el, k) { el.innerHTML = (k === 0 ? riyal(22, 24) : riyal(12, 13)) + sums.total; });
+    screen.querySelector('[data-pay-summary]').textContent = pieces(cart.length) + ' من ' + cart[0].seller[0] + ' · ' + (sums.method === 'courier' ? 'توصيل بالمندوب' : 'تسليم مباشر مع البائع');
+    var form = screen.querySelector('[data-card-form]');
+    var paintPay = function () {
+      screen.querySelectorAll('[data-pay]').forEach(function (b) {
+        var on = b.getAttribute('data-pay') === payMethod;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.style.background = on ? '#FFF4EC' : '#F7F3F093';
+        var ring = b.firstElementChild;
+        ring.style.borderColor = on ? '#C2410C' : '#C9BFB7';
+        ring.innerHTML = on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '';
+      });
+      form.style.display = payMethod === 'apple' ? 'none' : 'flex';
+      write('outlet-pay-method', payMethod);
+    };
+    paintPay();
+    // light formatting for the card fields (nothing is stored or sent anywhere)
+    var num = screen.querySelector('[data-card="number"]'), exp = screen.querySelector('[data-card="exp"]'), cvv = screen.querySelector('[data-card="cvv"]');
+    num.addEventListener('input', function () { num.value = num.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 '); });
+    exp.addEventListener('input', function () { var d = exp.value.replace(/\D/g, '').slice(0, 4); exp.value = d.length > 2 ? d.slice(0, 2) + ' / ' + d.slice(2) : d; });
+    cvv.addEventListener('input', function () { cvv.value = cvv.value.replace(/\D/g, '').slice(0, 4); });
+    var processing = function (then) {
+      var o = document.createElement('div');
+      o.setAttribute('role', 'status');
+      o.style.cssText = 'position: absolute; inset: 0; z-index: 50; background: rgba(255,255,255,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font: 700 16px/24px "Thmanyah Sans", system-ui, sans-serif; color: #1C1917';
+      o.innerHTML = '<span class="proto-spin" aria-hidden="true"></span>جاري تأكيد الدفع…<span style="font-weight: 400; font-size: 13px; color: #6B635D">لحظات وهنكمّل</span>';
+      screen.appendChild(o);
+      setTimeout(then, 1500);
+    };
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pay], [data-act="confirm-pay"]');
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      if (b.hasAttribute('data-pay')) { payMethod = b.getAttribute('data-pay'); paintPay(); return; }
+      var digits = num.value.replace(/\D/g, '');
+      if (payMethod !== 'apple' && digits.length < 12) { toast('اكتب رقم البطاقة الأول'); num.focus(); return; }
+      processing(function () {
+        // demo rule for showing the failure screen: a card number ending in 0002 is declined
+        if (payMethod !== 'apple' && /0002$/.test(digits)) { location.href = 'payment-failed.html'; return; }
+        var s = orderSums();
+        var order = { no: 'OUT-' + (24000 + Math.floor(Math.random() * 900)), items: cart.slice(), seller: cart[0].seller, method: s.method, addr: s.addr.label, total: s.total, pay: PAY_LABEL[payMethod] };
+        write('outlet-last-order', order);
+        var orders = read('outlet-orders', []); orders.unshift(order); write('outlet-orders', orders);
+        cart = []; saveCart();
+        location.href = 'payment-success.html';
+      });
+    }, true);
+  }
+
+  // ---------- payment result ----------
+  if (page === 'payment-success.html') {
+    var ord = read('outlet-last-order', null);
+    if (ord) {
+      screen.querySelector('[data-order-no]').textContent = ord.no;
+      screen.querySelector('[data-order-seller]').innerHTML = 'من <b style="color: #1C1917">' + esc(ord.seller[0]) + '</b>';
+      var tb = screen.querySelector('[data-order-thumbs]'), tt = tb.firstElementChild.cloneNode(true);
+      tb.innerHTML = '';
+      ord.items.slice(0, 4).forEach(function (it) { var t = tt.cloneNode(true), im = t.querySelector('img'); im.src = it.src; im.alt = it.name; tb.appendChild(t); });
+      screen.querySelector('[data-order-method]').textContent = ord.method === 'courier' ? 'توصيل بالمندوب · ' + ord.addr : 'تسليم مباشر مع البائع';
+      screen.querySelector('[data-order-total]').innerHTML = riyal(11, 12) + ord.total;
+      screen.querySelector('[data-order-pay]').textContent = ord.pay;
+      screen.querySelector('[data-order-next]').textContent = ord.method === 'courier'
+        ? 'البائع بيجهز القطع، والمندوب هيستلمها من عنده ويوصلها خلال 2–4 أيام عمل. هنبعت إشعار مع كل تحديث.'
+        : 'محادثة الطلب مع البائع اتفتحت دلوقتي، اتفقوا فيها على مكان ووقت التسليم. وبعد الاستلام أكّد من صفحة الطلب.';
+    }
+    paintCart(false);
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act="track"], [data-act="invoice"]');
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      toast(b.getAttribute('data-act') === 'track' ? 'صفحة متابعة الطلب لسه بتتصمم' : 'الفاتورة الضريبية لسه بتتصمم');
     }, true);
   }
 

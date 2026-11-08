@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>outlet · الدفع</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="outlet">
+<script>
+(function () {
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (standalone) document.documentElement.classList.add('standalone');
+})();
+</script>
+<link rel="stylesheet" href="styles.css">
+<style>
+body{margin:0}
+a{color:#1C1917}
+a:hover{color:#000000}
+input::placeholder{color:#8E857F}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}
+.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</head>
+<body>
+<main class="stage">
+<div class="device">
+<div class="screen" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Thmanyah Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #1C1917; direction: rtl; display: flex; flex-direction: column">
+
+<div style="flex: none; padding: 32px 18px 12px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; background: #FFFFFF">
+<a href="checkout.html" aria-label="رجوع" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #1C1917"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.43 5.93 20.5 12l-6.07 6.07M3.5 12h16.83" stroke-miterlimit="10"></path></svg></a>
+<div style="display: flex; flex-direction: column; align-items: center">
+<h1 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">الدفع</h1>
+<span style="font-size: 12px; line-height: 16px; color: #6B635D">الخطوة 2 من 2</span>
+</div>
+<span aria-hidden="true"></span>
+</div>
+
+<div class="noscroll" style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 24px; display: flex; flex-direction: column; gap: 22px">
+
+<div style="padding: 18px; border-radius: 20px; background: #FFF4EC; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center">
+<span style="font-size: 13px; line-height: 20px; color: #6B635D">المبلغ المطلوب</span>
+<span data-pay-amount style="direction: ltr; display: inline-flex; align-items: center; gap: 6px; font-size: 32px; line-height: 40px; font-weight: 700"><svg width="22" height="24" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>487</span>
+<span data-pay-summary style="font-size: 12px; line-height: 18px; color: #6B635D">3 قطع من خزانة لمى · توصيل بالمندوب</span>
+</div>
+
+<section role="radiogroup" aria-label="طريقة الدفع" style="display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700">طريقة الدفع</h2>
+<button type="button" role="radio" aria-checked="false" data-pay="apple" style="width: 100%; border: 0; border-radius: 18px; background: #F7F3F093; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right"><span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C9BFB7; display: flex; align-items: center; justify-content: center"></span><span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 9H7M22 10.97v2.06c0 .55-.44 1-1 1.02h-1.96c-1.08 0-2.07-.79-2.16-1.87-.06-.63.18-1.22.6-1.63.37-.38.88-.6 1.44-.6H21c.56.02 1 .47 1 1.02Z"></path><path d="M17.48 10.55c-.42.41-.66 1-.6 1.63.09 1.08 1.08 1.87 2.16 1.87H21v1.45c0 3-2 5-5 5H7c-3 0-5-2-5-5v-7c0-2.72 1.64-4.62 4.19-4.94.26-.04.53-.06.81-.06h9c.26 0 .51.01.75.05C19.33 3.85 21 5.76 21 8.5v1.45h-2.08c-.56 0-1.07.22-1.44.6Z"></path></svg></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">Apple Pay</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">دفع سريع من محفظة الجوال</span></span></button>
+<button type="button" role="radio" aria-checked="true" data-pay="mada" style="width: 100%; border: 0; border-radius: 18px; background: #FFF4EC; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right"><span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C2410C; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span></span><span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.5h20M6 16.5h2M10.5 16.5h4"></path><path d="M6.44 3.5h11.11c3.56 0 4.45.88 4.45 4.39v8.21c0 3.51-.89 4.39-4.44 4.39H6.44C2.89 20.5 2 19.62 2 16.11V7.89C2 4.38 2.89 3.5 6.44 3.5Z"></path></svg></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">بطاقة مدى</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">بطاقة الصراف البنكية</span></span></button>
+<button type="button" role="radio" aria-checked="false" data-pay="credit" style="width: 100%; border: 0; border-radius: 18px; background: #F7F3F093; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right"><span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C9BFB7; display: flex; align-items: center; justify-content: center"></span><span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.5h20M6 16.5h2M10.5 16.5h4"></path><path d="M6.44 3.5h11.11c3.56 0 4.45.88 4.45 4.39v8.21c0 3.51-.89 4.39-4.44 4.39H6.44C2.89 20.5 2 19.62 2 16.11V7.89C2 4.38 2.89 3.5 6.44 3.5Z"></path></svg></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">بطاقة ائتمانية</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">فيزا أو ماستركارد</span></span></button>
+</section>
+
+<section data-card-form style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700">بيانات البطاقة</h2>
+<label style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0"><span style="font-size: 12px; line-height: 16px; color: #6B635D">رقم البطاقة</span><input inputmode="numeric" autocomplete="cc-number" data-card="number" placeholder="0000 0000 0000 0000" style="height: 48px; box-sizing: border-box; border: 0; outline: 0; border-radius: 14px; background: #F7F3F093; padding: 0 14px; font-family: inherit; font-size: 15px; color: #1C1917; direction: ltr; text-align: right"></label>
+<div style="display: flex; gap: 10px">
+<label style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0"><span style="font-size: 12px; line-height: 16px; color: #6B635D">تاريخ الانتهاء</span><input inputmode="numeric" autocomplete="cc-exp" data-card="exp" placeholder="MM / YY" style="height: 48px; box-sizing: border-box; border: 0; outline: 0; border-radius: 14px; background: #F7F3F093; padding: 0 14px; font-family: inherit; font-size: 15px; color: #1C1917; direction: ltr; text-align: right"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0"><span style="font-size: 12px; line-height: 16px; color: #6B635D">رمز الأمان</span><input inputmode="numeric" autocomplete="cc-csc" data-card="cvv" placeholder="CVV" style="height: 48px; box-sizing: border-box; border: 0; outline: 0; border-radius: 14px; background: #F7F3F093; padding: 0 14px; font-family: inherit; font-size: 15px; color: #1C1917; direction: ltr; text-align: right"></label>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0"><span style="font-size: 12px; line-height: 16px; color: #6B635D">الاسم على البطاقة</span><input autocomplete="cc-name" data-card="name" placeholder="الاسم كما هو مكتوب" style="height: 48px; box-sizing: border-box; border: 0; outline: 0; border-radius: 14px; background: #F7F3F093; padding: 0 14px; font-family: inherit; font-size: 15px; color: #1C1917; direction: ltr; text-align: right"></label>
+</section>
+
+<p style="margin: 0; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M6 10V8c0-3.31 1-6 6-6s6 2.69 6 6v2M12 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"></path><path d="M17 22H7c-4 0-5-1-5-5v-2c0-4 1-5 5-5h10c4 0 5 1 5 5v2c0 4-1 5-5 5Z"></path></svg>الدفع بيتم من خلال بوابة دفع آمنة، وبيانات البطاقة بتتعالج عندها مباشرة.</p>
+</div>
+
+<div style="flex: none; padding: 14px 18px 28px; background: #FFFFFF; box-shadow: 0 -8px 24px rgba(28,25,23,0.06)">
+<button type="button" data-act="confirm-pay" style="width: 100%; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px"><span>تأكيد الدفع</span><span aria-hidden="true" style="width: 4px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.5)"></span><span data-pay-amount style="direction: ltr; display: inline-flex; align-items: center; gap: 4px"><svg width="12" height="13" viewBox="0 0 1124.14 1256.39" fill="currentColor" role="img" aria-label="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"></path><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"></path></svg>487</span></button>
+</div>
+</div>
+</div>
+</main>
+
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
