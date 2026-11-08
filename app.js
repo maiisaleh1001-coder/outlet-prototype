@@ -795,7 +795,7 @@
       var NAV = { favorites: 'favorites.html', listings: 'my-products.html', incoming: 'incoming.html', wallet: 'wallet.html', withdraw: 'withdraw.html', addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
       if (NAV[key]) { location.href = NAV[key]; return; }
       if (key === 'logout') return askSheet('تسجيل الخروج؟', 'هتحتاج تدخل برقم الجوال وكلمة المرور تاني عشان تشتري أو تبيع.', 'تسجيل الخروج', 'رجوع', function () { toast('اتسجل الخروج (تجريبي)'); });
-      if (!key) return toast(t.getAttribute('href') === '#notifications' ? 'الإشعارات لسه بتتصمم' : 'تعديل الملف لسه بيتصمم');
+      if (!key) { if (t.getAttribute('href') === '#notifications') location.href = 'notifications.html'; else toast('تعديل الملف لسه بيتصمم'); return; }
       toast(SOON[key] || 'الشاشة دي لسه بتتصمم');
     }, true);
     // tapping the pending card body opens the order
@@ -1981,6 +1981,55 @@
       if (p && p.st === 'اتباعت') { toast('القطعة دي اتباعت، ومينفعش تتشرى'); return; }
       if (p && p.st) { toast('القطعة مش متاحة للعرض دلوقتي'); return; }
       write('outlet-product', typeof p === 'object' ? p : infoFor(src, '', '', 0, 0)); location.href = 'product.html';
+    }, true);
+  }
+
+  // ---------- U-34 notifications (in-app list; read state per session) ----------
+  var NOTIF_UNREAD = [1, 2, 3];
+  var NOTIF_GO = {
+    1: ['outlet-chat-view', 'OUT-24790', 'chat.html'], 2: ['outlet-order-view', 'OUT-24790', 'order.html'], 3: ['outlet-inc-view', 'OUT-24833', 'incoming-order.html'],
+    4: ['outlet-inc-view', 'OUT-24810', 'incoming-order.html'], 5: [null, null, 'withdrawals.html'], 6: ['outlet-order-view', 'OUT-24655', 'dispute.html'],
+    7: [null, null, 'my-products.html'], 8: [null, null, 'wallet.html'], 9: [null, null, 'my-products.html']
+  };
+  function notifRead() { return read('outlet-notif-read', {}); }
+  function notifUnread() { var r = notifRead(); return NOTIF_UNREAD.filter(function (i) { return !r[i]; }).length; }
+  // bell on every page opens the list; a dot shows while something is unread
+  (function () {
+    var bells = [].slice.call(document.querySelectorAll('a[href="#notifications"]'));
+    var n = notifUnread();
+    bells.forEach(function (b) {
+      b.setAttribute('aria-label', n ? 'الإشعارات، فيه ' + n + ' جديد' : 'الإشعارات');
+      var dot = b.querySelector('[data-bell-dot]') || [].filter.call(b.querySelectorAll('span'), function (s) { return /border-radius: 999px/.test(s.getAttribute('style') || '') && !s.querySelector('svg'); })[0];
+      if (!dot && n) { b.style.position = 'relative'; b.insertAdjacentHTML('beforeend', '<span data-bell-dot aria-hidden="true" style="position: absolute; top: 9px; left: 11px; width: 9px; height: 9px; border-radius: 999px; background: #EA580C; box-shadow: 0 0 0 2px #FFFFFF"></span>'); }
+      else if (dot && !n) dot.style.display = 'none';
+      b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); location.href = 'notifications.html'; }, true);
+    });
+  })();
+
+  if (page === 'notifications.html') {
+    var nl = screen.querySelector('[data-n-list]'), nc = screen.querySelector('[data-n-unread]');
+    var paintN = function () {
+      var r = notifRead(), n = notifUnread();
+      nc.textContent = n ? n + ' جديدة' : '';
+      [].forEach.call(nl.querySelectorAll('[data-notif]'), function (row) {
+        var id = +row.getAttribute('data-notif'), un = NOTIF_UNREAD.indexOf(id) !== -1 && !r[id];
+        row.style.background = un ? '#FFF4EC' : 'transparent';
+        var title = row.querySelector('span[style*="flex: 1; min-width: 0; font-size: 14px"]'); if (title) title.style.fontWeight = un ? '700' : '500';
+        var dot = row.querySelector('[aria-label="غير مقروء"]'); if (dot) dot.style.display = un ? 'block' : 'none';
+      });
+      screen.querySelector('[data-n-readall]').style.visibility = n ? 'visible' : 'hidden';
+    };
+    paintN();
+    screen.addEventListener('click', function (e) {
+      if (e.target.closest('[data-n-readall]')) {
+        e.preventDefault(); e.stopPropagation();
+        var r = notifRead(); NOTIF_UNREAD.forEach(function (i) { r[i] = true; }); write('outlet-notif-read', r); paintN(); toast('كل الإشعارات اتعلّمت كمقروءة'); return;
+      }
+      var row = e.target.closest('[data-notif]'); if (!row) return;
+      e.preventDefault(); e.stopPropagation();
+      var id = +row.getAttribute('data-notif'), r2 = notifRead(); r2[id] = true; write('outlet-notif-read', r2);
+      var g = NOTIF_GO[id]; if (g[0]) write(g[0], g[1]);
+      location.href = g[2];
     }, true);
   }
 

@@ -42,6 +42,7 @@ const CORE = [
   './rate.html',
   './rate-sent.html',
   './favorites.html',
+  './notifications.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
