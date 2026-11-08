@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>outlet · الإبلاغ عن مشكلة</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="outlet">
+<script>
+(function () {
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (standalone) document.documentElement.classList.add('standalone');
+})();
+</script>
+<link rel="stylesheet" href="styles.css">
+<style>
+body{margin:0}
+a{color:#1C1917}
+a:hover{color:#000000}
+input::placeholder,textarea::placeholder{color:#8E857F}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}
+.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</head>
+<body>
+<main class="stage">
+<div class="device">
+<div class="screen" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Thmanyah Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #1C1917; direction: rtl; display: flex; flex-direction: column">
+
+<div style="flex: none; padding: 32px 18px 12px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; background: #FFFFFF">
+<a href="order.html" aria-label="رجوع" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #1C1917"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.43 5.93 20.5 12l-6.07 6.07M3.5 12h16.83" stroke-miterlimit="10"></path></svg></a>
+<div style="display: flex; flex-direction: column; align-items: center">
+<h1 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">الإبلاغ عن مشكلة</h1>
+<span style="font-size: 12px; line-height: 16px; color: #6B635D">طلب <b data-rp-no style="direction: ltr; display: inline-block">OUT-24790</b></span>
+</div>
+<span aria-hidden="true"></span>
+</div>
+
+<div class="noscroll" style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 24px; display: flex; flex-direction: column; gap: 22px">
+
+<div style="padding: 12px; border-radius: 18px; background: #F7F3F093; display: flex; align-items: center; gap: 12px">
+<span data-rp-thumb style="width: 52px; height: 62px; flex: none; border-radius: 12px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box"><img src="assets/sneakers.jpg" alt="حذاء رياضي جلد أبيض" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span data-rp-name style="font-size: 14px; line-height: 20px; font-weight: 700">حذاء أبيض</span><span data-rp-meta style="font-size: 12px; line-height: 18px; color: #6B635D">من خزانة لمى · المقاس 40</span></span>
+<span data-rp-status style="height: 26px; padding: 0 10px; border-radius: 999px; background: #FEF6E7; color: #9A5800; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; flex: none">وصل المندوب</span>
+</div>
+
+<section style="display: flex; flex-direction: column; gap: 10px">
+<h2 id="rp-reason" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700">إيه المشكلة؟</h2>
+<div role="radiogroup" aria-labelledby="rp-reason" style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" role="radio" aria-checked="true" data-reason="mismatch" style="width: 100%; border: 0; border-radius: 18px; background: #FFF4EC; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right">
+<span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C2410C; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">مش مطابقة للوصف</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">اللون أو المقاس أو الماركة مختلفين عن الإعلان</span></span>
+</button>
+<button type="button" role="radio" aria-checked="false" data-reason="defect" style="width: 100%; border: 0; border-radius: 18px; background: #F7F3F093; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right">
+<span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C9BFB7; display: flex; align-items: center; justify-content: center"></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">فيها عيب مش مذكور</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">بقعة أو قطع أو تلف ما اتذكرش في الإعلان</span></span>
+</button>
+<button type="button" role="radio" aria-checked="false" data-reason="fake" style="width: 100%; border: 0; border-radius: 18px; background: #F7F3F093; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right">
+<span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C9BFB7; display: flex; align-items: center; justify-content: center"></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">القطعة مقلّدة</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">اتعرضت على إنها أصلية وطلعت تقليد</span></span>
+</button>
+<button type="button" role="radio" aria-checked="false" data-reason="missing" style="width: 100%; border: 0; border-radius: 18px; background: #F7F3F093; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right">
+<span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid #C9BFB7; display: flex; align-items: center; justify-content: center"></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">ما وصلتش أو وصلت تالفة</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">الطلب ما وصلش، أو اتضرر في الشحن</span></span>
+</button>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 10px">
+<label for="rp-text" style="font-size: 16px; line-height: 24px; font-weight: 700">اشرح المشكلة</label>
+<div style="border-radius: 18px; background: #F7F3F093; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+<textarea id="rp-text" data-rp-text maxlength="500" rows="4" placeholder="اكتب اللي لاحظته بالتفصيل، مثلًا: المقاس المكتوب 40 والحذاء 38" style="width: 100%; box-sizing: border-box; border: 0; background: transparent; resize: none; font-family: inherit; font-size: 14px; line-height: 22px; color: #1C1917; outline: none; padding: 0"></textarea>
+<span data-rp-count style="align-self: flex-end; font-size: 12px; line-height: 16px; color: #8E857F; direction: ltr">0 / 500</span>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700">صور <span style="font-size: 13px; font-weight: 500; color: #6B635D">(اختياري)</span></h2>
+<span style="font-size: 12px; color: #8E857F">لحد 4 صور</span>
+</div>
+<div data-rp-photos style="display: flex; gap: 10px; flex-wrap: wrap">
+<button type="button" data-rp-add style="width: 76px; height: 76px; border: 0; border-radius: 16px; background: #F7F3F0; font-family: inherit; color: #1C1917; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.76 22h10.48c2.76 0 3.86-1.69 3.99-3.75l.52-8.26A3.753 3.753 0 0 0 18 6c-.61 0-1.17-.35-1.45-.89l-.72-1.45C15.37 2.75 14.17 2 13.15 2h-2.29c-1.03 0-2.23.75-2.69 1.66l-.72 1.45C7.17 5.65 6.61 6 6 6 3.83 6 2.11 7.830 2.25 9.99l.52 8.26C2.89 20.31 4 22 6.76 22ZM10.5 8h3M12 18c1.79 0 3.25-1.46 3.25-3.25S13.790 11.5 12 11.5s-3.25 1.46-3.25 3.25S10.21 18 12 18Z"></path></svg>أضف صورة</button>
+<span data-rp-photo style="position: relative; width: 76px; height: 76px; flex: none; border-radius: 16px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px; box-sizing: border-box"><img src="assets/sneakers.jpg" alt="صورة مرفقة للحذاء" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"><button type="button" data-rp-remove aria-label="شيل الصورة" style="position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border: 0; border-radius: 999px; background: rgba(28,25,23,0.72); color: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></span>
+</div>
+<span style="font-size: 12px; line-height: 18px; color: #6B635D">الصور بتساعد فريق المراجعة يقرر أسرع.</span>
+</section>
+
+<div style="padding: 14px; border-radius: 18px; background: #FEF6E7; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 700; color: #9A5800"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10ZM12 8v5M11.995 16h.009"></path></svg>بعد ما تبعت البلاغ</span>
+<ul style="margin: 0; padding: 0 18px 0 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 20px; color: #6B635D">
+<li>الطلب مش هيكتمل تلقائيًا، والمبلغ هيفضل محجوز لحد القرار.</li>
+<li>فريق outlet هيراجع الطلب والمحادثة وسجل التوصيل.</li>
+<li>محادثة الطلب مع البائع هتفضل متاحة.</li>
+</ul>
+</div>
+
+</div>
+
+<div style="flex: none; padding: 14px 18px 28px; background: #FFFFFF; box-shadow: 0 -8px 24px rgba(28,25,23,0.06); display: flex">
+<a href="report-sent.html" data-rp-send style="flex: 1; height: 54px; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-size: 16px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">إرسال البلاغ</a>
+</div>
+</div>
+</div>
+</main>
+
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>

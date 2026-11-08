@@ -617,9 +617,11 @@
     arrived: { label: 'وصل المندوب', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'المندوب سلّم الطلب', sub: 'راجع القطع وأكّد الاستلام، أو بلّغ عن مشكلة لو فيه حاجة مش مظبوطة.' },
     handover: { label: 'بانتظار التسليم', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'اتفقوا على التسليم', sub: 'كلّم البائع في محادثة الطلب واتفقوا على المكان والوقت، وبعد الاستلام أكّد من هنا.' },
     completed: { label: 'مكتمل', bg: '#ECF6EF', fg: '#1F7A4D', card: '#ECF6EF', title: 'الطلب اكتمل', sub: 'المبلغ اتحوّل للبائع، وتقييم البائع متاح دلوقتي.' },
+    disputed: { label: 'محل نزاع', bg: '#FDEBDD', fg: '#9A3412', card: '#FFF4EC', title: 'بلاغك قيد المراجعة', sub: 'فريق outlet بيراجع البلاغ. الطلب مش هيكتمل تلقائيًا والمبلغ محجوز لحد القرار.' },
     cancelled: { label: 'ملغى', bg: '#F2F2F2', fg: '#6B635D', card: '#F7F3F093', title: 'الطلب اتلغى', sub: 'المبلغ المدفوع رجع للمحفظة.' }
   };
-  var CURRENT = { preparing: 1, shipping: 1, arrived: 1, handover: 1 };
+  var CURRENT = { preparing: 1, shipping: 1, arrived: 1, handover: 1, disputed: 1 };
+  var REASONS = { mismatch: 'مش مطابقة للوصف', defect: 'فيها عيب مش مذكور', fake: 'القطعة مقلّدة', missing: 'ما وصلتش أو وصلت تالفة' };
   function demoOrders() {
     var d = read('outlet-demo-orders', null);
     if (d) return d;
@@ -737,7 +739,7 @@
       e.preventDefault(); e.stopPropagation();
       if (t.hasAttribute('data-mode')) return setMode(t.getAttribute('data-mode'));
       var pa = t.getAttribute('data-pending'), no = screen.querySelector('[data-acc-pending]').getAttribute('data-no');
-      if (pa === 'report') return toast('شاشة الإبلاغ عن مشكلة لسه بتتصمم');
+      if (pa === 'report') { write('outlet-order-view', no); location.href = 'report.html'; return; }
       if (pa === 'confirm') return askSheet('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل والمبلغ بيتحوّل للبائع، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
         var o = allOrders().filter(function (x) { return x.no === no; })[0]; if (!o) return;
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = fmtDate(new Date(), true); saveOrder(o); renderAcc(); toast('تم تأكيد الاستلام، شكرًا!'); });
@@ -774,6 +776,7 @@
       screen.querySelector('[data-od-date]').textContent = o.date;
       var extra = st === 'arrived' ? '<span style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A5800">' + CLOCK + 'باقي ' + (o.hoursLeft || 24) + ' ساعة، وبعدها الطلب بيكتمل تلقائيًا</span>'
         : st === 'handover' ? '<span style="margin-top: 4px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A5800">التسليم المباشر ما بيكتملش تلقائيًا، لازم تأكيد الاستلام.</span>' : '';
+      if (st === 'disputed' && o.dispute) extra = '<span style="margin-top: 4px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A3412">رقم البلاغ ' + o.dispute.ref + ' · ' + REASONS[o.dispute.reason] + '</span>';
       var box = screen.querySelector('[data-od-status]');
       box.style.background = S.card;
       box.innerHTML = statusPill(st).replace('background: ' + S.bg, 'background: #FFFFFF; align-self: flex-start') +
@@ -781,12 +784,13 @@
       var steps = o.method === 'courier' ? [['paid', 'تم الدفع'], ['preparing', 'قيد التجهيز'], ['shipping', 'قيد التوصيل'], ['arrived', 'وصل المندوب'], ['completed', 'مكتمل']]
         : [['paid', 'تم الدفع'], ['handover', 'بانتظار التسليم'], ['completed', 'مكتمل']];
       if (st === 'cancelled') steps = [['paid', 'تم الدفع'], ['cancelled', 'ملغى']];
+      if (st === 'disputed') steps = steps.filter(function (s) { return s[0] !== 'completed' && (s[0] !== 'arrived' || (o.times || {}).arrived); }).concat([['disputed', 'البلاغ قيد المراجعة'], ['completed', 'مكتمل']]);
       var cur = steps.findIndex(function (s) { return s[0] === st; });
       if (st === 'preparing' && o.method !== 'courier') cur = 1;
       var t = o.times || {};
       screen.querySelector('[data-od-timeline]').innerHTML = steps.map(function (s, i) {
         var state = i < cur || (st === 'completed' || st === 'cancelled') && i === cur ? 'done' : i === cur ? 'now' : 'todo';
-        var time = t[s[0]] || (s[0] === 'completed' && state === 'todo' ? 'بعد تأكيد الاستلام' : '');
+        var time = t[s[0]] || (s[0] === 'completed' && state === 'todo' ? (st === 'disputed' ? 'بعد القرار' : 'بعد تأكيد الاستلام') : '');
         return stepHTML(s[1], time, state, i === steps.length - 1);
       }).join('');
       screen.querySelector('[data-od-seller]').innerHTML = 'من <b style="color: #1C1917">' + esc(o.seller[0]) + '</b>';
@@ -809,7 +813,8 @@
       var bar = screen.querySelector('[data-od-bar]'), btn = function (act, label, style) { return '<button type="button" data-act="' + act + '" style="' + style + '">' + label + '</button>'; };
       bar.style.display = 'flex';
       bar.innerHTML = st === 'preparing' ? btn('cancel', 'إلغاء الطلب', light) + btn('chat', 'تواصل مع البائع', dark)
-        : st === 'shipping' ? btn('chat', 'تواصل مع البائع', dark.replace('flex: 1.3', 'flex: 1'))
+        : st === 'shipping' ? btn('report', 'بلّغ عن مشكلة', light) + btn('chat', 'تواصل مع البائع', dark)
+        : st === 'disputed' ? btn('dispute', 'تفاصيل البلاغ', light) + btn('chat', 'تواصل مع البائع', dark)
         : st === 'arrived' || st === 'handover' ? btn('report', 'بلّغ عن مشكلة', light) + btn('confirm', 'تأكيد الاستلام', dark)
         : st === 'completed' ? btn('rate', 'قيّم البائع', dark.replace('flex: 1.3', 'flex: 1'))
         : '';
@@ -828,10 +833,95 @@
       else if (act === 'cancel') ask('إلغاء الطلب؟', 'الطلب هيتلغي والمبلغ المدفوع هيرجع للمحفظة.', 'إلغاء الطلب', 'رجوع', function () {
         o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o); renderOrder(); toast('اتلغى الطلب والمبلغ رجع للمحفظة'); });
       else if (act === 'chat') toast('محادثة الطلب لسه بتتصمم');
-      else if (act === 'report') toast('شاشة الإبلاغ عن مشكلة لسه بتتصمم');
+      else if (act === 'report') { write('outlet-order-view', o.no); location.href = 'report.html'; }
+      else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'report-sent.html'; }
       else if (act === 'rate') toast('شاشة التقييم لسه بتتصمم');
       else if (act === 'invoice') toast('الفاتورة الضريبية لسه بتتصمم');
     }, true);
+  }
+
+  // ---------- U-17 report a problem ----------
+  if (page === 'report.html') {
+    var rno = read('outlet-order-view', 'OUT-24790');
+    var ro = allOrders().filter(function (x) { return x.no === rno; })[0] || demoOrders()[0];
+    if (ro.status === 'disputed') { location.replace('report-sent.html'); return; } // one open dispute per order
+    var rIt = ro.items[0];
+    screen.querySelector('[data-rp-no]').textContent = ro.no;
+    var rImg = screen.querySelector('[data-rp-thumb] img'); rImg.src = rIt.src; rImg.alt = rIt.alt || rIt.name;
+    screen.querySelector('[data-rp-name]').textContent = rIt.name + (ro.items.length > 1 ? ' + ' + (ro.items.length - 1) + ' قطع' : '');
+    screen.querySelector('[data-rp-meta]').textContent = 'من ' + ro.seller[0] + ' · المقاس ' + rIt.size;
+    var pillBox = document.createElement('span'); pillBox.innerHTML = statusPill(ro.status || 'preparing');
+    screen.querySelector('[data-rp-status]').replaceWith(pillBox.firstChild);
+    var notYet = !(ro.status === 'arrived' || ro.status === 'handover');
+    var reasonBtns = [].slice.call(screen.querySelectorAll('[data-reason]')), reason = null;
+    var sendBtn = screen.querySelector('[data-rp-send]');
+    var paintReasons = function () {
+      reasonBtns.forEach(function (b) {
+        var on = b.getAttribute('data-reason') === reason, ring = b.firstElementChild;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.style.background = on ? '#FFF4EC' : '#F7F3F093';
+        ring.style.borderColor = on ? '#C2410C' : '#C9BFB7';
+        ring.innerHTML = on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '';
+      });
+      sendBtn.style.opacity = reason ? '1' : '0.35';
+    };
+    if (notYet) {
+      // before the courier arrives, only "didn't arrive" can be reported
+      reason = 'missing';
+      reasonBtns.forEach(function (b) { if (b.getAttribute('data-reason') !== 'missing') { b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.style.opacity = '0.45'; } });
+      var hint = document.createElement('p');
+      hint.style.cssText = 'margin: 0; font-size: 12px; line-height: 18px; color: #6B635D';
+      hint.textContent = 'قبل ما المندوب يسلّم الطلب، تقدر تبلّغ بس إن الطلب ما وصلش.';
+      screen.querySelector('[role="radiogroup"]').after(hint);
+    }
+    paintReasons();
+    reasonBtns.forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); if (b.disabled) return; reason = b.getAttribute('data-reason'); paintReasons(); }); });
+    var txt = screen.querySelector('[data-rp-text]'), cnt = screen.querySelector('[data-rp-count]');
+    txt.addEventListener('input', function () { cnt.textContent = txt.value.length + ' / 500'; });
+    // photos: real file picker, previews only (nothing is uploaded in the prototype)
+    var photosBox = screen.querySelector('[data-rp-photos]'), addTile = screen.querySelector('[data-rp-add]'), photoTpl = screen.querySelector('[data-rp-photo]');
+    photoTpl.remove();
+    var picker = document.createElement('input'); picker.type = 'file'; picker.accept = 'image/*'; picker.multiple = true; picker.hidden = true; screen.appendChild(picker);
+    var photoCount = function () { return photosBox.querySelectorAll('[data-rp-photo]').length; };
+    addTile.addEventListener('click', function (e) { e.stopPropagation(); picker.click(); });
+    picker.addEventListener('change', function () {
+      [].slice.call(picker.files).forEach(function (f) {
+        if (photoCount() >= 4) return;
+        var tile = photoTpl.cloneNode(true), im = tile.querySelector('img');
+        im.src = URL.createObjectURL(f); im.alt = 'صورة مرفقة'; im.style.objectFit = 'cover'; im.style.mixBlendMode = 'normal';
+        tile.style.padding = '0';
+        photosBox.appendChild(tile);
+      });
+      picker.value = '';
+      if (photoCount() >= 4) { addTile.style.display = 'none'; toast('وصلت للحد: 4 صور'); }
+    });
+    photosBox.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var rm = e.target.closest('[data-rp-remove]'); if (!rm) return;
+      rm.closest('[data-rp-photo]').remove(); addTile.style.display = 'flex';
+    });
+    sendBtn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (!reason) { toast('اختار سبب المشكلة الأول'); return; }
+      var stamp = fmtDate(new Date(), true);
+      ro.prevStatus = ro.status; ro.status = 'disputed';
+      ro.dispute = { ref: 'DSP-' + (1040 + Math.floor(Math.random() * 900)), reason: reason, text: txt.value.trim(), photos: photoCount(), date: stamp };
+      ro.times = ro.times || {}; ro.times.disputed = stamp;
+      saveOrder(ro);
+      location.replace('report-sent.html');
+    }, true);
+  }
+
+  if (page === 'report-sent.html') {
+    var sno = read('outlet-order-view', 'OUT-24790');
+    var so = allOrders().filter(function (x) { return x.no === sno; })[0];
+    if (so && so.dispute) {
+      screen.querySelector('[data-rs-ref]').textContent = so.dispute.ref;
+      screen.querySelector('[data-rs-no]').textContent = so.no;
+      screen.querySelector('[data-rs-reason]').textContent = REASONS[so.dispute.reason];
+      if (so.dispute.reason === 'missing') screen.querySelector('[data-rs-outcome]').textContent = 'لو اتأكدنا إن الطلب ما وصلش أو وصل تالف، المبلغ بيرجع لمحفظتك. ولو لأ، الطلب بيكتمل.';
+    }
+    screen.querySelector('[data-rs-chat]').addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); toast('محادثة الطلب لسه بتتصمم'); }, true);
   }
 
   // ---------- search ----------

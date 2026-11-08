@@ -15,6 +15,8 @@ const CORE = [
   './orders.html',
   './order.html',
   './account.html',
+  './report.html',
+  './report-sent.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
