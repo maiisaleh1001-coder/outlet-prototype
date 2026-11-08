@@ -29,6 +29,10 @@ $pages = @(
   @('U39b-Policy.dc.html', 'policy.html', 'outlet · السياسة'),
   @('U40-Settings.dc.html', 'settings.html', 'outlet · الإعدادات'),
   @('U40b-DeleteAccount.dc.html', 'delete-account.html', 'outlet · حذف الحساب'),
+  @('U27-Wallet.dc.html', 'wallet.html', 'outlet · المحفظة'),
+  @('U28-WalletHistory.dc.html', 'wallet-history.html', 'outlet · سجل العمليات'),
+  @('U29-Withdraw.dc.html', 'withdraw.html', 'outlet · طلب سحب'),
+  @('U30-Withdrawals.dc.html', 'withdrawals.html', 'outlet · طلبات السحب'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
@@ -237,6 +241,10 @@ const CORE = [
   './policy.html',
   './settings.html',
   './delete-account.html',
+  './wallet.html',
+  './wallet-history.html',
+  './withdraw.html',
+  './withdrawals.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

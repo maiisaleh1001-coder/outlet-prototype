@@ -734,7 +734,10 @@
     var renderAcc = function () {
       var orders = allOrders();
       var current = orders.filter(function (x) { return CURRENT[x.status || 'preparing']; }).length;
-      var walletBal = orders.filter(function (x) { return x.status === 'cancelled'; }).reduce(function (s, x) { return s + x.total; }, 0);
+      var wsum = walletSums(), walletBal = wsum.free;
+      var sellAmt = screen.querySelectorAll('[data-panel="sell"] span[style*="direction: ltr"]');
+      if (sellAmt[0]) sellAmt[0].innerHTML = riyal(18, 20) + wsum.free;
+      if (sellAmt[1]) sellAmt[1].innerHTML = riyal(10, 11) + wsum.held;
       var val = function (k) { return screen.querySelector('[data-row="' + k + '"] [data-row-value]'); };
       val('orders').textContent = current ? current + ' حالية' : orders.length + ' طلبات';
       val('favorites').textContent = Object.keys(favs).length || '';
@@ -765,7 +768,7 @@
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = fmtDate(new Date(), true); saveOrder(o); renderAcc(); toast('تم تأكيد الاستلام، شكرًا!'); });
       var key = t.getAttribute('data-row');
       if (key === 'orders') { location.href = 'orders.html'; return; }
-      var NAV = { addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
+      var NAV = { wallet: 'wallet.html', withdraw: 'withdraw.html', addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
       if (NAV[key]) { location.href = NAV[key]; return; }
       if (key === 'logout') return askSheet('تسجيل الخروج؟', 'هتحتاج تدخل برقم الجوال وكلمة المرور تاني عشان تشتري أو تبيع.', 'تسجيل الخروج', 'رجوع', function () { toast('اتسجل الخروج (تجريبي)'); });
       if (!key) return toast(t.getAttribute('href') === '#notifications' ? 'الإشعارات لسه بتتصمم' : 'تعديل الملف لسه بيتصمم');
@@ -846,7 +849,8 @@
       if (act === 'confirm') ask('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل والمبلغ بيتحوّل للبائع، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = stamp; saveOrder(o); renderOrder(); toast('تم تأكيد الاستلام، شكرًا!'); });
       else if (act === 'cancel') ask('إلغاء الطلب؟', 'الطلب هيتلغي والمبلغ المدفوع هيرجع للمحفظة.', 'إلغاء الطلب', 'رجوع', function () {
-        o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o); renderOrder(); toast('اتلغى الطلب والمبلغ رجع للمحفظة'); });
+        o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o);
+        var wl = wallet(); wl.tx.unshift({ type: 'refund', amt: o.total, ref: o.no, date: stamp.split(' · ')[0], month: 'نوفمبر 2026' }); write('outlet-wallet-v1', wl); renderOrder(); toast('اتلغى الطلب والمبلغ رجع للمحفظة'); });
       else if (act === 'chat') { write('outlet-chat-view', o.no); location.href = 'chat.html'; }
       else if (act === 'report') { write('outlet-order-view', o.no); location.href = 'report.html'; }
       else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'dispute.html'; }
@@ -1144,6 +1148,169 @@
     }, true);
   }
 
+  // ---------- U-27..U-30 wallet: one ledger, balances are computed from it ----------
+  var WD_FEE = 5; // placeholder bank-transfer fee (the client sets the real one)
+  var WBANKS = { '05': 'مصرف الإنماء', '10': 'البنك الأهلي السعودي', '15': 'بنك البلاد', '20': 'بنك الرياض', '30': 'البنك العربي الوطني', '45': 'البنك السعودي الأول', '55': 'البنك السعودي الفرنسي', '60': 'بنك الجزيرة', '65': 'البنك السعودي للاستثمار', '80': 'مصرف الراجحي' };
+  var TXT = {
+    pend: ['أرباح بيع معلقة', '#FEF6E7', '#9A5800', 'coin'], earn: ['أرباح بيع متاحة', '#ECF6EF', '#1F7A4D', 'coin'], refund: ['استرداد مبلغ', '#ECF6EF', '#1F7A4D', 'refund'],
+    wd: ['طلب سحب', '#F7F3F0', '#1C1917', 'bank'], release: ['إعادة مبلغ محجوز', '#ECF6EF', '#1F7A4D', 'back']
+  };
+  var TXI = {
+    coin: '<path d="M8.67 14.33c0 1.29.99 2.33 2.22 2.33h2.51c1.07 0 1.94-.91 1.94-2.03 0-1.22-.53-1.65-1.32-1.93l-4.03-1.4c-.79-.28-1.32-.71-1.32-1.93 0-1.12.87-2.03 1.94-2.03h2.51c1.23 0 2.22 1.04 2.22 2.33M12 6v12"></path><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10Z"></path>',
+    refund: '<path d="M9.57 5.93 3.5 12l6.07 6.07M20.5 12H3.67"></path>',
+    bank: '<path d="M12.37 2.15l9 3.6c.35.14.63.56.63.93V10c0 .55-.45 1-1 1H3c-.55 0-1-.45-1-1V6.68c0-.37.28-.79.63-.93l9-3.6c.2-.08.54-.08.74 0ZM22 22H2v-3c0-.55.45-1 1-1h18c.55 0 1 .45 1 1v3ZM4 18v-7M8 18v-7M12 18v-7M16 18v-7M20 18v-7M1 22h22"></path><path d="M12 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path>',
+    back: '<path d="M14.99 19.5 9 13.51 14.99 7.52M9 13.51h7.84c3.36 0 6.16-2.75 6.16-6.11"></path>'
+  };
+  var WST = { 'معلّق': ['#FEF6E7', '#9A5800'], 'قيد التنفيذ': ['#FEF6E7', '#9A5800'], 'مكتمل': ['#ECF6EF', '#1F7A4D'], 'مرفوض': ['#FEF3F2', '#B42318'] };
+  var wpill = function (s) { var c = WST[s]; return c ? '<span style="height: 22px; padding: 0 8px; border-radius: 999px; background: ' + c[0] + '; color: ' + c[1] + '; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; flex: none">' + s + '</span>' : ''; };
+  var money = function (n, size, color) { return '<span style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: ' + size + 'px; font-weight: 700; color: ' + (color || '#1C1917') + '">' + riyal(Math.round(size * 0.68), Math.round(size * 0.75)) + n + '</span>'; };
+  function wallet() {
+    var w = read('outlet-wallet-v1', null);
+    if (w) return w;
+    w = {
+      tx: [
+        { type: 'pend', amt: 102, ref: 'OUT-24833', date: '8 نوفمبر', month: 'نوفمبر 2026', status: 'معلّق' },
+        { type: 'pend', amt: 108, ref: 'OUT-24810', date: '7 نوفمبر', month: 'نوفمبر 2026', status: 'معلّق' },
+        { type: 'release', amt: 150, ref: 'WD-0201', date: '5 نوفمبر', month: 'نوفمبر 2026' },
+        { type: 'wd', amt: -150, ref: 'WD-0201', date: '4 نوفمبر', month: 'نوفمبر 2026', status: 'مرفوض' },
+        { type: 'earn', amt: 331, ref: 'OUT-24588', date: '2 نوفمبر', month: 'نوفمبر 2026' },
+        { type: 'wd', amt: -300, ref: 'WD-0198', date: '27 أكتوبر', month: 'أكتوبر 2026', status: 'مكتمل' },
+        { type: 'earn', amt: 255, ref: 'OUT-24420', date: '25 أكتوبر', month: 'أكتوبر 2026' },
+        { type: 'refund', amt: 354, ref: 'OUT-24502', date: '20 أكتوبر', month: 'أكتوبر 2026' }
+      ],
+      wd: [
+        { ref: 'WD-0201', date: '4 نوفمبر · 11:15 ص', amount: 150, fee: 5, status: 'مرفوض', reason: 'اسم صاحب الحساب مش مطابق لاسم الآيبان في البنك' },
+        { ref: 'WD-0198', date: '27 أكتوبر · 9:30 م', amount: 300, fee: 5, status: 'مكتمل', done: '29 أكتوبر' }
+      ]
+    };
+    write('outlet-wallet-v1', w);
+    return w;
+  }
+  function walletSums(w) {
+    w = w || wallet();
+    var s = { free: 0, held: 0, reserved: 0 };
+    w.tx.forEach(function (t) { if (t.type === 'pend') s.held += t.amt; else s.free += t.amt; if (t.type === 'wd' && t.status === 'قيد التنفيذ') s.reserved -= t.amt; });
+    return s;
+  }
+  function bankInfo() {
+    var b = read('outlet-bank', { name: 'لمى الحربي', iban: '0380000000608010167519' });
+    return { name: b.name, bank: WBANKS[b.iban.slice(2, 4)] || 'البنك', masked: 'SA' + b.iban.slice(0, 2) + ' •••• •••• ' + b.iban.slice(-4), last4: b.iban.slice(-4) };
+  }
+  function txHTML(t, i) {
+    var T = TXT[t.type], plus = t.amt > 0;
+    return '<button type="button" data-tx="' + i + '" style="width: 100%; border: 0; background: transparent; padding: 8px 0; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right"><span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: ' + T[1] + '; color: ' + T[2] + '; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TXI[T[3]] + '</svg></span>' +
+      '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; line-height: 20px; font-weight: 700">' + T[0] + '</span><span style="font-size: 12px; line-height: 16px; color: #8E857F"><span style="direction: ltr; display: inline-block">' + t.ref + '</span> · ' + t.date + '</span></span>' +
+      '<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px">' + money((plus ? '+' : '−') + Math.abs(t.amt), 15, t.type === 'pend' ? '#9A5800' : plus ? '#1F7A4D' : '#1C1917') + wpill(t.status) + '</span></button>';
+  }
+  function txSheet(t) {
+    var T = TXT[t.type];
+    var NOTE = { pend: 'صافي أرباحك بعد عمولة المنصة. بيتحرر للرصيد المتاح لما الطلب يكتمل.', earn: 'صافي أرباحك بعد عمولة المنصة، والطلب اكتمل.', refund: 'رجعلك بعد إلغاء الطلب أو قرار نزاع لصالحك.',
+      wd: t.status === 'مرفوض' ? 'الطلب اترفض، والمبلغ رجع لرصيدك في عملية «إعادة مبلغ محجوز».' : t.status === 'مكتمل' ? 'اتحوّل على حسابك البنكي.' : 'المبلغ محجوز لحد ما فريق outlet ينفذ التحويل.', release: 'رجع لرصيدك المتاح بعد رفض طلب السحب.' };
+    var r = function (l, v) { return '<div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 22px"><span style="color: #6B635D">' + l + '</span>' + v + '</div>'; };
+    mountSheet('<section role="dialog" aria-modal="true" aria-label="تفاصيل العملية" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+      '<div style="padding: 0 18px 28px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><span style="font-size: 14px; font-weight: 700; color: #6B635D">' + T[0] + '</span>' + money((t.amt > 0 ? '+' : '−') + Math.abs(t.amt), 30) + '</div>' +
+      '<div style="padding: 12px 14px; border-radius: 16px; background: #F7F3F093; display: flex; flex-direction: column; gap: 6px">' + r('الحالة', wpill(t.status) || '<b>تمت</b>') + r('التاريخ', '<b>' + t.date + '</b>') + r(t.ref.indexOf('WD') === 0 ? 'طلب السحب' : 'الطلب', '<b style="direction: ltr">' + t.ref + '</b>') + '</div>' +
+      '<p style="margin: 0; font-size: 13px; line-height: 20px; color: #6B635D">' + NOTE[t.type] + '</p>' +
+      '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">تمام</button></div></section>', function () {}, null);
+  }
+
+  if (page === 'wallet.html') {
+    var ws = walletSums(), ww = wallet();
+    screen.querySelector('[data-w-free]').innerHTML = money(ws.free, 34);
+    screen.querySelector('[data-w-held]').innerHTML = money(ws.held, 16);
+    screen.querySelector('[data-w-reserved]').innerHTML = money(ws.reserved, 16);
+    var wv = function (k) { return screen.querySelector('[data-row="' + k + '"] [data-row-value]'); };
+    var pendingWd = ww.wd.filter(function (x) { return x.status === 'قيد التنفيذ'; }).length;
+    wv('withdrawals').textContent = pendingWd ? pendingWd + ' قيد التنفيذ' : ww.wd.length;
+    wv('bank').innerHTML = '<span style="direction: ltr; display: inline-block">•••• ' + bankInfo().last4 + '</span>';
+    screen.querySelector('[data-w-recent]').innerHTML = ww.tx.slice(0, 4).map(txHTML).join('');
+    var wbtn = screen.querySelector('[data-w-withdraw]');
+    if (ws.free <= WD_FEE) { wbtn.style.opacity = '0.4'; }
+    screen.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-tx]');
+      if (t) { e.preventDefault(); e.stopPropagation(); txSheet(ww.tx[+t.getAttribute('data-tx')]); return; }
+      if (e.target.closest('[data-w-withdraw]') && ws.free <= WD_FEE) { e.preventDefault(); e.stopPropagation(); toast(ws.held ? 'مفيش رصيد متاح لسه، أرباحك المعلقة بتتحرر لما الطلبات تكتمل' : 'مفيش رصيد متاح للسحب'); }
+    }, true);
+  }
+
+  if (page === 'wallet-history.html') {
+    var hw = wallet(), hf = 'all', hl = screen.querySelector('[data-h-list]');
+    var GROUP = { all: null, earn: ['pend', 'earn'], refund: ['refund'], wd: ['wd', 'release'] };
+    var renderH = function () {
+      var html = '', lastM = '';
+      hw.tx.forEach(function (t, i) {
+        if (GROUP[hf] && GROUP[hf].indexOf(t.type) === -1) return;
+        if (t.month !== lastM) { lastM = t.month; html += '<h2 style="margin: 10px 0 2px; font-size: 13px; line-height: 20px; font-weight: 700; color: #6B635D">' + t.month + '</h2>'; }
+        html += txHTML(t, i);
+      });
+      hl.innerHTML = html || '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">مفيش عمليات من النوع ده.</p>';
+      screen.querySelectorAll('[data-h-filter]').forEach(function (b) {
+        var on = b.getAttribute('data-h-filter') === hf;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500';
+      });
+    };
+    renderH();
+    screen.addEventListener('click', function (e) {
+      var f = e.target.closest('[data-h-filter]'), t = e.target.closest('[data-tx]');
+      if (f) { e.preventDefault(); e.stopPropagation(); hf = f.getAttribute('data-h-filter'); renderH(); }
+      else if (t) { e.preventDefault(); e.stopPropagation(); txSheet(hw.tx[+t.getAttribute('data-tx')]); }
+    }, true);
+  }
+
+  if (page === 'withdraw.html') {
+    var dw = wallet(), dsum = walletSums(dw), bi = bankInfo();
+    var amIn = screen.querySelector('[data-wd-amount]');
+    screen.querySelector('[data-wd-avail]').innerHTML = 'المتاح للسحب: <b style="color: #1C1917">' + dsum.free + ' ريال</b>';
+    screen.querySelector('[data-wd-bank]').textContent = bi.bank;
+    screen.querySelector('[data-wd-iban]').textContent = bi.masked + ' · ' + bi.name;
+    amIn.value = dsum.free > 0 ? dsum.free : 0;
+    var quick = [].slice.call(screen.querySelectorAll('[data-wd-quick]'));
+    var paintQ = function (k) { quick.forEach(function (b) { var on = b.getAttribute('data-wd-quick') === k; b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500'; }); };
+    var recalc = function () {
+      var v = parseInt(amIn.value.replace(/\D/g, ''), 10) || 0;
+      screen.querySelector('[data-wd-sum]').innerHTML = money(v, 13);
+      screen.querySelector('[data-wd-fee]').innerHTML = money(WD_FEE, 13);
+      screen.querySelector('[data-wd-net]').innerHTML = money(Math.max(0, v - WD_FEE), 18);
+      paintQ(v === dsum.free ? 'all' : v === Math.floor(dsum.free / 2) ? 'half' : '');
+      return v;
+    };
+    recalc();
+    amIn.addEventListener('input', function () { amIn.value = amIn.value.replace(/\D/g, '').slice(0, 6); recalc(); });
+    quick.forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); amIn.value = b.getAttribute('data-wd-quick') === 'all' ? dsum.free : Math.floor(dsum.free / 2); recalc(); }); });
+    screen.querySelector('[data-wd-submit]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var v = recalc();
+      if (!dsum.free) { toast('مفيش رصيد متاح للسحب'); return; }
+      if (v <= 0) { toast('اكتب مبلغ أكبر من صفر'); return; }
+      if (v > dsum.free) { toast('المبلغ أكبر من رصيدك المتاح (' + dsum.free + ' ريال)'); return; }
+      if (v <= WD_FEE) { toast('المبلغ لازم يكون أكبر من رسوم التحويل'); return; }
+      askSheet('تأكيد طلب السحب؟', 'هنحجز ' + v + ' ريال من رصيدك، وهيوصل ' + (v - WD_FEE) + ' ريال على ' + bi.bank + ' •••• ' + bi.last4 + ' بعد ما فريق outlet ينفذ التحويل.', 'تأكيد', 'رجوع', function () {
+        var fresh = wallet(); if (v > walletSums(fresh).free) { toast('رصيدك اتغير، راجع المبلغ'); return; }
+        var n = 207 + fresh.wd.filter(function (x) { return x.mine; }).length, ref = 'WD-0' + n, stamp = fmtDate(new Date(), true);
+        fresh.wd.unshift({ ref: ref, date: 'اليوم · ' + stamp.split(' · ')[1], amount: v, fee: WD_FEE, status: 'قيد التنفيذ', mine: true });
+        fresh.tx.unshift({ type: 'wd', amt: -v, ref: ref, date: stamp.split(' · ')[0], month: 'نوفمبر 2026', status: 'قيد التنفيذ' });
+        write('outlet-wallet-v1', fresh);
+        write('outlet-wd-new', ref);
+        location.replace('withdrawals.html');
+      });
+    });
+  }
+
+  if (page === 'withdrawals.html') {
+    var lw = wallet(), lbi = bankInfo(), fresh = read('outlet-wd-new', '');
+    var cardH = function (w) {
+      var rej = w.status === 'مرفوض';
+      var extra = w.status === 'مكتمل' ? '<span style="font-size: 12px; line-height: 18px; color: #6B635D">اتحوّل ' + w.done + ' · وصلك ' + (w.amount - w.fee) + ' ريال</span>'
+        : w.status === 'قيد التنفيذ' ? '<span style="font-size: 12px; line-height: 18px; color: #6B635D">المبلغ محجوز لحد ما فريق outlet ينفذ التحويل. هيوصلك ' + (w.amount - w.fee) + ' ريال بعد خصم رسوم التحويل.</span>' : '';
+      return '<div data-wd="' + w.ref + '" style="padding: 14px; border-radius: 18px; background: ' + (rej ? '#FEF3F2' : w.ref === fresh ? '#FFF4EC' : '#F7F3F093') + '; display: flex; flex-direction: column; gap: 10px">' +
+        '<div style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 15px; line-height: 22px; direction: ltr; text-align: right">' + w.ref + '</b><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + w.date + '</span></span>' + money(w.amount, 18) + '</div>' +
+        '<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: #6B635D">' + wpill(w.status) + '<span style="direction: ltr">' + lbi.bank + ' •••• ' + lbi.last4 + '</span></div>' + extra +
+        (rej ? '<div style="padding: 10px 12px; border-radius: 12px; background: #FFFFFF; font-size: 12px; line-height: 18px; color: #B42318"><b>سبب الرفض:</b> ' + esc(w.reason) + '. المبلغ رجع لرصيدك المتاح.</div>' : '') + '</div>';
+    };
+    screen.querySelector('[data-wd-list]').innerHTML = lw.wd.length ? lw.wd.map(cardH).join('') : '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">لسه ما طلبتش سحب قبل كده.</p>';
+    if (fresh) { toast('اتبعت طلب السحب ' + fresh + '، والمبلغ اتحجز'); write('outlet-wd-new', ''); }
+  }
+
   // ---------- U-36..U-40 profile, addresses, bank, policies, settings ----------
   var CITIES = [['الرياض', 25], ['جدة', 30], ['الدمام', 30], ['الخبر', 30], ['مكة', 30], ['المدينة المنورة', 30], ['القريات', null]];
   var cityFee = function (c) { var f = CITIES.filter(function (x) { return x[0] === c; })[0]; return f ? f[1] : null; };
@@ -1357,7 +1524,7 @@
   if (page === 'delete-account.html') {
     var dOrders = allOrders(), act = dOrders.filter(function (x) { return CURRENT[x.status || 'preparing'] && x.status !== 'disputed'; }).length;
     var disp = dOrders.filter(function (x) { return x.status === 'disputed'; }).length;
-    var bal = dOrders.filter(function (x) { return x.status === 'cancelled'; }).reduce(function (s, x) { return s + x.total; }, 0);
+    var bal = walletSums().free;
     var reqs = [].slice.call(screen.querySelectorAll('[data-del-req]'));
     var OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z"></path><path d="M7.75 12l2.83 2.83 5.67-5.66"></path></svg>';
     var setReq = function (li, ok, sub) {
@@ -1372,7 +1539,7 @@
     pass.addEventListener('input', paintBtn); paintBtn();
     screen.addEventListener('click', function (e) {
       var l = e.target.closest('[data-del-link]');
-      if (l) { e.preventDefault(); e.stopPropagation(); if (l.getAttribute('data-del-link') === 'orders') location.href = 'orders.html'; else toast('شاشة المحفظة والسحب لسه بتتصمم'); return; }
+      if (l) { e.preventDefault(); e.stopPropagation(); if (l.getAttribute('data-del-link') === 'orders') location.href = 'orders.html'; else location.href = 'withdraw.html'; return; }
       if (e.target.closest('[data-del-confirm]')) {
         e.stopPropagation();
         if (blocked) { toast('خلّص الخطوات اللي فوق الأول'); return; }
