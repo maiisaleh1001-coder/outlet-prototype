@@ -44,6 +44,7 @@ $pages = @(
   @('U33b-RateSent.dc.html', 'rate-sent.html', 'outlet · شكرًا على تقييمك'),
   @('U10-Favorites.dc.html', 'favorites.html', 'outlet · المفضلة'),
   @('U34-Notifications.dc.html', 'notifications.html', 'outlet · الإشعارات'),
+  @('U19-TaxInvoice.dc.html', 'invoice.html', 'outlet · الفاتورة الضريبية'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
@@ -267,6 +268,7 @@ const CORE = [
   './rate-sent.html',
   './favorites.html',
   './notifications.html',
+  './invoice.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

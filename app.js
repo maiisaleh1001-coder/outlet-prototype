@@ -612,7 +612,7 @@
       if (!b) return;
       e.preventDefault(); e.stopPropagation();
       if (b.getAttribute('data-act') === 'track' && ord) { write('outlet-order-view', ord.no); location.href = 'order.html'; }
-      else toast('الفاتورة الضريبية لسه بتتصمم');
+      else if (ord) { write('outlet-invoice-view', ord.no); location.href = 'invoice.html'; }
     }, true);
   }
 
@@ -880,7 +880,7 @@
       else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'dispute.html'; }
       else if (act === 'rate') { write('outlet-rate-view', { no: o.no, role: 'buy' }); location.href = 'rate.html'; }
       else if (act === 'rated') toast('قيّمت الطلب ده خلاص، والتقييم مينفعش يتعدّل');
-      else if (act === 'invoice') toast('الفاتورة الضريبية لسه بتتصمم');
+      else if (act === 'invoice') { write('outlet-invoice-view', o.no); location.href = 'invoice.html'; }
     }, true);
   }
 
@@ -2030,6 +2030,40 @@
       var id = +row.getAttribute('data-notif'), r2 = notifRead(); r2[id] = true; write('outlet-notif-read', r2);
       var g = NOTIF_GO[id]; if (g[0]) write(g[0], g[1]);
       location.href = g[2];
+    }, true);
+  }
+
+  // ---------- U-19 tax invoice (outlet's own services: service fee + delivery, VAT 15% included) ----------
+  if (page === 'invoice.html') {
+    var ivNo = read('outlet-invoice-view', read('outlet-order-view', 'OUT-24790'));
+    var iv = allOrders().filter(function (x) { return x.no === ivNo; })[0] || allOrders()[0];
+    var q3 = function (s) { return screen.querySelector(s); };
+    var m2 = function (n, sz, b) { return '<span style="direction: ltr; display: inline-flex; align-items: center; gap: 3px; font-size: ' + sz + 'px; font-weight: ' + (b ? 700 : 500) + '">' + riyal(9, 10) + n.toFixed(2) + '</span>'; };
+    var split = function (gross) { var net = Math.round(gross / 1.15 * 100) / 100; return [net, Math.round((gross - net) * 100) / 100, gross]; };
+    var lines = [['رسوم الخدمة', iv.fee || 0]].concat(iv.delivery ? [['رسوم التوصيل', iv.delivery]] : []);
+    var tN = 0, tV = 0, tT = 0;
+    q3('[data-inv-rows]').innerHTML = lines.map(function (l) {
+      var s = split(l[1]); tN += s[0]; tV += s[1]; tT += s[2];
+      var td = 'padding: 10px 6px; font-size: 12px; line-height: 18px; vertical-align: top';
+      return '<tr><td style="' + td + '; font-weight: 500">' + l[0] + '</td><td style="' + td + '">' + m2(s[0], 12) + '</td><td style="' + td + '">' + m2(s[1], 12) + '</td><td style="' + td + '">' + m2(s[2], 12, 1) + '</td></tr>';
+    }).join('');
+    q3('[data-inv-net]').innerHTML = m2(tN, 13); q3('[data-inv-vat]').innerHTML = m2(tV, 13); q3('[data-inv-total]').innerHTML = m2(tT, 16, 1);
+    var digits = iv.no.replace(/\D/g, '');
+    q3('[data-inv-no]').textContent = 'INV-2026-0' + digits;
+    q3('[data-inv-order]').textContent = iv.no;
+    q3('[data-inv-date]').textContent = (iv.times && iv.times.paid) ? iv.times.paid.replace(' · ', ' 2026 · ') : iv.date;
+    q3('[data-inv-buyer]').textContent = read('outlet-profile', { name: 'لمى الحربي' }).name;
+    if (iv.status === 'cancelled') {
+      var paper = q3('[data-inv-paper]');
+      paper.insertAdjacentHTML('afterbegin', '<div style="padding: 10px 12px; border-radius: 12px; background: #FEF3F2; font-size: 12px; line-height: 18px; font-weight: 700; color: #B42318">الطلب اتلغى، واتعمل إشعار دائن <span style="direction: ltr; display: inline-block">CN-2026-0' + digits + '</span> بنفس المبلغ ورجع لمحفظتك.</div>');
+    }
+    screen.addEventListener('click', function (e) {
+      if (e.target.closest('[data-inv-pdf]')) { e.preventDefault(); e.stopPropagation(); toast('في النسخة النهائية الفاتورة بتتحمل PDF من منصة «فاتورة»'); }
+      else if (e.target.closest('[data-inv-share]')) {
+        e.preventDefault(); e.stopPropagation();
+        if (navigator.share) navigator.share({ title: 'فاتورة outlet ' + iv.no, text: 'فاتورة ضريبية مبسطة · ' + iv.no }).catch(function () {});
+        else toast('المشاركة متاحة من الموبايل');
+      }
     }, true);
   }
 
