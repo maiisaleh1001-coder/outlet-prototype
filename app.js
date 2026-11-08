@@ -841,7 +841,7 @@
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = stamp; saveOrder(o); renderOrder(); toast('تم تأكيد الاستلام، شكرًا!'); });
       else if (act === 'cancel') ask('إلغاء الطلب؟', 'الطلب هيتلغي والمبلغ المدفوع هيرجع للمحفظة.', 'إلغاء الطلب', 'رجوع', function () {
         o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o); renderOrder(); toast('اتلغى الطلب والمبلغ رجع للمحفظة'); });
-      else if (act === 'chat') toast('محادثة الطلب لسه بتتصمم');
+      else if (act === 'chat') { write('outlet-chat-view', o.no); location.href = 'chat.html'; }
       else if (act === 'report') { write('outlet-order-view', o.no); location.href = 'report.html'; }
       else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'dispute.html'; }
       else if (act === 'rate') toast('شاشة التقييم لسه بتتصمم');
@@ -931,7 +931,7 @@
       screen.querySelector('[data-rs-reason]').textContent = REASONS[so.dispute.reason];
       if (so.dispute.reason === 'missing') screen.querySelector('[data-rs-outcome]').textContent = 'لو اتأكدنا إن الطلب ما وصلش أو وصل تالف، المبلغ بيرجع لمحفظتك. ولو لأ، الطلب بيكتمل.';
     }
-    screen.querySelector('[data-rs-chat]').addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); toast('محادثة الطلب لسه بتتصمم'); }, true);
+    screen.querySelector('[data-rs-chat]').addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); write('outlet-chat-view', sno); location.href = 'chat.html'; }, true);
   }
 
   // ---------- U-18 dispute details ----------
@@ -977,8 +977,164 @@
     $('[data-ds-note]').textContent = !dec ? 'محادثة الطلب مع البائع متاحة طول فترة المراجعة.' : dec === 'buyer' && D.stage !== 'refunded' ? 'محادثة الطلب مع البائع متاحة لحد ما الإرجاع يخلص.' : 'البلاغ اتقفل.';
     screen.addEventListener('click', function (e) {
       var c = e.target.closest('[data-ds-chat]'), od = e.target.closest('[data-ds-order]');
-      if (c) { e.preventDefault(); e.stopPropagation(); toast('محادثة الطلب لسه بتتصمم'); }
+      if (c) { e.preventDefault(); e.stopPropagation(); write('outlet-chat-view', dor.no); location.href = 'chat.html'; }
       else if (od) { e.preventDefault(); e.stopPropagation(); location.href = 'order.html'; }
+    }, true);
+  }
+
+  // ---------- U-31 / U-32 chats (one chat per paid order) ----------
+  var LOCK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M6 10V8c0-3.31 1-6 6-6s6 2.69 6 6v2M12 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"></path><path d="M17 22H7c-4 0-5-1-5-5v-2c0-4 1-5 5-5h10c4 0 5 1 5 5v2c0 4-1 5-5 5Z"></path></svg>';
+  var SELL_ORDERS = [{ no: 'OUT-24833', date: '8 نوفمبر 2026', status: 'preparing', role: 'sell', buyer: 'مها',
+    items: [{ src: 'assets/sweater.jpg', alt: 'سويتر', name: 'سويتر مخطط', size: 'M', cond: 'ممتازة', priceNum: 120 }] }];
+  function chatStore() {
+    var c = read('outlet-chats-v1', null);
+    if (c) return c;
+    c = {
+      'OUT-24790': { unread: 1, msgs: [['day', '6 نوفمبر'], ['sys', 'تم الدفع، والمحادثة اتفتحت'], ['safe'],
+        ['them', 'أهلًا! شكرًا على الطلب، هجهّز الحذاء النهارده.', '3:25 م'], ['me', 'تمام، هو نضيف من جوه؟', '3:31 م'],
+        ['them', 'أيوه، اتغسل ومتلمّع. دي صورته قبل التغليف.', '3:40 م', 'assets/sneakers.jpg'],
+        ['day', 'اليوم'], ['sys', 'المندوب سلّم الطلب'], ['them', 'المندوب سلّمه؟ لو فيه أي حاجة بلغني هنا.', '1:20 م']] },
+      'OUT-24833': { unread: 2, msgs: [['day', 'اليوم'], ['sys', 'تم الدفع، والمحادثة اتفتحت'], ['safe'],
+        ['them', 'أهلًا، اشتريت السويتر.', '12:04 م'], ['them', 'المندوب هيعدّي يستلم إمتى؟', '12:05 م']] },
+      'OUT-24655': { unread: 0, msgs: [['day', '30 أكتوبر'], ['sys', 'تم الدفع، والمحادثة اتفتحت'], ['safe'],
+        ['them', 'شكرًا على الطلب! هشحنه بكرة الصبح.', '2:30 م'], ['day', '1 نوفمبر'], ['sys', 'المندوب سلّم الطلب'],
+        ['me', 'فيه قطع صغير جنب الكم ما كانش ظاهر في الصور.', '8:32 م'], ['sys', 'اتفتح بلاغ على الطلب'],
+        ['day', 'أمس'], ['them', 'تمام، هستنى قرار outlet وأستلم القطعة.', '6:10 م']] },
+      'OUT-24611': { unread: 0, msgs: [['day', '28 أكتوبر'], ['sys', 'تم الدفع، والمحادثة اتفتحت'], ['safe'],
+        ['them', 'أهلًا! التسليم مباشر، ينفع نتقابل بكرة الساعة 5 العصر؟', '9:20 م'], ['me', 'تمام، 5 مناسب. نتقابل عند المدخل الرئيسي للمول.', '9:26 م'],
+        ['day', '29 أكتوبر'], ['them', 'أنا وصلت عند المدخل.', '4:58 م'], ['me', 'استلمت، شكرًا!', '5:30 م'],
+        ['sys', 'تم تأكيد الاستلام واكتمل الطلب'], ['them', 'شكرًا، أتمنى البنطلون يعجبك.', '7:05 م']] },
+      'OUT-24502': { unread: 0, msgs: [['day', '20 أكتوبر'], ['sys', 'تم الدفع، والمحادثة اتفتحت'], ['safe'],
+        ['me', 'أهلًا، الشنطة لسه متاحة؟', '2:50 م'], ['sys', 'الطلب اتلغى، والمبلغ رجع للمحفظة'], ['them', 'معلش، الطلب اتلغى.', '4:15 م']] }
+    };
+    write('outlet-chats-v1', c);
+    return c;
+  }
+  function chatFor(store, o) {
+    if (!store[o.no]) store[o.no] = { unread: 0, msgs: [['day', String(o.date).split(' ').slice(0, 2).join(' ')], ['sys', 'تم الدفع، والمحادثة اتفتحت'], ['safe']] };
+    return store[o.no];
+  }
+  function chatOrders() { return allOrders().map(function (o) { return Object.assign({ role: 'buy' }, o); }).concat(SELL_ORDERS); }
+  function chatClosed(o) { return o.status === 'completed' || o.status === 'cancelled'; }
+  function chatOther(o) { return o.role === 'sell' ? o.buyer : o.seller[0]; }
+  function lastOf(ch) {
+    for (var i = ch.msgs.length - 1; i >= 0; i--) { var m = ch.msgs[i]; if (m[0] === 'me' || m[0] === 'them') return m; }
+    return ['sys', 'تم الدفع، والمحادثة اتفتحت', ''];
+  }
+  function lastDay(ch) { for (var i = ch.msgs.length - 1; i >= 0; i--) if (ch.msgs[i][0] === 'day') return ch.msgs[i][1]; return ''; }
+  function chatUnreadTotal() { var s = chatStore(); return Object.keys(s).reduce(function (n, k) { return n + (s[k].unread || 0); }, 0); }
+  // unread dot on the "الرسائل" tab of every bottom bar
+  (function () {
+    var tab = document.querySelector('nav a[href="#messages"], nav a[href="messages.html"]');
+    if (!tab || !chatUnreadTotal()) return;
+    var ic = tab.querySelector('svg'); if (!ic) return;
+    var wrap = document.createElement('span'); wrap.style.cssText = 'position: relative; display: flex';
+    ic.parentNode.insertBefore(wrap, ic); wrap.appendChild(ic);
+    wrap.insertAdjacentHTML('beforeend', '<span aria-label="رسائل جديدة" style="position: absolute; top: -2px; left: -3px; width: 9px; height: 9px; border-radius: 999px; background: #EA580C; box-shadow: 0 0 0 2px #FFFFFF"></span>');
+  })();
+  var miniPill = function (t, bg, fg) { return '<span style="height: 22px; padding: 0 8px; border-radius: 999px; background: ' + bg + '; color: ' + fg + '; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; flex: none">' + t + '</span>'; };
+
+  if (page === 'messages.html') {
+    var cStore = chatStore(), cFilter = 'all';
+    var cList = screen.querySelector('[data-chat-list]'), cEmpty = screen.querySelector('[data-chat-empty]');
+    cList.querySelectorAll('[data-chat-row]').forEach(function (r) { r.remove(); });
+    var renderChats = function () {
+      cList.querySelectorAll('[data-chat-row]').forEach(function (r) { r.remove(); });
+      var shown = 0;
+      var mins = function (t) { var m = /(d+):(d+)s*([صم])/.exec(t || ''); if (!m) return 0; return (+m[1] % 12 + (m[3] === 'م' ? 12 : 0)) * 60 + +m[2]; };
+      var rank = function (o) { var ch = chatFor(cStore, o), d = lastDay(ch); return d === 'اليوم' ? 3000 - mins(lastOf(ch)[2]) : d === 'أمس' ? 5000 : 9000; };
+      chatOrders().map(function (o, i) { return [rank(o), i, o]; }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (x) { return x[2]; }).forEach(function (o) {
+        if (cFilter !== 'all' && o.role !== cFilter) return;
+        var ch = chatFor(cStore, o), last = lastOf(ch), it = o.items[0], closed = chatClosed(o);
+        var day = lastDay(ch), when = day === 'اليوم' ? last[2] : day;
+        var html = '<a href="chat.html" data-chat-row data-no="' + o.no + '" style="padding: 12px; border-radius: 18px; background: #F7F3F093; display: flex; align-items: center; gap: 12px; text-decoration: none; color: #1C1917">' +
+          '<span style="width: 52px; height: 60px; flex: none; border-radius: 12px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box"><img src="' + it.src + '" alt="' + esc(it.alt || it.name) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></span>' +
+          '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">' +
+          '<span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 15px; line-height: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc(chatOther(o)) + '</span><span style="font-size: 12px; color: #8E857F; flex: none">' + (when || '') + '</span></span>' +
+          '<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; color: #6B635D">' + (o.role === 'sell' ? miniPill('بيع', '#FDEBDD', '#9A3412') : miniPill('شراء', '#FFFFFF', '#6B635D')) + '<span style="direction: ltr">' + o.no + '</span>' +
+          (closed ? '<span style="display: inline-flex; align-items: center; gap: 3px; color: #8E857F">' + LOCK_SVG + 'مقفولة</span>' : '') + '</span>' +
+          '<span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 13px; line-height: 20px; ' + (ch.unread ? 'color: #1C1917; font-weight: 700' : 'color: #6B635D; font-weight: 400') + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + (last[3] && !last[1] ? 'صورة' : esc(last[1])) + '</span>' +
+          (ch.unread ? '<span style="min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #EA580C; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">' + ch.unread + '</span>' : '') +
+          '</span></span></a>';
+        cEmpty.insertAdjacentHTML('beforebegin', html); shown++;
+      });
+      write('outlet-chats-v1', cStore);
+      cEmpty.style.display = shown ? 'none' : 'block';
+      screen.querySelectorAll('[data-chat-filter]').forEach(function (b) {
+        var on = b.getAttribute('data-chat-filter') === cFilter;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500';
+      });
+    };
+    renderChats();
+    screen.addEventListener('click', function (e) {
+      var f = e.target.closest('[data-chat-filter]'), r = e.target.closest('[data-chat-row]');
+      if (f) { e.preventDefault(); e.stopPropagation(); cFilter = f.getAttribute('data-chat-filter'); renderChats(); }
+      else if (r) { e.preventDefault(); e.stopPropagation(); write('outlet-chat-view', r.getAttribute('data-no')); location.href = 'chat.html'; }
+    }, true);
+    window.addEventListener('pageshow', function (ev) { if (ev.persisted) { cStore = chatStore(); renderChats(); } });
+  }
+
+  if (page === 'chat.html') {
+    var kStore = chatStore(), kNo = read('outlet-chat-view', 'OUT-24790');
+    var ko = chatOrders().filter(function (x) { return x.no === kNo; })[0] || chatOrders()[0];
+    var kc = chatFor(kStore, ko); kc.unread = 0; write('outlet-chats-v1', kStore);
+    var q = function (s) { return screen.querySelector(s); };
+    var other = chatOther(ko), kClosed = chatClosed(ko);
+    q('[data-chat-initial]').textContent = other.charAt(0);
+    q('[data-chat-name]').textContent = other;
+    q('[data-chat-sub]').textContent = (ko.role === 'sell' ? 'المشتري' : 'البائع') + ' · ' + (kClosed ? 'للقراءة بس' : 'محادثة نشطة');
+    var kIt = ko.items[0], kImg = q('[data-chat-order] img'); kImg.src = kIt.src; kImg.alt = kIt.alt || kIt.name;
+    q('[data-chat-item]').textContent = kIt.name; q('[data-chat-no]').textContent = ko.no;
+    q('[data-chat-status]').innerHTML = statusPill(ko.status || 'preparing').replace('height: 26px; padding: 0 10px', 'height: 22px; padding: 0 8px').replace('font-size: 12px', 'font-size: 11px');
+    var box = q('[data-chat-msgs]');
+    var SAFE_TXT = 'ما تشاركش رقم جوالك أو بيانات بنكية. الدفع والتواصل جوه outlet بس.';
+    var msgHTML = function (m) {
+      if (m[0] === 'day') return '<span style="align-self: center; height: 24px; padding: 0 10px; border-radius: 999px; background: #F7F3F0; color: #6B635D; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; margin: 8px 0 2px">' + m[1] + '</span>';
+      if (m[0] === 'sys') return '<span style="align-self: center; max-width: 86%; text-align: center; padding: 6px 12px; border-radius: 12px; background: #FEF6E7; color: #9A5800; font-size: 12px; line-height: 18px; font-weight: 700">' + m[1] + '</span>';
+      if (m[0] === 'safe') return '<span style="align-self: center; max-width: 90%; text-align: center; font-size: 11px; line-height: 16px; color: #8E857F">' + SAFE_TXT + '</span>';
+      var me = m[0] === 'me', side = me ? 'flex-end' : 'flex-start';
+      var bub = me ? 'background: #1C1917; color: #FFFFFF; border-radius: 18px 18px 18px 6px' : 'background: #F7F3F0; color: #1C1917; border-radius: 18px 18px 6px 18px';
+      var body = m[3] ? '<span style="display: flex; flex-direction: column; gap: 6px; padding: 6px; ' + bub + '"><span style="width: 190px; height: 190px; border-radius: 14px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center"><img src="' + m[3] + '" alt="' + (me ? 'صورة مرسلة' : 'صورة من ' + esc(other)) + '" style="width: 100%; height: 100%; object-fit: ' + (m[3].indexOf('assets/') === 0 ? 'contain; padding: 10px; box-sizing: border-box; mix-blend-mode: multiply' : 'cover') + '"></span>' + (m[1] ? '<span style="padding: 0 6px 4px; font-size: 14px; line-height: 22px">' + esc(m[1]) + '</span>' : '') + '</span>'
+        : '<span style="padding: 10px 14px; font-size: 14px; line-height: 22px; white-space: pre-wrap; word-break: break-word; ' + bub + '">' + esc(m[1]) + '</span>';
+      return '<div style="align-self: ' + side + '; max-width: 78%; display: flex; flex-direction: column; align-items: ' + side + '; gap: 3px">' + body + '<span style="font-size: 11px; line-height: 14px; color: #8E857F; padding: 0 4px">' + (m[2] || '') + '</span></div>';
+    };
+    var renderMsgs = function () { box.innerHTML = kc.msgs.map(msgHTML).join(''); box.scrollTop = box.scrollHeight; };
+    renderMsgs();
+    var form = q('[data-chat-form]');
+    if (kClosed) {
+      form.outerHTML = '<div style="flex: none; padding: 14px 18px 30px; background: #FFFFFF; box-shadow: 0 -8px 24px rgba(28,25,23,0.06); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; line-height: 20px; color: #6B635D">' + LOCK_SVG + '<span>' + (ko.status === 'cancelled' ? 'الطلب اتلغى، فالمحادثة للقراءة بس.' : 'الطلب اكتمل، فالمحادثة للقراءة بس.') + '</span></div>';
+    } else {
+      var inp = q('[data-chat-input]'), replied = false;
+      var now = function () { return fmtDate(new Date(), true).split(' · ')[1]; };
+      var ensureToday = function () { if (lastDay(kc) !== 'اليوم') kc.msgs.push(['day', 'اليوم']); };
+      var push = function (m) { ensureToday(); kc.msgs.push(m); write('outlet-chats-v1', kStore); renderMsgs(); };
+      var autoReply = function () {
+        if (replied) return; replied = true;
+        setTimeout(function () { push(['them', 'وصلت رسالتك، هرد عليك بعد شوية.', now()]); }, 1600);
+      };
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var t = inp.value.trim(); if (!t) return;
+        push(['me', t, now()]); inp.value = ''; autoReply();
+      });
+      var kPick = document.createElement('input'); kPick.type = 'file'; kPick.accept = 'image/*'; kPick.hidden = true; screen.appendChild(kPick);
+      q('[data-chat-attach]').addEventListener('click', function (e) { e.stopPropagation(); kPick.click(); });
+      kPick.addEventListener('change', function () {
+        var f = kPick.files[0]; kPick.value = ''; if (!f) return;
+        var im = new Image(); im.onload = function () {
+          var k = Math.min(1, 480 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+          cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+          URL.revokeObjectURL(im.src); push(['me', '', now(), cv.toDataURL('image/jpeg', 0.75)]); autoReply();
+        };
+        im.src = URL.createObjectURL(f);
+      });
+      q('[data-chat-send]').addEventListener('click', function (e) { e.stopPropagation(); });
+    }
+    q('[data-chat-order]').addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (ko.role === 'sell') { toast('تفاصيل الطلب الوارد لسه بتتصمم'); return; }
+      write('outlet-order-view', ko.no); location.href = 'order.html';
     }, true);
   }
 
@@ -1074,6 +1230,7 @@
       return;
     }
     // "حسابي" in the bottom bar (pages built before the account screen still link to #profile)
+    if (t.closest('nav a[href="#messages"]')) { e.preventDefault(); location.href = 'messages.html'; return; }
     if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'account.html'; return; }
     var cartLink = t.closest('a[aria-label^="سلة التسوق"]');
     if (cartLink) { e.preventDefault(); location.href = 'cart.html'; return; }

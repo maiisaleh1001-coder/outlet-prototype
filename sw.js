@@ -18,6 +18,8 @@ const CORE = [
   './report.html',
   './report-sent.html',
   './dispute.html',
+  './messages.html',
+  './chat.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
