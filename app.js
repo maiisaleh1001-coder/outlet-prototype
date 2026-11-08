@@ -442,14 +442,14 @@
 
   // ---------- order maths shared by checkout, payment and the result ----------
   // saved addresses; delivery fee is set by region (null = courier does not cover that region)
-  var ADDRS = [
-    { label: 'البيت', line: 'حي النرجس، شارع الأمير سعود بن عبدالله، الرياض', fee: 25 },
-    { label: 'الشغل', line: 'حي الروضة، طريق الأمير سلطان، جدة', fee: 30 },
-    { label: 'بيت العيلة', line: 'حي الخالدية، القريات', fee: null }
+  var ADDRS = read('outlet-addrs', null) || [
+    { label: 'البيت', city: 'الرياض', detail: 'حي النرجس، شارع الأمير سعود بن عبدالله', line: 'حي النرجس، شارع الأمير سعود بن عبدالله، الرياض', fee: 25, def: true, pickup: true },
+    { label: 'الشغل', city: 'جدة', detail: 'حي الروضة، طريق الأمير سلطان', line: 'حي الروضة، طريق الأمير سلطان، جدة', fee: 30 },
+    { label: 'بيت العيلة', city: 'القريات', detail: 'حي الخالدية', line: 'حي الخالدية، القريات', fee: null }
   ];
   var SERVICE_FEE = 9;
   function orderSums() {
-    var c = read('outlet-checkout', { addr: 0, method: 'courier' }), a = ADDRS[c.addr] || ADDRS[0];
+    var c = read('outlet-checkout', { addr: Math.max(0, ADDRS.findIndex(function (x) { return x.def; })), method: 'courier' }), a = ADDRS[c.addr] || ADDRS[0];
     var method = a.fee === null ? 'direct' : c.method;
     var sub = cart.reduce(function (s, it) { return s + it.priceNum; }, 0);
     var delivery = method === 'courier' ? a.fee : 0;
@@ -728,6 +728,9 @@
       screen.querySelectorAll('[data-panel]').forEach(function (p) { p.style.display = p.getAttribute('data-panel') === m ? 'flex' : 'none'; });
     };
     var note = screen.querySelector('[data-acc-note]'); if (note) note.remove();
+    var apf = read('outlet-profile', { name: 'لمى الحربي' });
+    var hello = screen.querySelector('a[href="edit-profile.html"]');
+    if (hello) { hello.previousElementSibling.textContent = 'أهلًا، ' + apf.name.trim().split(' ')[0]; hello.closest('div').querySelector('span[aria-hidden]').textContent = apf.name.trim().charAt(0); }
     var renderAcc = function () {
       var orders = allOrders();
       var current = orders.filter(function (x) { return CURRENT[x.status || 'preparing']; }).length;
@@ -762,6 +765,9 @@
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = fmtDate(new Date(), true); saveOrder(o); renderAcc(); toast('تم تأكيد الاستلام، شكرًا!'); });
       var key = t.getAttribute('data-row');
       if (key === 'orders') { location.href = 'orders.html'; return; }
+      var NAV = { addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
+      if (NAV[key]) { location.href = NAV[key]; return; }
+      if (key === 'logout') return askSheet('تسجيل الخروج؟', 'هتحتاج تدخل برقم الجوال وكلمة المرور تاني عشان تشتري أو تبيع.', 'تسجيل الخروج', 'رجوع', function () { toast('اتسجل الخروج (تجريبي)'); });
       if (!key) return toast(t.getAttribute('href') === '#notifications' ? 'الإشعارات لسه بتتصمم' : 'تعديل الملف لسه بيتصمم');
       toast(SOON[key] || 'الشاشة دي لسه بتتصمم');
     }, true);
@@ -1135,6 +1141,243 @@
       e.preventDefault(); e.stopPropagation();
       if (ko.role === 'sell') { toast('تفاصيل الطلب الوارد لسه بتتصمم'); return; }
       write('outlet-order-view', ko.no); location.href = 'order.html';
+    }, true);
+  }
+
+  // ---------- U-36..U-40 profile, addresses, bank, policies, settings ----------
+  var CITIES = [['الرياض', 25], ['جدة', 30], ['الدمام', 30], ['الخبر', 30], ['مكة', 30], ['المدينة المنورة', 30], ['القريات', null]];
+  var cityFee = function (c) { var f = CITIES.filter(function (x) { return x[0] === c; })[0]; return f ? f[1] : null; };
+  function profile() { return read('outlet-profile', { name: 'لمى الحربي', phone: '+966 55 123 4567', city: 'الرياض' }); }
+  function saveAddrs() { write('outlet-addrs', ADDRS); }
+  // pick-one sheet (cities, language)
+  function pickSheet(title, options, current, onPick) {
+    mountSheet('<section role="dialog" aria-modal="true" aria-label="' + title + '" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+      '<h2 style="margin: 0; padding: 0 18px 8px; font-size: 20px; line-height: 28px; font-weight: 700">' + title + '</h2><div style="display: flex; flex-direction: column; gap: 8px; padding: 0 18px 28px">' +
+      options.map(function (o) { var on = o === current; return '<button type="button" data-act="pick" data-val="' + o + '" style="min-height: 52px; border: 0; border-radius: 16px; background: ' + (on ? '#FFF4EC' : '#F7F3F093') + '; padding: 0 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; font-size: 15px; font-weight: ' + (on ? 700 : 500) + '; color: #1C1917; text-align: right"><span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>' + o + '</button>'; }).join('') +
+      '</div></section>', function (e, b) { if (b && b.getAttribute('data-act') === 'pick') { var v = b.getAttribute('data-val'); closeSheet(); setTimeout(function () { onPick(v); }, 200); } }, null);
+  }
+  var fieldBox = 'min-height: 52px; border-radius: 16px; background: #F7F3F0; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box';
+
+  if (page === 'edit-profile.html') {
+    var pf = profile();
+    var nameIn = screen.querySelector('[data-ep-name]'), cityV = screen.querySelector('[data-ep-city-value]'), phoneV = screen.querySelector('[data-ep-phone]');
+    nameIn.value = pf.name; cityV.textContent = pf.city; phoneV.textContent = pf.phone;
+    screen.querySelector('[data-ep-initial]').textContent = pf.name.trim().charAt(0);
+    nameIn.addEventListener('input', function () { screen.querySelector('[data-ep-initial]').textContent = (nameIn.value.trim().charAt(0) || '؟'); });
+    screen.querySelector('[data-ep-city]').addEventListener('click', function (e) { e.stopPropagation(); pickSheet('المدينة', CITIES.map(function (c) { return c[0]; }), cityV.textContent, function (v) { cityV.textContent = v; }); });
+    screen.querySelector('[data-ep-change-phone]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var step = 1, num = '';
+      var paint = function () {
+        return '<section role="dialog" aria-modal="true" aria-label="تغيير رقم الجوال" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+          '<div style="padding: 0 18px 28px; display: flex; flex-direction: column; gap: 12px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + (step === 1 ? 'رقم الجوال الجديد' : 'اكتب رمز التحقق') + '</h2>' +
+          '<p style="margin: 0; font-size: 13px; line-height: 20px; color: #6B635D">' + (step === 1 ? 'هنبعت رمز تحقق من 4 أرقام على الرقم الجديد.' : 'بعتنا الرمز على <b style="direction: ltr; display: inline-block">+966 ' + esc(num) + '</b>. (في البروتوتايب اكتب أي 4 أرقام)') + '</p>' +
+          '<label style="' + fieldBox + '; direction: ltr">' + (step === 1 ? '<span style="font-weight: 700; color: #6B635D">+966</span>' : '') + '<input data-ph-in type="tel" inputmode="numeric" maxlength="' + (step === 1 ? 11 : 4) + '" placeholder="' + (step === 1 ? '5X XXX XXXX' : '• • • •') + '" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 17px; letter-spacing: ' + (step === 1 ? '0.5px' : '8px') + '; color: #1C1917; text-align: left"></label>' +
+          '<button type="button" data-act="next" style="height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">' + (step === 1 ? 'ابعت رمز التحقق' : 'تأكيد') + '</button></div></section>';
+      };
+      var handler = function (ev, b) {
+        if (!b || b.getAttribute('data-act') !== 'next') return;
+        var v = (document.querySelector('[data-ph-in]').value || '').replace(/\D/g, '');
+        if (step === 1) {
+          if (!/^5\d{8}$/.test(v)) { toast('اكتب رقم سعودي صحيح يبدأ بـ 5'); return; }
+          num = v.slice(0, 2) + ' ' + v.slice(2, 5) + ' ' + v.slice(5); step = 2; closeSheet(); setTimeout(function () { mountSheet(paint(), handler, null); }, 220);
+        } else {
+          if (v.length !== 4) { toast('الرمز 4 أرقام'); return; }
+          phoneV.textContent = '+966 ' + num; closeSheet(); toast('اتأكد الرقم الجديد، دوس «حفظ التغييرات»');
+        }
+      };
+      mountSheet(paint(), handler, null);
+    });
+    screen.querySelector('[data-ep-save]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var n = nameIn.value.trim();
+      if (n.length < 2) { toast('اكتب اسمك (حرفين على الأقل)'); nameIn.focus(); return; }
+      write('outlet-profile', { name: n, phone: phoneV.textContent, city: cityV.textContent });
+      toast('اتحفظت التغييرات'); setTimeout(function () { history.length > 1 ? history.back() : (location.href = 'settings.html'); }, 700);
+    });
+    screen.querySelector('[data-ep-cancel]').addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); history.length > 1 ? history.back() : (location.href = 'settings.html'); }, true);
+  }
+
+  if (page === 'addresses.html') {
+    var list = screen.querySelector('[data-addr-list]'), tpl = list.querySelector('[data-addr]').cloneNode(true);
+    var pillH = function (t, fg) { return '<span style="height: 22px; padding: 0 8px; border-radius: 999px; background: #FFFFFF; color: ' + fg + '; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; flex: none">' + t + '</span>'; };
+    var renderAddrs = function () {
+      list.innerHTML = '';
+      ADDRS.forEach(function (a, i) {
+        var c = tpl.cloneNode(true); c.setAttribute('data-addr', i);
+        c.style.background = a.def ? '#FFF4EC' : '#F7F3F093';
+        var info = c.children[1], head = info.children[0];
+        head.innerHTML = '<b style="font-size: 15px; line-height: 22px">' + esc(a.label) + '</b>' + (a.def ? pillH('الافتراضي', '#9A3412') : '') + (a.pickup ? pillH('استلام المبيعات', '#6B635D') : '');
+        info.children[1].textContent = a.line;
+        var acts = info.lastElementChild, warn = info.children.length > 3 ? info.children[2] : null;
+        if (warn) warn.remove();
+        if (a.fee == null) acts.insertAdjacentHTML('beforebegin', '<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; color: #9A5800">التوصيل بالمندوب لسه مش متاح في المدينة دي</span>');
+        acts.innerHTML = '<a href="address-form.html" data-addr-edit style="font-size: 13px; font-weight: 700; color: #1C1917; text-decoration: none">تعديل</a>' +
+          (a.def ? '' : '<button type="button" data-addr-default style="border: 0; background: transparent; padding: 0; font-family: inherit; font-size: 13px; font-weight: 700; color: #C2410C">اجعله الافتراضي</button>') +
+          '<button type="button" data-addr-delete style="border: 0; background: transparent; padding: 0; font-family: inherit; font-size: 13px; font-weight: 700; color: #B42318">حذف</button>';
+        list.appendChild(c);
+      });
+      if (!ADDRS.length) list.innerHTML = '<p style="margin: 30px 0; text-align: center; font-size: 14px; line-height: 22px; color: #6B635D">لسه ما ضفتش أي عنوان.</p>';
+    };
+    renderAddrs();
+    screen.addEventListener('click', function (e) {
+      var card = e.target.closest('[data-addr]'), i = card ? +card.getAttribute('data-addr') : -1;
+      if (e.target.closest('[data-addr-add]')) { e.preventDefault(); e.stopPropagation(); write('outlet-addr-edit', -1); location.href = 'address-form.html'; return; }
+      if (!card) return;
+      if (e.target.closest('[data-addr-edit]')) { e.preventDefault(); e.stopPropagation(); write('outlet-addr-edit', i); location.href = 'address-form.html'; return; }
+      if (e.target.closest('[data-addr-default]')) {
+        e.stopPropagation(); var a = ADDRS.splice(i, 1)[0]; ADDRS.forEach(function (x) { x.def = false; }); a.def = true; ADDRS.unshift(a); saveAddrs(); renderAddrs(); toast('بقى العنوان الافتراضي'); return;
+      }
+      if (e.target.closest('[data-addr-delete]')) {
+        e.stopPropagation();
+        var t = ADDRS[i];
+        if (t.pickup) { toast('ده عنوان استلام مبيعاتك، اختار عنوان تاني للاستلام الأول'); return; }
+        if (ADDRS.length === 1) { toast('لازم يفضل عنوان واحد على الأقل'); return; }
+        askSheet('حذف العنوان؟', 'هنشيل «' + esc(t.label) + '» من عناوينك. الطلبات اللي اتدفعت مش هتتأثر.', 'حذف', 'رجوع', function () {
+          ADDRS.splice(i, 1); if (t.def && ADDRS[0]) ADDRS[0].def = true; saveAddrs(); renderAddrs(); toast('اتشال العنوان');
+        });
+      }
+    }, true);
+  }
+
+  if (page === 'address-form.html') {
+    var ei = read('outlet-addr-edit', -1), ea = ADDRS[ei] || null;
+    var cur = ea ? { label: ea.label, city: ea.city || 'الرياض', detail: ea.detail || ea.line, def: !!ea.def, pickup: !!ea.pickup } : { label: 'البيت', city: 'الرياض', detail: '', def: !ADDRS.length, pickup: false };
+    screen.querySelector('h1').textContent = ea ? 'تعديل العنوان' : 'عنوان جديد';
+    var line = screen.querySelector('[data-af-line]'); line.value = cur.detail;
+    var cityVal = screen.querySelector('[data-af-city-value]'); cityVal.textContent = cur.city;
+    var labels = [].slice.call(screen.querySelectorAll('[data-af-label]'));
+    var other = null;
+    var paintLabels = function () {
+      var known = ['البيت', 'الشغل'].indexOf(cur.label) !== -1;
+      labels.forEach(function (b) {
+        var k = b.getAttribute('data-af-label'), on = known ? k === cur.label : k === 'تاني';
+        b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500';
+      });
+      if (!known && !other) {
+        other = document.createElement('span'); other.style.cssText = fieldBox + '; margin-top: 8px';
+        other.innerHTML = '<input data-af-other type="text" maxlength="20" placeholder="مثلًا: بيت العيلة" aria-label="اسم العنوان" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 15px; color: #1C1917">';
+        labels[0].parentNode.after(other); other.querySelector('input').value = cur.label === 'تاني' ? '' : cur.label;
+      } else if (known && other) { other.remove(); other = null; }
+    };
+    paintLabels();
+    labels.forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); cur.label = b.getAttribute('data-af-label'); paintLabels(); if (other) other.querySelector('input').focus(); }); });
+    screen.querySelector('[data-af-city]').addEventListener('click', function (e) { e.stopPropagation(); pickSheet('المدينة', CITIES.map(function (c) { return c[0]; }), cityVal.textContent, function (v) { cityVal.textContent = v; }); });
+    var checks = [].slice.call(screen.querySelectorAll('[data-af-check]'));
+    var paintChecks = function () {
+      checks.forEach(function (b) {
+        var on = !!cur[b.getAttribute('data-af-check')], box = b.firstElementChild;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        box.style.background = on ? '#C2410C' : '#FFFFFF'; box.style.border = on ? '0' : '2px solid #C9BFB7';
+        box.innerHTML = on ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>' : '';
+      });
+    };
+    paintChecks();
+    checks.forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); var k = b.getAttribute('data-af-check'); cur[k] = !cur[k]; paintChecks(); }); });
+    screen.querySelector('[data-af-save]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var label = other ? other.querySelector('input').value.trim() : cur.label;
+      var detail = line.value.trim();
+      if (!label) { toast('اكتب اسم للعنوان'); return; }
+      if (detail.length < 8) { toast('اكتب العنوان التفصيلي: الحي والشارع'); line.focus(); return; }
+      var city = cityVal.textContent;
+      if (cur.pickup && cityFee(city) == null) { toast('المندوب مش بيستلم من ' + city + ' لسه، اختار عنوان تاني للاستلام'); return; }
+      var a = { label: label, city: city, detail: detail, line: detail.indexOf(city) === -1 ? detail + '، ' + city : detail, fee: cityFee(city), def: cur.def, pickup: cur.pickup };
+      if (ea) ADDRS[ei] = a; else ADDRS.push(a);
+      var idx = ea ? ei : ADDRS.length - 1;
+      if (a.pickup) ADDRS.forEach(function (x, j) { if (j !== idx) x.pickup = false; });
+      if (a.def) { ADDRS.forEach(function (x, j) { if (j !== idx) x.def = false; }); ADDRS.splice(idx, 1); ADDRS.unshift(a); }
+      if (!ADDRS.some(function (x) { return x.def; })) ADDRS[0].def = true;
+      saveAddrs(); toast(ea ? 'اتحفظ التعديل' : 'اتضاف العنوان');
+      setTimeout(function () { location.replace('addresses.html'); }, 600);
+    });
+  }
+
+  if (page === 'bank.html') {
+    var BANKS = { '05': 'مصرف الإنماء', '10': 'البنك الأهلي السعودي', '15': 'بنك البلاد', '20': 'بنك الرياض', '30': 'البنك العربي الوطني', '45': 'البنك السعودي الأول', '55': 'البنك السعودي الفرنسي', '60': 'بنك الجزيرة', '65': 'البنك السعودي للاستثمار', '80': 'مصرف الراجحي' };
+    var bk = read('outlet-bank', { name: 'لمى الحربي', iban: '03800000006080101675 19'.replace(/\s/g, '') });
+    var bName = screen.querySelector('[data-bk-name]'), bIban = screen.querySelector('[data-bk-iban]'), bBank = screen.querySelector('[data-bk-bank]');
+    var fmt = function (d) { return d.replace(/(.{2})(.{0,4})(.{0,4})(.{0,4})(.{0,4})(.{0,4})/, function () { return [].slice.call(arguments, 1, 7).filter(Boolean).join(' '); }); };
+    bName.value = bk.name; bIban.value = fmt(bk.iban);
+    var showBank = function () {
+      var d = bIban.value.replace(/\D/g, ''), b = BANKS[d.slice(2, 4)];
+      bBank.style.display = d.length >= 4 ? 'flex' : 'none';
+      bBank.lastElementChild.textContent = b || 'مش معروف، راجع الرقم';
+      bBank.lastElementChild.style.color = b ? '#1C1917' : '#B42318';
+    };
+    showBank();
+    bIban.addEventListener('input', function () { var d = bIban.value.replace(/\D/g, '').slice(0, 22); bIban.value = fmt(d); showBank(); });
+    screen.querySelector('[data-bk-save]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var d = bIban.value.replace(/\D/g, '');
+      if (bName.value.trim().length < 3) { toast('اكتب اسم صاحب الحساب'); return; }
+      if (d.length !== 22) { toast('الآيبان لازم يكون SA و22 رقم'); bIban.focus(); return; }
+      write('outlet-bank', { name: bName.value.trim(), iban: d }); toast('اتحفظ الآيبان');
+    });
+  }
+
+  var POLICIES = {
+    terms: 'الشروط والأحكام', privacy: 'سياسة الخصوصية', returns: 'الإرجاع والنزاعات', prohibited: 'المنتجات الممنوعة', fees: 'الرسوم والعمولات'
+  };
+  if (page === 'policies.html') {
+    screen.addEventListener('click', function (e) {
+      var r = e.target.closest('[data-row]'); if (!r) return;
+      e.preventDefault(); e.stopPropagation(); write('outlet-policy', r.getAttribute('data-row')); location.href = 'policy.html';
+    }, true);
+  }
+  if (page === 'policy.html') {
+    var pid = read('outlet-policy', 'returns');
+    screen.querySelector('h1').textContent = POLICIES[pid] || POLICIES.returns;
+    if (pid !== 'returns' && POLICIES[pid]) {
+      screen.querySelector('[data-policy-body]').innerHTML = '<p style="margin: 0; font-size: 12px; line-height: 18px; color: #8E857F">آخر تحديث: 1 نوفمبر 2026</p>' +
+        '<div style="padding: 16px; border-radius: 18px; background: #F7F3F093; font-size: 14px; line-height: 24px; color: #3D3833">النص النهائي لـ«' + POLICIES[pid] + '» هيتكتب مع المراجعة القانونية ويتعرض هنا بنفس الشكل: عناوين قصيرة وفقرات بسيطة.</div>';
+    }
+  }
+
+  if (page === 'settings.html') {
+    var spf = profile(), sbk = read('outlet-bank', { iban: '0380000000608010167519' });
+    var sv = function (k) { return screen.querySelector('[data-row="' + k + '"] [data-row-value]'); };
+    sv('phone').innerHTML = '<span style="direction: ltr; display: inline-block">•••• ' + spf.phone.replace(/\D/g, '').slice(-4) + '</span>';
+    sv('addresses').textContent = ADDRS.length;
+    sv('bank').innerHTML = '<span style="direction: ltr; display: inline-block">•••• ' + sbk.iban.slice(-4) + '</span>';
+    var lang = read('outlet-lang', 'العربية'); sv('language').textContent = lang;
+    var sw = screen.querySelector('[data-set-notify]'), notifOn = read('outlet-notify', true);
+    var paintSw = function () { sw.setAttribute('aria-checked', notifOn ? 'true' : 'false'); sw.style.background = notifOn ? '#C2410C' : '#D6CEC7'; sw.style.justifyContent = notifOn ? 'flex-end' : 'flex-start'; };
+    paintSw();
+    screen.addEventListener('click', function (e) {
+      if (e.target.closest('[data-set-notify]')) { e.preventDefault(); e.stopPropagation(); notifOn = !notifOn; write('outlet-notify', notifOn); paintSw(); toast(notifOn ? 'الإشعارات اتفعّلت' : 'الإشعارات اتقفلت، مش هيوصلك جديد الطلبات والرسائل'); return; }
+      var r = e.target.closest('[data-row]'); if (!r) return;
+      var k = r.getAttribute('data-row');
+      if (k === 'password') { e.preventDefault(); e.stopPropagation(); toast('تغيير كلمة المرور بيستخدم نفس شاشة «كلمة مرور جديدة» بعد رمز التحقق'); }
+      else if (k === 'language') { e.preventDefault(); e.stopPropagation(); pickSheet('اللغة', ['العربية', 'English'], lang, function (v) { lang = v; write('outlet-lang', v); sv('language').textContent = v; if (v === 'English') toast('النسخة الإنجليزية جاية بعد اعتماد العربي'); }); }
+      else if (k === 'support') { e.preventDefault(); e.stopPropagation(); toast('صفحة التواصل مع الدعم لسه بتتصمم'); }
+    }, true);
+  }
+
+  if (page === 'delete-account.html') {
+    var dOrders = allOrders(), act = dOrders.filter(function (x) { return CURRENT[x.status || 'preparing'] && x.status !== 'disputed'; }).length;
+    var disp = dOrders.filter(function (x) { return x.status === 'disputed'; }).length;
+    var bal = dOrders.filter(function (x) { return x.status === 'cancelled'; }).reduce(function (s, x) { return s + x.total; }, 0);
+    var reqs = [].slice.call(screen.querySelectorAll('[data-del-req]'));
+    var OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z"></path><path d="M7.75 12l2.83 2.83 5.67-5.66"></path></svg>';
+    var setReq = function (li, ok, sub) {
+      var icon = li.firstElementChild; icon.style.color = ok ? '#1F7A4D' : '#B42318'; if (ok) icon.innerHTML = OK;
+      var txt = li.lastElementChild; txt.children[1].textContent = sub; if (ok && txt.children[2]) txt.children[2].remove();
+    };
+    setReq(reqs[0], !act, act ? 'عندك ' + act + (act === 1 ? ' طلب لسه ما خلصش.' : ' طلبات لسه ما خلصتش.') : 'مفيش طلبات شغالة.');
+    setReq(reqs[1], !disp, disp ? 'فيه بلاغ لسه قيد المراجعة.' : 'مفيش بلاغات مفتوحة.');
+    setReq(reqs[2], !bal, bal ? 'عندك رصيد ' + bal + ' ريال، اسحبه الأول لحسابك البنكي.' : 'المحفظة فاضية.');
+    var blocked = act || disp || bal, pass = screen.querySelector('[data-del-pass]'), btn = screen.querySelector('[data-del-confirm]');
+    var paintBtn = function () { var can = !blocked && pass.value.length >= 4; btn.disabled = !can; btn.style.opacity = can ? '1' : '0.4'; };
+    pass.addEventListener('input', paintBtn); paintBtn();
+    screen.addEventListener('click', function (e) {
+      var l = e.target.closest('[data-del-link]');
+      if (l) { e.preventDefault(); e.stopPropagation(); if (l.getAttribute('data-del-link') === 'orders') location.href = 'orders.html'; else toast('شاشة المحفظة والسحب لسه بتتصمم'); return; }
+      if (e.target.closest('[data-del-confirm]')) {
+        e.stopPropagation();
+        if (blocked) { toast('خلّص الخطوات اللي فوق الأول'); return; }
+        askSheet('حذف الحساب نهائيًا؟', 'الخطوة دي ما ينفعش ترجع فيها.', 'احذف الحساب', 'رجوع', function () { toast('اتحذف الحساب (تجريبي)'); });
+      }
     }, true);
   }
 
