@@ -1611,6 +1611,7 @@
       });
     };
     renderP();
+    var flash = read('outlet-flash', ''); if (flash) { write('outlet-flash', ''); setTimeout(function () { toast(flash); }, 300); }
     screen.addEventListener('click', function (e) {
       var f = e.target.closest('[data-p-filter]');
       if (f) { e.preventDefault(); e.stopPropagation(); pf = f.getAttribute('data-p-filter'); renderP(); return; }
@@ -1620,7 +1621,7 @@
       var p = PR.filter(function (x) { return x.id === +a.closest('[data-prod]').getAttribute('data-prod'); })[0], act = a.getAttribute('data-p-act');
       if (act === 'hide') askSheet('إخفاء المنتج؟', 'مش هيظهر للمشترين لحد ما ترجّعه. بياناته مش هتتمسح، والرجوع مش محتاج مراجعة.', 'إخفاء', 'رجوع', function () { p.st = 'مخفي'; p.sub = 'مش ظاهر للمشترين، وتقدر ترجّعه من غير مراجعة'; renderP(); toast('اتخفى المنتج'); });
       else if (act === 'show') { p.st = 'منشور'; p.sub = 'رجع ظاهر للمشترين'; renderP(); toast('المنتج رجع ظاهر للمشترين'); }
-      else if (act === 'edit') toast('شاشة تعديل المنتج لسه بتتصمم. التعديل بيرجّع المنتج للمراجعة');
+      else if (act === 'edit' || act === 'resubmit') { write('outlet-edit-id', p.id); location.href = 'edit-product.html'; }
       else if (act === 'resubmit') askSheet('إعادة إرسال للمراجعة؟', 'في النسخة النهائية هتعدّل الصور أو البيانات الأول. المنتج هيبقى «قيد المراجعة» ومش هيظهر لحد ما فريق outlet يوافق.', 'إرسال للمراجعة', 'رجوع', function () { p.st = 'قيد المراجعة'; p.sub = 'اتبعت تاني للمراجعة'; renderP(); toast('اتبعت للمراجعة'); });
       else if (act === 'order') { write('outlet-inc-view', p.order); location.href = 'incoming-order.html'; }
     }, true);
@@ -1740,8 +1741,10 @@
   var chipPaint = function (b, on) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500'; };
   var chipH = function (attr, v) { return '<button type="button" ' + attr + '="' + v + '" aria-pressed="false" style="height: 38px; padding: 0 14px; flex: none; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-weight: 500; font-family: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px">' + v + '</button>'; };
 
-  if (page === 'add-product.html') {
+  if (page === 'add-product.html' || page === 'edit-product.html') {
     if (!read('outlet-seller-ok', true)) { location.replace('seller-setup.html'); return; }
+    var EDIT = page === 'edit-product.html', editId = read('outlet-edit-id', 0), editP = EDIT ? products().filter(function (x) { return x.id === editId; })[0] : null;
+    if (EDIT && !editP) { location.replace('my-products.html'); return; }
     var $a = function (s) { return screen.querySelector(s); }, $$a = function (s) { return [].slice.call(screen.querySelectorAll(s)); };
     var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلية', nobrand: false };
     // start empty: the board shows a filled example
@@ -1773,6 +1776,23 @@
     var renderSizes = function () {
       $a('[data-ap-sizes]').innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px">' + (SIZES[st.cat] || []).map(function (s) { return chipH('data-ap-size', s); }).join('') + '</div>';
     };
+    if (editP) {
+      var guessCat = editP.cat || (/فستان/.test(editP.name) ? 'فساتين' : /حذاء|كوتشي/.test(editP.name) ? 'أحذية' : /شنط/.test(editP.name) ? 'شنط' : 'ملابس');
+      st.cat = guessCat; st.size = editP.size || (guessCat === 'شنط' ? 'مقاس واحد' : guessCat === 'أحذية' ? '40' : 'M');
+      var guessCol = ['أسود', 'أبيض', 'بيج', 'بني', 'تيراكوتا', 'وردي', 'أخضر', 'أزرق'].filter(function (c) { return (editP.color || editP.name).indexOf(c) !== -1; })[0];
+      st.color = editP.color && !guessCol ? 'تاني' : (guessCol || (/عاجي|أبيض/.test(editP.name) ? 'أبيض' : 'أسود'));
+      st.cond = editP.cond || 'ممتازة'; st.auth = editP.auth || 'أصلية';
+      nameIn.value = editP.name; priceIn.value = editP.price; usesIn.value = editP.uses != null ? editP.uses : 2; descIn.value = editP.desc || '';
+      if (editP.brand === 'بدون ماركة' || !editP.brand) st.nobrand = !editP.brand ? false : true; brandIn.value = editP.brand && editP.brand !== 'بدون ماركة' ? editP.brand : '';
+      if (!editP.brand) { st.nobrand = true; }
+      $a('[data-ap-desc-count]').textContent = descIn.value.length + ' / 500';
+      if (editP.city) $a('[data-ap-city-value]').textContent = editP.city;
+      var bn = $a('[data-ap-banner]');
+      if (bn) {
+        if (editP.st === 'مرفوض') bn.lastElementChild.textContent = (editP.sub || '').replace(/^سبب الرفض: /, 'السبب: ') + '. عدّل اللي محتاج تعديل وابعته تاني.';
+        else { bn.style.background = '#FEF6E7'; bn.firstElementChild.style.color = '#9A5800'; bn.firstElementChild.textContent = editP.st === 'مخفي' ? 'المنتج مخفي دلوقتي' : 'المنتج منشور دلوقتي'; bn.lastElementChild.textContent = 'أي تعديل بيخفي المنتج من المشترين ويرجّعه للمراجعة لحد ما فريق outlet يوافق.'; }
+      }
+    }
     renderSizes(); paintAll();
     var clearErr = function (k) { var f = $a('[data-ap-field="' + k + '"]'), e = f && f.querySelector('[data-ap-err]'); if (e) e.remove(); };
     screen.addEventListener('click', function (e) {
@@ -1811,6 +1831,7 @@
       $a('[data-ap-count]').textContent = n + ' من 5';
       if (n) clearErr('photos');
     };
+    if (editP) { var et = phTpl.cloneNode(true), eim = et.querySelector('img'); eim.src = editP.src; eim.alt = editP.name; if (editP.src.indexOf('data:') === 0) { eim.style.objectFit = 'cover'; eim.style.mixBlendMode = 'normal'; eim.style.padding = '0'; } phBox.insertBefore(et, addBtn); }
     picker.addEventListener('change', function () {
       [].slice.call(picker.files).forEach(function (f) {
         if (tiles().length >= 5) { toast('أقصى حاجة 5 صور'); return; }
@@ -1840,10 +1861,12 @@
       if (!st.cond) return fail('cond', 'اختار حالة المنتج');
       if (isNaN(uses) || uses < 0) return fail('uses', 'اكتب عدد مرات الاستخدام');
       if (price <= 0) return fail('price', 'اكتب سعر صحيح');
-      var PRL = products(), id = Date.now();
+      var PRL = products(), id = editP ? editP.id : Date.now();
+      if (editP) PRL = PRL.filter(function (x) { return x.id !== editP.id; });
       PRL.unshift({ id: id, src: tiles()[0].querySelector('img').src, alt: name, name: name, price: price, st: 'قيد المراجعة', sub: 'اتبعت للمراجعة دلوقتي، ومش ظاهر للمشترين لسه',
         cat: st.cat, size: st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : brandIn.value.trim(), cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
       write('outlet-products', PRL); write('outlet-ap-last', id);
+      if (editP) { write('outlet-flash', 'اتحفظ التعديل والمنتج رجع للمراجعة'); location.replace('my-products.html'); return; }
       location.replace('add-product-sent.html');
     };
   }
