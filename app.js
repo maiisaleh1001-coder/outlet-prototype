@@ -195,9 +195,9 @@
               '<div style="background: #F7F3F0; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; line-height: 16px; color: #6B635D">المقاس</span><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + esc(p.size) + '</span></div>' +
               '<div style="background: #F7F3F0; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; line-height: 16px; color: #6B635D">الحالة</span><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + esc(p.cond) + '</span></div>' +
             '</div>' +
-            '<a href="#seller" data-act="soon" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; color: #1C1917">' +
+            '<a href="seller.html" data-act="seller" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; color: #1C1917">' +
               '<span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: #FDEBDD; color: #9A3412; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">' + p.seller[0].split(' ').pop().charAt(0) + '</span>' +
-              '<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 700">' + p.seller[0] + '</span><span style="font-size: 12px; line-height: 16px; color: #6B635D">★ ' + p.seller[1] + ' · ' + p.seller[2] + ' · ' + p.seller[3] + ' قطعة مباعة</span></span>' +
+              '<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 700">' + p.seller[0] + '</span><span style="font-size: 12px; line-height: 16px; color: #6B635D">★ ' + p.seller[1] + ' · ' + p.seller[2] + ' · ' + p.seller[3] + ' تقييم</span></span>' +
               '<span style="color: #6B635D; display: flex">' + ICON_CHEV + '</span></a>' +
             '<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 18px; color: #6B635D">' + ICON_SHIELD + 'قطعة واحدة متاحة، والمبلغ محفوظ حتى استلامها</p>' +
           '</div>' +
@@ -211,6 +211,7 @@
       if (!b) return;
       var act = b.getAttribute('data-act');
       if (act === 'soon') { e.preventDefault(); toast('الشاشة دي لسه بتتصمم'); }
+      else if (act === 'seller') { e.preventDefault(); write('outlet-seller-view', p.seller[0]); location.href = 'seller.html'; }
       else if (act === 'details') { e.preventDefault(); openProduct(card); }
       else if (act === 'fav') {
         var now = toggleFav(p.src, p);
@@ -324,7 +325,7 @@
       set('seller', function (el) { el.textContent = p.seller[0]; });
       set('seller-initial', function (el) { el.textContent = p.seller[0].split(' ').pop().charAt(0); });
       set('rating', function (el) { el.textContent = p.seller[1]; });
-      set('sold', function (el) { el.textContent = p.seller[3] + ' قطعة مباعة'; });
+      set('sold', function (el) { el.textContent = p.seller[3] + ' تقييم'; });
       set('desc', function (el) { el.textContent = p.desc; });
       document.title = 'outlet · ' + p.name;
     }
@@ -448,7 +449,7 @@
       if (b.getAttribute('data-act') === 'remove') {
         cart.splice(parseInt(b.getAttribute('data-i'), 10), 1); saveCart(); paintCart(false); renderCart(); toast('اتشالت من السلة');
       } else if (b.getAttribute('data-act') === 'checkout') { location.href = 'checkout.html'; }
-      else { toast('صفحة البائع لسه بتتصمم'); }
+      else { write('outlet-seller-view', cart.length ? cart[0].seller[0] : 'خزانة لمى'); location.href = 'seller.html'; }
     }, true);
   }
 
@@ -519,7 +520,7 @@
       mountSheet(html, function (e) {
         var r = e.target.closest('[data-addr]'), n = e.target.closest('[data-act="new-address"]');
         if (r) { co.addr = parseInt(r.getAttribute('data-addr'), 10); renderCheckout(); closeSheet(); }
-        else if (n) { toast('شاشة إضافة عنوان لسه بتتصمم'); }
+        else if (n) { write('outlet-addr-edit', -1); write('outlet-addr-return', 'checkout.html'); location.href = 'address-form.html'; }
       }, opener);
     };
     renderCheckout();
@@ -573,7 +574,7 @@
       e.preventDefault(); e.stopPropagation();
       if (b.hasAttribute('data-pay')) { payMethod = b.getAttribute('data-pay'); paintPay(); return; }
       var digits = num.value.replace(/\D/g, '');
-      if (payMethod !== 'apple' && digits.length < 12) { toast('اكتب رقم البطاقة الأول'); num.focus(); return; }
+      if (payMethod !== 'apple' && digits.length < 12) { toast('رقم البطاقة ناقص'); num.focus(); return; }
       processing(function () {
         // demo rule for showing the failure screen: a card number ending in 0002 is declined
         if (payMethod !== 'apple' && /0002$/.test(digits)) { location.href = 'payment-failed.html'; return; }
@@ -581,7 +582,7 @@
         var now = new Date();
         var order = { no: 'OUT-' + (24818 + Math.floor(Math.random() * 180)), date: fmtDate(now), status: s.method === 'direct' ? 'handover' : 'preparing',
           items: cart.slice(), seller: cart[0].seller, method: s.method, addr: s.addr.label, addrLine: s.addr.line,
-          sub: s.sub, fee: s.fee, delivery: s.delivery, total: s.total, pay: PAY_LABEL[payMethod], times: { paid: fmtDate(now, true) } };
+          sub: s.sub, fee: s.fee, delivery: s.delivery, total: s.total, pay: PAY_LABEL[payMethod], times: { paid: fmtDate(now, true) }, paidAt: now.getTime() };
         write('outlet-last-order', order);
         var orders = read('outlet-orders', []); orders.unshift(order); write('outlet-orders', orders);
         cart = []; saveCart();
@@ -603,8 +604,8 @@
       screen.querySelector('[data-order-total]').innerHTML = riyal(11, 12) + ord.total;
       screen.querySelector('[data-order-pay]').textContent = ord.pay;
       screen.querySelector('[data-order-next]').textContent = ord.method === 'courier'
-        ? 'البائع بيجهز القطع، والمندوب هيستلمها من عنده ويوصلها خلال 2–4 أيام عمل. هنبعت إشعار مع كل تحديث.'
-        : 'محادثة الطلب مع البائع اتفتحت دلوقتي، اتفقوا فيها على مكان ووقت التسليم. وبعد الاستلام أكّد من صفحة الطلب.';
+        ? 'البائع بيجهز القطع، والمندوب هيستلمها من عنده ويوصلها لعنوانك. محادثة الطلب مع البائع اتفتحت، وهنبعت إشعار مع كل تحديث.'
+        : 'محادثة الطلب مع البائع اتفتحت دلوقتي، اتفقوا فيها على مكان ووقت التسليم. وبعد ما البائع يسجّل التسليم، تأكيد الاستلام بيكون من صفحة الطلب.';
     }
     paintCart(false);
     screen.addEventListener('click', function (e) {
@@ -626,13 +627,23 @@
   var STATUS = {
     preparing: { label: 'قيد التجهيز', bg: '#F7F3F0', fg: '#6B635D', card: '#F7F3F093', title: 'البائع بيجهز طلبك', sub: 'هنبعت إشعار أول ما المندوب يستلم القطع. الإلغاء متاح لحد ما الشحن يبدأ.' },
     shipping: { label: 'قيد التوصيل', bg: '#FFF4EC', fg: '#C2410C', card: '#FFF4EC', title: 'طلبك في الطريق', sub: 'المندوب استلم القطع من البائع وجاي على عنوانك.' },
-    arrived: { label: 'وصل المندوب', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'المندوب سلّم الطلب', sub: 'راجع القطع وأكّد الاستلام، أو بلّغ عن مشكلة لو فيه حاجة مش مظبوطة.' },
-    handover: { label: 'بانتظار التسليم', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'اتفقوا على التسليم', sub: 'كلّم البائع في محادثة الطلب واتفقوا على المكان والوقت، وبعد الاستلام أكّد من هنا.' },
-    completed: { label: 'مكتمل', bg: '#ECF6EF', fg: '#1F7A4D', card: '#ECF6EF', title: 'الطلب اكتمل', sub: 'المبلغ اتحوّل للبائع، وتقييم البائع متاح دلوقتي.' },
+    arrived: { label: 'وصل المندوب', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'المندوب سلّم الطلب', sub: 'بعد مراجعة القطع، تأكيد الاستلام بيكمّل الطلب. ولو فيه حاجة مش مظبوطة، الإبلاغ متاح من هنا.' },
+    handover: { label: 'بانتظار التسليم', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'اتفقوا على التسليم', sub: 'المكان والوقت بيتحددوا في محادثة الطلب. بعد ما البائع يسجّل إنه سلّم القطعة، تأكيد الاستلام هيظهر هنا.' },
+    handed: { label: 'بانتظار تأكيد الاستلام', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'البائع سجّل إنه سلّم القطعة', sub: 'لو القطعة وصلت زي الوصف، تأكيد الاستلام بيكمّل الطلب. ولو فيه مشكلة، الإبلاغ متاح من هنا.' },
+    completed: { label: 'مكتمل', bg: '#ECF6EF', fg: '#1F7A4D', card: '#ECF6EF', title: 'الطلب اكتمل', sub: 'مستحقات البائع بقت متاحة في محفظته، وتقييم البائع متاح دلوقتي.' },
+    refunded: { label: 'مسترد', bg: '#F2F2F2', fg: '#6B635D', card: '#ECF6EF', title: 'المبلغ رجع لمحفظتك', sub: 'القرار كان لصالحك، فالطلب اتلغى والمبلغ اتسجّل في محفظتك.' },
     disputed: { label: 'محل نزاع', bg: '#FDEBDD', fg: '#9A3412', card: '#FFF4EC', title: 'بلاغك قيد المراجعة', sub: 'فريق outlet بيراجع البلاغ. الطلب مش هيكتمل تلقائيًا والمبلغ محجوز لحد القرار.' },
     cancelled: { label: 'ملغى', bg: '#F2F2F2', fg: '#6B635D', card: '#F7F3F093', title: 'الطلب اتلغى', sub: 'المبلغ المدفوع رجع للمحفظة.' }
   };
-  var CURRENT = { preparing: 1, shipping: 1, arrived: 1, handover: 1, disputed: 1 };
+  var CURRENT = { preparing: 1, shipping: 1, arrived: 1, handover: 1, handed: 1, disputed: 1 };
+  // the status the user sees: direct handover splits in two, and a dispute decision ends the order
+  function effSt(o) {
+    var s = o.status || 'preparing', d = o.dispute;
+    if (s === 'handover' && o.sellerDelivered) return 'handed';
+    if (s === 'disputed' && d && d.decision === 'seller') return 'completed';
+    if (s === 'disputed' && d && d.decision === 'buyer' && d.stage === 'refunded') return 'refunded';
+    return s;
+  }
   var REASONS = { mismatch: 'مش مطابقة للوصف', defect: 'فيها عيب مش مذكور', fake: 'القطعة مقلّدة', missing: 'ما وصلتش أو وصلت تالفة' };
   function demoOrders() {
     var d = read('outlet-demo-orders-v2', null);
@@ -671,7 +682,13 @@
     { no: 'OUT-24420', date: '21 أكتوبر 2026', status: 'completed', role: 'sell', buyer: 'سلمى', method: 'direct', net: 255, times: { paid: '21 أكتوبر · 7:00 م', delivered: '24 أكتوبر · 5:10 م', completed: '25 أكتوبر · 10:30 ص' },
       items: [{ src: 'assets/dress-polka.jpg', alt: 'فستان منقط', name: 'فستان منقط', size: 'M', cond: 'ممتازة', priceNum: 300 }] }
   ];
-  function allOrders() { return read('outlet-orders', []).concat(demoOrders()); }
+  function allOrders() {
+    // demo: on a direct-handover order the seller records the handover a minute after payment
+    var mine = read('outlet-orders', []), ch = false;
+    mine.forEach(function (o) { if (o.status === 'handover' && !o.sellerDelivered && o.paidAt && Date.now() - o.paidAt > 60000) { o.sellerDelivered = true; o.times = o.times || {}; o.times.delivered = fmtDate(new Date(o.paidAt + 60000), true); ch = true; } });
+    if (ch) write('outlet-orders', mine);
+    return mine.concat(demoOrders());
+  }
   function saveOrder(o) {
     ['outlet-orders', 'outlet-demo-orders-v2'].forEach(function (k) {
       var list = read(k, []), i = list.findIndex(function (x) { return x.no === o.no; });
@@ -706,7 +723,7 @@
       listEl.querySelectorAll('[data-order-card]').forEach(function (c) { c.remove(); });
       var shown = 0;
       allOrders().forEach(function (o) {
-        var st = o.status || 'preparing', group = CURRENT[st] ? 'current' : 'past';
+        var st = effSt(o), group = CURRENT[st] ? 'current' : 'past';
         if (filter !== 'all' && filter !== group) return;
         var c = cardTpl.cloneNode(true);
         c.setAttribute('data-no', o.no);
@@ -716,7 +733,7 @@
         var row = c.children[1], thumbs = row.firstElementChild, t0 = thumbs.firstElementChild.cloneNode(true);
         thumbs.innerHTML = '';
         o.items.slice(0, 3).forEach(function (it) { var t = t0.cloneNode(true), im = t.querySelector('img'); im.src = it.src; im.alt = it.name; thumbs.appendChild(t); });
-        var note = st === 'arrived' || st === 'handover' ? ' · أكّد الاستلام' : st === 'cancelled' ? ' · المبلغ رجع للمحفظة' : '';
+        var note = st === 'arrived' || st === 'handed' ? ' · بانتظار تأكيدك' : st === 'cancelled' || st === 'refunded' ? ' · المبلغ رجع للمحفظة' : '';
         row.lastElementChild.textContent = pieces(o.items.length) + ' من ' + o.seller[0] + note;
         c.children[2].firstElementChild.innerHTML = riyal(12, 13) + o.total;
         listEl.insertBefore(c, emptyEl);
@@ -766,15 +783,15 @@
       val('orders').textContent = current ? current + ' حالية' : orders.length + ' طلبات';
       val('favorites').textContent = Object.keys(favs).length || '';
       val('wallet').innerHTML = riyal(10, 11) + walletBal;
-      var pend = orders.filter(function (x) { return x.status === 'arrived' || x.status === 'handover'; })[0];
+      var pend = orders.filter(function (x) { return effSt(x) === 'arrived' || effSt(x) === 'handed'; })[0];
       var card = screen.querySelector('[data-acc-pending]');
       card.style.display = pend ? 'flex' : 'none';
       if (!pend) return;
       card.setAttribute('data-no', pend.no);
       screen.querySelector('[data-acc-no]').textContent = pend.no;
       var im = screen.querySelector('[data-acc-thumb] img'); im.src = pend.items[0].src; im.alt = pend.items[0].alt || pend.items[0].name;
-      screen.querySelector('[data-acc-title]').textContent = STATUS[pend.status].title;
-      screen.querySelector('[data-acc-sub]').textContent = pend.status === 'arrived' ? 'باقي ' + (pend.hoursLeft || 24) + ' ساعة، وبعدها بيكتمل تلقائيًا' : 'أكّد بعد ما تستلم القطع من البائع';
+      screen.querySelector('[data-acc-title]').textContent = STATUS[effSt(pend)].title;
+      screen.querySelector('[data-acc-sub]').textContent = pend.status === 'arrived' ? 'باقي ' + (pend.hoursLeft || 24) + ' ساعة، وبعدها بيكتمل تلقائيًا' : 'التسليم المباشر بيكتمل بتأكيد الاستلام بس';
     };
     setMode(mode); renderAcc();
     var SOON = { favorites: 'شاشة المفضلة لسه بتتصمم', addresses: 'شاشة العناوين لسه بتتصمم', wallet: 'شاشة المحفظة لسه بتتصمم', language: 'تغيير اللغة لسه بيتصمم', policies: 'الشروط والسياسات لسه بتتصمم',
@@ -787,7 +804,7 @@
       if (t.hasAttribute('data-mode')) return setMode(t.getAttribute('data-mode'));
       var pa = t.getAttribute('data-pending'), no = screen.querySelector('[data-acc-pending]').getAttribute('data-no');
       if (pa === 'report') { write('outlet-order-view', no); location.href = 'report.html'; return; }
-      if (pa === 'confirm') return askSheet('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل والمبلغ بيتحوّل للبائع، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
+      if (pa === 'confirm') return askSheet('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل ومستحقات البائع بتبقى متاحة في محفظته، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
         var o = allOrders().filter(function (x) { return x.no === no; })[0]; if (!o) return;
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = fmtDate(new Date(), true); saveOrder(o); renderAcc(); toast('تم تأكيد الاستلام، شكرًا!'); });
       var key = t.getAttribute('data-row');
@@ -812,8 +829,9 @@
     var itemsBox = screen.querySelector('[data-od-items]'), itemTpl = itemsBox.firstElementChild.cloneNode(true);
     var CLOCK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10Z"></path><path d="m15.71 15.18-3.1-1.85c-.54-.32-.98-1.09-.98-1.72v-4.1"></path></svg>';
     var renderOrder = function () {
-      var st = o.status || 'preparing', S = STATUS[st];
+      var st = effSt(o), S = STATUS[st];
       if (st === 'disputed' && o.dispute && o.dispute.decision === 'buyer') S = Object.assign({}, S, { card: '#ECF6EF', title: 'القرار لصالحك', sub: 'القطعة هترجع للبائع على حسابه، والمبلغ هيرجع لمحفظتك أول ما البائع يستلمها.' });
+      if (st === 'completed' && o.dispute && o.dispute.decision === 'seller') S = Object.assign({}, S, { title: 'القرار لصالح البائع', sub: 'فريق outlet راجع البلاغ وقرر إكمال الطلب، ومستحقات البائع بقت متاحة.' });
       screen.querySelector('[data-od-no]').textContent = o.no;
       screen.querySelector('[data-od-date]').textContent = o.date;
       var extra = st === 'arrived' ? '<span style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A5800">' + CLOCK + 'باقي ' + (o.hoursLeft || 24) + ' ساعة، وبعدها الطلب بيكتمل تلقائيًا</span>'
@@ -824,15 +842,17 @@
       box.innerHTML = statusPill(st).replace('background: ' + S.bg, 'background: #FFFFFF; align-self: flex-start') +
         '<span style="font-size: 18px; line-height: 26px; font-weight: 700">' + S.title + '</span><span style="font-size: 13px; line-height: 20px; color: #6B635D">' + S.sub + '</span>' + extra;
       var steps = o.method === 'courier' ? [['paid', 'تم الدفع'], ['preparing', 'قيد التجهيز'], ['shipping', 'قيد التوصيل'], ['arrived', 'وصل المندوب'], ['completed', 'مكتمل']]
-        : [['paid', 'تم الدفع'], ['handover', 'بانتظار التسليم'], ['completed', 'مكتمل']];
+        : [['paid', 'تم الدفع'], ['handover', 'بانتظار التسليم'], ['handed', 'البائع سجّل التسليم'], ['completed', 'مكتمل']];
       if (st === 'cancelled') steps = [['paid', 'تم الدفع'], ['cancelled', 'ملغى']];
-      if (st === 'disputed') steps = steps.filter(function (s) { return s[0] !== 'completed' && (s[0] !== 'arrived' || (o.times || {}).arrived); }).concat([['disputed', o.dispute && o.dispute.decision === 'buyer' ? 'القرار لصالحك · الإرجاع' : 'البلاغ قيد المراجعة'], ['completed', 'مكتمل']]);
+      var buyerWin = o.dispute && o.dispute.decision === 'buyer';
+      if (st === 'disputed' || st === 'refunded') steps = steps.filter(function (s) { return s[0] !== 'completed' && (s[0] !== 'arrived' || (o.times || {}).arrived); }).concat([['disputed', buyerWin ? 'القرار لصالحك · الإرجاع' : 'البلاغ قيد المراجعة'], buyerWin ? ['refunded', 'مسترد · المبلغ في محفظتك'] : ['completed', 'مكتمل']]);
       var cur = steps.findIndex(function (s) { return s[0] === st; });
+      if (st === 'handed') (o.times || {}).handed = (o.times || {}).delivered;
       if (st === 'preparing' && o.method !== 'courier') cur = 1;
       var t = o.times || {};
       screen.querySelector('[data-od-timeline]').innerHTML = steps.map(function (s, i) {
-        var state = i < cur || (st === 'completed' || st === 'cancelled') && i === cur ? 'done' : i === cur ? 'now' : 'todo';
-        var time = t[s[0]] || (s[0] === 'completed' && state === 'todo' ? (st === 'disputed' ? 'بعد القرار' : 'بعد تأكيد الاستلام') : '');
+        var state = i < cur || (st === 'completed' || st === 'cancelled' || st === 'refunded') && i === cur ? 'done' : i === cur ? 'now' : 'todo';
+        var time = t[s[0]] || (s[0] === 'completed' && state === 'todo' ? (st === 'disputed' ? 'بعد القرار' : 'بعد تأكيد الاستلام') : s[0] === 'refunded' && state === 'todo' ? 'أول ما البائع يستلم القطعة' : '');
         return stepHTML(s[1], time, state, i === steps.length - 1);
       }).join('');
       screen.querySelector('[data-od-seller]').innerHTML = 'من <b style="color: #1C1917">' + esc(o.seller[0]) + '</b>';
@@ -849,15 +869,16 @@
       screen.querySelector('[data-od-fee]').innerHTML = riyal(10, 11) + (o.fee || 0);
       screen.querySelector('[data-od-delivery]').innerHTML = o.delivery ? riyal(10, 11) + o.delivery : 'مجانًا';
       screen.querySelector('[data-od-total]').innerHTML = riyal(14, 15) + o.total;
-      screen.querySelector('[data-act="chat"]').style.visibility = st === 'cancelled' ? 'hidden' : 'visible';
+      screen.querySelector('[data-act="chat"]').style.visibility = 'visible';
       var light = 'flex: 1; height: 54px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700';
       var dark = 'flex: 1.3; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700';
       var bar = screen.querySelector('[data-od-bar]'), btn = function (act, label, style) { return '<button type="button" data-act="' + act + '" style="' + style + '">' + label + '</button>'; };
       bar.style.display = 'flex';
       bar.innerHTML = st === 'preparing' ? btn('cancel', 'إلغاء الطلب', light) + btn('chat', 'تواصل مع البائع', dark)
-        : st === 'shipping' ? btn('report', 'بلّغ عن مشكلة', light) + btn('chat', 'تواصل مع البائع', dark)
+        : st === 'shipping' ? btn('report', 'الإبلاغ عن مشكلة', light) + btn('chat', 'تواصل مع البائع', dark)
         : st === 'disputed' ? btn('dispute', 'تفاصيل البلاغ', light) + btn('chat', 'تواصل مع البائع', dark)
-        : st === 'arrived' || st === 'handover' ? btn('report', 'بلّغ عن مشكلة', light) + btn('confirm', 'تأكيد الاستلام', dark)
+        : st === 'handover' ? btn('chat', 'تواصل مع البائع', dark.replace('flex: 1.3', 'flex: 1'))
+        : st === 'arrived' || st === 'handed' ? btn('report', 'الإبلاغ عن مشكلة', light) + btn('confirm', 'تأكيد الاستلام', dark)
         : st === 'completed' ? (ratings()[o.no + '|buy'] ? btn('rated', 'قيّمت البائع · ' + ratings()[o.no + '|buy'].stars + ' من 5', light) : btn('rate', 'قيّم البائع', dark.replace('flex: 1.3', 'flex: 1')))
         : '';
       if (!bar.innerHTML) bar.style.display = 'none';
@@ -870,7 +891,7 @@
       var act = b.getAttribute('data-act');
       e.preventDefault(); e.stopPropagation();
       var stamp = fmtDate(new Date(), true);
-      if (act === 'confirm') ask('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل والمبلغ بيتحوّل للبائع، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
+      if (act === 'confirm') ask('تأكيد الاستلام؟', 'بعد التأكيد الطلب بيكتمل ومستحقات البائع بتبقى متاحة في محفظته، ومش هينفع فتح نزاع بعدها.', 'أيوه، استلمت القطع', 'لسه', function () {
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = stamp; saveOrder(o); renderOrder(); toast('تم تأكيد الاستلام، شكرًا!'); });
       else if (act === 'cancel') ask('إلغاء الطلب؟', 'الطلب هيتلغي والمبلغ المدفوع هيرجع للمحفظة.', 'إلغاء الطلب', 'رجوع', function () {
         o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o);
@@ -894,9 +915,9 @@
     var rImg = screen.querySelector('[data-rp-thumb] img'); rImg.src = rIt.src; rImg.alt = rIt.alt || rIt.name;
     screen.querySelector('[data-rp-name]').textContent = rIt.name + (ro.items.length > 1 ? ' + ' + (ro.items.length - 1) + ' قطع' : '');
     screen.querySelector('[data-rp-meta]').textContent = 'من ' + ro.seller[0] + ' · المقاس ' + rIt.size;
-    var pillBox = document.createElement('span'); pillBox.innerHTML = statusPill(ro.status || 'preparing');
+    var pillBox = document.createElement('span'); pillBox.innerHTML = statusPill(effSt(ro));
     screen.querySelector('[data-rp-status]').replaceWith(pillBox.firstChild);
-    var notYet = !(ro.status === 'arrived' || ro.status === 'handover');
+    var notYet = !(effSt(ro) === 'arrived' || effSt(ro) === 'handed');
     var reasonBtns = [].slice.call(screen.querySelectorAll('[data-reason]')), reason = null;
     var sendBtn = screen.querySelector('[data-rp-send]');
     var paintReasons = function () {
@@ -947,7 +968,7 @@
     });
     sendBtn.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
-      if (!reason) { toast('اختار سبب المشكلة الأول'); return; }
+      if (!reason) { toast('سبب المشكلة مطلوب'); return; }
       var stamp = fmtDate(new Date(), true);
       ro.prevStatus = ro.status; ro.status = 'disputed';
       ro.dispute = { ref: 'DSP-' + (1040 + Math.floor(Math.random() * 900)), reason: reason, text: txt.value.trim(), photos: photoCount(), shots: [].map.call(photosBox.querySelectorAll('[data-shot]'), function (t) { return t.getAttribute('data-shot'); }), date: stamp };
@@ -1009,7 +1030,7 @@
     $('[data-ds-name]').textContent = dIt.name + (dor.items.length > 1 ? ' + ' + (dor.items.length - 1) + ' قطع' : '');
     $('[data-ds-meta]').textContent = dor.no + ' · من ' + dor.seller[0];
     $('[data-ds-total]').innerHTML = riyal(11, 12) + dor.total;
-    $('[data-ds-note]').textContent = !dec ? 'محادثة الطلب مع البائع متاحة طول فترة المراجعة.' : dec === 'buyer' && D.stage !== 'refunded' ? 'محادثة الطلب مع البائع متاحة لحد ما الإرجاع يخلص.' : 'البلاغ اتقفل.';
+    $('[data-ds-note]').textContent = !dec ? 'محادثة الطلب مع البائع متاحة طول فترة المراجعة.' : 'القرار صدر، فمحادثة الطلب بقت للقراءة بس. الإرجاع بيتابعه فريق outlet مع البائع.';
     screen.addEventListener('click', function (e) {
       var c = e.target.closest('[data-ds-chat]'), od = e.target.closest('[data-ds-order]');
       if (c) { e.preventDefault(); e.stopPropagation(); write('outlet-chat-view', dor.no); location.href = 'chat.html'; }
@@ -1048,7 +1069,7 @@
     return store[o.no];
   }
   function chatOrders() { return allOrders().map(function (o) { return Object.assign({ role: 'buy' }, o); }).concat(SELL_ORDERS); }
-  function chatClosed(o) { return o.status === 'completed' || o.status === 'cancelled'; }
+  function chatClosed(o) { var s = effSt(o); return s === 'completed' || s === 'cancelled' || s === 'refunded' || !!(o.dispute && o.dispute.decision); }
   function chatOther(o) { return o.role === 'sell' ? o.buyer : o.seller[0]; }
   function lastOf(ch) {
     for (var i = ch.msgs.length - 1; i >= 0; i--) { var m = ch.msgs[i]; if (m[0] === 'me' || m[0] === 'them') return m; }
@@ -1085,7 +1106,7 @@
           '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">' +
           '<span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 15px; line-height: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc(chatOther(o)) + '</span><span style="font-size: 12px; color: #8E857F; flex: none">' + (when || '') + '</span></span>' +
           '<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; color: #6B635D">' + (o.role === 'sell' ? miniPill('بيع', '#FDEBDD', '#9A3412') : miniPill('شراء', '#FFFFFF', '#6B635D')) + '<span style="direction: ltr">' + o.no + '</span>' +
-          (closed ? '<span style="display: inline-flex; align-items: center; gap: 3px; color: #8E857F">' + LOCK_SVG + 'مقفولة</span>' : '') + '</span>' +
+          (closed ? '<span style="display: inline-flex; align-items: center; gap: 3px; color: #8E857F">' + LOCK_SVG + 'للقراءة بس</span>' : '') + '</span>' +
           '<span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 13px; line-height: 20px; ' + (ch.unread ? 'color: #1C1917; font-weight: 700' : 'color: #6B635D; font-weight: 400') + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + (last[3] && !last[1] ? 'صورة' : esc(last[1])) + '</span>' +
           (ch.unread ? '<span style="min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #EA580C; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">' + ch.unread + '</span>' : '') +
           '</span></span></a>';
@@ -1119,9 +1140,9 @@
     q('[data-chat-sub]').textContent = (ko.role === 'sell' ? 'المشتري' : 'البائع') + ' · ' + (kClosed ? 'للقراءة بس' : 'محادثة نشطة');
     var kIt = ko.items[0], kImg = q('[data-chat-order] img'); kImg.src = kIt.src; kImg.alt = kIt.alt || kIt.name;
     q('[data-chat-item]').textContent = kIt.name; q('[data-chat-no]').textContent = ko.no;
-    q('[data-chat-status]').innerHTML = statusPill(ko.status || 'preparing').replace('height: 26px; padding: 0 10px', 'height: 22px; padding: 0 8px').replace('font-size: 12px', 'font-size: 11px');
+    q('[data-chat-status]').innerHTML = statusPill(effSt(ko)).replace('height: 26px; padding: 0 10px', 'height: 22px; padding: 0 8px').replace('font-size: 12px', 'font-size: 11px');
     var box = q('[data-chat-msgs]');
-    var SAFE_TXT = 'ما تشاركش رقم جوالك أو بيانات بنكية. الدفع والتواصل جوه outlet بس.';
+    var SAFE_TXT = 'للأمان، مفيش مشاركة لأرقام الجوال أو البيانات البنكية. الدفع والتواصل جوه outlet بس.';
     var msgHTML = function (m) {
       if (m[0] === 'day') return '<span style="align-self: center; height: 24px; padding: 0 10px; border-radius: 999px; background: #F7F3F0; color: #6B635D; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; margin: 8px 0 2px">' + m[1] + '</span>';
       if (m[0] === 'sys') return '<span style="align-self: center; max-width: 86%; text-align: center; padding: 6px 12px; border-radius: 12px; background: #FEF6E7; color: #9A5800; font-size: 12px; line-height: 18px; font-weight: 700">' + m[1] + '</span>';
@@ -1166,7 +1187,7 @@
     }
     q('[data-chat-order]').addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
-      if (ko.role === 'sell') { toast('تفاصيل الطلب الوارد لسه بتتصمم'); return; }
+      if (ko.role === 'sell') { write('outlet-inc-view', ko.no); location.href = 'incoming-order.html'; return; }
       write('outlet-order-view', ko.no); location.href = 'order.html';
     }, true);
   }
@@ -1310,7 +1331,7 @@
       askSheet('تأكيد طلب السحب؟', 'هنحجز ' + v + ' ريال من رصيدك، وهيوصل ' + (v - WD_FEE) + ' ريال على ' + bi.bank + ' •••• ' + bi.last4 + ' بعد ما فريق outlet ينفذ التحويل.', 'تأكيد', 'رجوع', function () {
         var fresh = wallet(); if (v > walletSums(fresh).free) { toast('رصيدك اتغير، راجع المبلغ'); return; }
         var n = 207 + fresh.wd.filter(function (x) { return x.mine; }).length, ref = 'WD-0' + n, stamp = fmtDate(new Date(), true);
-        fresh.wd.unshift({ ref: ref, date: 'اليوم · ' + stamp.split(' · ')[1], amount: v, fee: WD_FEE, status: 'قيد التنفيذ', mine: true });
+        fresh.wd.unshift({ ref: ref, date: 'اليوم · ' + stamp.split(' · ')[1], amount: v, fee: WD_FEE, status: 'قيد التنفيذ', mine: true, bank: bankInfo().bank, last4: bankInfo().last4 });
         fresh.tx.unshift({ type: 'wd', amt: -v, ref: ref, date: stamp.split(' · ')[0], month: 'نوفمبر 2026', status: 'قيد التنفيذ' });
         write('outlet-wallet-v1', fresh);
         write('outlet-wd-new', ref);
@@ -1327,8 +1348,8 @@
         : w.status === 'قيد التنفيذ' ? '<span style="font-size: 12px; line-height: 18px; color: #6B635D">المبلغ محجوز لحد ما فريق outlet ينفذ التحويل. هيوصلك ' + (w.amount - w.fee) + ' ريال بعد خصم رسوم التحويل.</span>' : '';
       return '<div data-wd="' + w.ref + '" style="padding: 14px; border-radius: 18px; background: ' + (rej ? '#FEF3F2' : w.ref === fresh ? '#FFF4EC' : '#F7F3F093') + '; display: flex; flex-direction: column; gap: 10px">' +
         '<div style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 15px; line-height: 22px; direction: ltr; text-align: right">' + w.ref + '</b><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + w.date + '</span></span>' + money(w.amount, 18) + '</div>' +
-        '<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: #6B635D">' + wpill(w.status) + '<span style="direction: ltr">' + lbi.bank + ' •••• ' + lbi.last4 + '</span></div>' + extra +
-        (rej ? '<div style="padding: 10px 12px; border-radius: 12px; background: #FFFFFF; font-size: 12px; line-height: 18px; color: #B42318"><b>سبب الرفض:</b> ' + esc(w.reason) + '. المبلغ رجع لرصيدك المتاح.</div>' : '') + '</div>';
+        '<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: #6B635D">' + wpill(w.status) + '<span style="direction: ltr">' + (w.bank || lbi.bank) + ' •••• ' + (w.last4 || lbi.last4) + '</span></div>' + extra +
+        (rej ? '<div style="padding: 10px 12px; border-radius: 12px; background: #FFFFFF; font-size: 12px; line-height: 18px; color: #B42318"><b>سبب الرفض:</b> ' + esc(w.reason) + '. المبلغ رجع لرصيدك المتاح.' + (/بنك|آيبان|حساب/.test(w.reason || '') ? ' <a href="bank.html" style="color: #B42318; font-weight: 700">تعديل البيانات البنكية</a>' : '') + '</div>' : '') + '</div>';
     };
     screen.querySelector('[data-wd-list]').innerHTML = lw.wd.length ? lw.wd.map(cardH).join('') : '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">لسه ما طلبتش سحب قبل كده.</p>';
     if (fresh) { toast('اتبعت طلب السحب ' + fresh + '، والمبلغ اتحجز'); write('outlet-wd-new', ''); }
@@ -1471,6 +1492,7 @@
       if (!label) { toast('اكتب اسم للعنوان'); return; }
       if (detail.length < 8) { toast('اكتب العنوان التفصيلي: الحي والشارع'); line.focus(); return; }
       var city = cityVal.textContent;
+      if (ea && ea.pickup && !cur.pickup) { toast('ده عنوان استلام مبيعاتك. لازم عنوان تاني يتعلّم للاستلام الأول'); return; }
       if (cur.pickup && cityFee(city) == null) { toast('المندوب مش بيستلم من ' + city + ' لسه، اختار عنوان تاني للاستلام'); return; }
       var a = { label: label, city: city, detail: detail, line: detail.indexOf(city) === -1 ? detail + '، ' + city : detail, fee: cityFee(city), def: cur.def, pickup: cur.pickup };
       if (ea) ADDRS[ei] = a; else ADDRS.push(a);
@@ -1479,7 +1501,8 @@
       if (a.def) { ADDRS.forEach(function (x, j) { if (j !== idx) x.def = false; }); ADDRS.splice(idx, 1); ADDRS.unshift(a); }
       if (!ADDRS.some(function (x) { return x.def; })) ADDRS[0].def = true;
       saveAddrs(); toast(ea ? 'اتحفظ التعديل' : 'اتضاف العنوان');
-      setTimeout(function () { location.replace('addresses.html'); }, 600);
+      var back = read('outlet-addr-return', ''); write('outlet-addr-return', '');
+      setTimeout(function () { location.replace(back || 'addresses.html'); }, 600);
     });
   }
 
@@ -1535,7 +1558,7 @@
     var paintSw = function () { sw.setAttribute('aria-checked', notifOn ? 'true' : 'false'); sw.style.background = notifOn ? '#C2410C' : '#D6CEC7'; sw.style.justifyContent = notifOn ? 'flex-end' : 'flex-start'; };
     paintSw();
     screen.addEventListener('click', function (e) {
-      if (e.target.closest('[data-set-notify]')) { e.preventDefault(); e.stopPropagation(); notifOn = !notifOn; write('outlet-notify', notifOn); paintSw(); toast(notifOn ? 'الإشعارات اتفعّلت' : 'الإشعارات اتقفلت، مش هيوصلك جديد الطلبات والرسائل'); return; }
+      if (e.target.closest('[data-set-notify]')) { e.preventDefault(); e.stopPropagation(); notifOn = !notifOn; write('outlet-notify', notifOn); paintSw(); toast(notifOn ? 'إشعارات الجوال اتفعّلت' : 'إشعارات الجوال اتقفلت. الإشعارات هتفضل ظاهرة جوه التطبيق، وتأكيد الاستلام ليه مهلة 24 ساعة'); return; }
       var r = e.target.closest('[data-row]'); if (!r) return;
       var k = r.getAttribute('data-row');
       if (k === 'password') { e.preventDefault(); e.stopPropagation(); toast('تغيير كلمة المرور بيستخدم نفس شاشة «كلمة مرور جديدة» بعد رمز التحقق'); }
@@ -1545,9 +1568,10 @@
   }
 
   if (page === 'delete-account.html') {
-    var dOrders = allOrders(), act = dOrders.filter(function (x) { return CURRENT[x.status || 'preparing'] && x.status !== 'disputed'; }).length;
-    var disp = dOrders.filter(function (x) { return x.status === 'disputed'; }).length;
-    var bal = walletSums().free;
+    var dOrders = allOrders(), act = dOrders.filter(function (x) { return CURRENT[effSt(x)] && effSt(x) !== 'disputed'; }).length
+      + SELL_ORDERS.filter(function (x) { return CURRENT[x.status] && x.status !== 'disputed'; }).length;
+    var disp = dOrders.filter(function (x) { return effSt(x) === 'disputed'; }).length;
+    var dws = walletSums(), bal = dws.free + dws.held + dws.reserved;
     var reqs = [].slice.call(screen.querySelectorAll('[data-del-req]'));
     var OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z"></path><path d="M7.75 12l2.83 2.83 5.67-5.66"></path></svg>';
     var setReq = function (li, ok, sub) {
@@ -1556,7 +1580,7 @@
     };
     setReq(reqs[0], !act, act ? 'عندك ' + act + (act === 1 ? ' طلب لسه ما خلصش.' : ' طلبات لسه ما خلصتش.') : 'مفيش طلبات شغالة.');
     setReq(reqs[1], !disp, disp ? 'فيه بلاغ لسه قيد المراجعة.' : 'مفيش بلاغات مفتوحة.');
-    setReq(reqs[2], !bal, bal ? 'عندك رصيد ' + bal + ' ريال، اسحبه الأول لحسابك البنكي.' : 'المحفظة فاضية.');
+    setReq(reqs[2], !bal, bal ? 'فيه ' + bal + ' ريال في المحفظة (متاح أو معلّق أو محجوز في سحب). لازم يتسحب الأول.' : 'المحفظة فاضية.');
     var blocked = act || disp || bal, pass = screen.querySelector('[data-del-pass]'), btn = screen.querySelector('[data-del-confirm]');
     var paintBtn = function () { var can = !blocked && pass.value.length >= 4; btn.disabled = !can; btn.style.opacity = can ? '1' : '0.4'; };
     pass.addEventListener('input', paintBtn); paintBtn();
@@ -1603,7 +1627,8 @@
           '<span style="direction: ltr; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700">' + riyal(10, 11) + p.price + '</span>' +
           (p.sub ? '<span style="font-size: 12px; line-height: 18px; color: ' + (p.st === 'مرفوض' ? '#B42318' : '#6B635D') + '">' + esc(p.sub) + '</span>' : '') +
           (acts ? '<span style="display: flex; gap: 18px; padding-top: 2px">' + acts + '</span>' : '') + '</span></div>';
-      }).join('') || '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">مفيش منتجات هنا.</p>';
+      }).join('') || (PR.length ? '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">مفيش منتجات بالحالة دي.</p>'
+        : '<div style="margin: 40px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center"><b style="font-size: 17px; line-height: 24px">لسه مفيش منتجات معروضة</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">أول قطعة بتتراجع من فريق outlet قبل ما تظهر للمشترين.</span><a href="add-product.html" style="margin-top: 6px; height: 50px; padding: 0 26px; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">إضافة منتج</a></div>');
       screen.querySelectorAll('[data-p-filter]').forEach(function (b) {
         var k = b.getAttribute('data-p-filter'), on = k === pf, n = PR.filter(function (p) { return k === 'all' || p.st === k; }).length;
         b.innerHTML = b.firstChild.textContent.trim() + ' <span style="opacity: 0.7">' + n + '</span>';
@@ -1627,7 +1652,7 @@
     }, true);
   }
 
-  var INC_CUR = { preparing: 1, handover: 1 };
+  var INC_CUR = { preparing: 1, shipping: 1, arrived: 1, handover: 1, disputed: 1 };
   if (page === 'incoming.html') {
     var ifl = 'current', il = screen.querySelector('[data-inc-list]');
     var MLAB = { courier: 'توصيل بالمندوب', direct: 'تسليم مباشر' };
@@ -1641,7 +1666,7 @@
       il.innerHTML = SELL_ORDERS.filter(function (o) { return (ifl === 'current') === !!INC_CUR[o.status]; }).map(function (o) {
         var it = o.items[0], nx = nextTxt(o);
         return '<a href="incoming-order.html" data-inc="' + o.no + '" style="padding: 14px; border-radius: 18px; background: #F7F3F093; display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: #1C1917">' +
-          '<span style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 15px; line-height: 22px; direction: ltr; text-align: right">' + o.no + '</b><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + o.date + ' · المشتري: ' + esc(o.buyer) + '</span></span>' + (o.cancelReq ? ppill('طلب إلغاء', '#FEF3F2') : statusPill(o.status)) + '</span>' +
+          '<span style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 15px; line-height: 22px; direction: ltr; text-align: right">' + o.no + '</b><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + o.date + ' · المشتري: ' + esc(o.buyer) + '</span></span>' + (o.cancelReq ? ppill('طلب إلغاء', '#FEF3F2') : statusPill(effSt(o))) + '</span>' +
           '<span style="display: flex; align-items: center; gap: 10px"><span style="width: 44px; height: 52px; flex: none; border-radius: 12px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box"><img src="' + it.src + '" alt="' + esc(it.alt) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 700">' + esc(it.name) + '</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">' + MLAB[o.method] + '</span></span><span style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700">' + riyal(10, 11) + it.priceNum + '</span></span>' +
           (nx ? '<span style="padding: 8px 10px; border-radius: 12px; background: #FFFFFF; font-size: 12px; line-height: 18px; font-weight: 700; color: ' + (o.cancelReq ? '#B42318' : '#9A5800') + '">' + nx + '</span>' : '') +
           '<span style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700"><span style="color: #6B635D; font-weight: 500">صافي أرباحك ' + o.net + ' ريال</span><span style="color: #C2410C">عرض التفاصيل</span></span></a>';
@@ -1670,15 +1695,19 @@
       var it = io.items[0], st = io.status;
       var C = io.cancelReq ? ['#FEF3F2', ppill('طلب إلغاء', '#FFFFFF'), 'طلب الإلغاء قيد المراجعة', 'الإجراءات متوقفة لحد ما فريق outlet يقرر. لو اتوافق، المبلغ بيرجع للمشتري؛ ولو اترفض الطلب بيكمل عادي.']
         : st === 'preparing' ? ['#FFF4EC', statusPill(st), 'جهّز القطعة للمندوب', 'المندوب هيستلمها من عنوان الاستلام، وفريق outlet هيبلغك بميعاد الاستلام.']
-        : st === 'handover' && io.sellerDelivered ? ['#FEF6E7', statusPill(st), 'مستني تأكيد المشتري', 'سجّلت إنك سلّمت القطعة. الطلب بيكتمل وأرباحك بتتحرر لما المشتري يأكد الاستلام.']
+        : st === 'handover' && io.sellerDelivered ? ['#FEF6E7', statusPill('handed'), 'مستني تأكيد المشتري', 'سجّلت إنك سلّمت القطعة. الطلب بيكتمل وأرباحك بتتحرر لما المشتري يأكد الاستلام.']
         : st === 'handover' ? ['#FEF6E7', statusPill(st), 'اتفقوا على التسليم', 'اتفقوا في المحادثة على المكان والوقت. بعد ما تسلّم القطعة دوس «تم التسليم»، والطلب بيكتمل لما المشتري يأكد الاستلام.']
+        : st === 'shipping' ? ['#FFF4EC', statusPill(st), 'المندوب استلم القطعة', 'القطعة في الطريق للمشتري. أرباحك معلّقة لحد ما الطلب يكتمل.']
+        : st === 'arrived' ? ['#FEF6E7', statusPill(st), 'القطعة وصلت للمشتري', 'الطلب بيكتمل لما المشتري يأكد الاستلام، أو بعد 24 ساعة من وصول المندوب لو مفيش بلاغ.']
+        : st === 'disputed' ? ['#FFF4EC', statusPill(st), 'فيه بلاغ على الطلب', 'فريق outlet بيراجع البلاغ، وأرباحك معلّقة لحد القرار. المحادثة مفتوحة لحد ما القرار يصدر.']
         : st === 'cancelled' ? ['#F7F3F093', statusPill(st), 'الطلب اتلغى', 'المبلغ رجع للمشتري.']
-        : ['#ECF6EF', statusPill(st), 'الطلب اكتمل', 'أرباحك نزلت في رصيدك المتاح.'];
+        : st === 'completed' ? ['#ECF6EF', statusPill(st), 'الطلب اكتمل', 'أرباحك نزلت في رصيدك المتاح.']
+        : ['#F7F3F093', statusPill(st), STATUS[st] ? STATUS[st].label : 'الطلب', ''];
       var box = q2('[data-io-status]'); box.style.background = C[0];
       box.innerHTML = C[1].replace(/background: [^;]+;/, 'background: #FFFFFF;').replace('flex: none', 'flex: none; align-self: flex-start') + '<span style="font-size: 18px; line-height: 26px; font-weight: 700">' + C[2] + '</span><span style="font-size: 13px; line-height: 20px; color: #6B635D">' + C[3] + '</span>';
       var t = io.times || {};
       var steps = io.method === 'courier'
-        ? [['تم الدفع', t.paid, 'done'], ['قيد التجهيز', st === 'preparing' ? 'دلوقتي' : t.preparing, st === 'preparing' ? 'now' : 'done'], ['المندوب استلم القطعة', t.shipping, st === 'completed' ? 'done' : 'todo'], ['وصلت للمشتري', t.arrived, st === 'completed' ? 'done' : 'todo'], ['مكتمل · الأرباح متاحة', st === 'completed' ? t.completed : 'بعد تأكيد المشتري أو 24 ساعة', st === 'completed' ? 'done' : 'todo']]
+        ? [['تم الدفع', t.paid, 'done'], ['قيد التجهيز', st === 'preparing' ? 'دلوقتي' : t.preparing, st === 'preparing' ? 'now' : 'done'], ['المندوب استلم القطعة', t.shipping, st === 'completed' ? 'done' : 'todo'], ['وصلت للمشتري', t.arrived, st === 'completed' ? 'done' : 'todo'], ['مكتمل · الأرباح متاحة', st === 'completed' ? t.completed : 'بعد تأكيد المشتري، أو 24 ساعة من وصول المندوب لو مفيش بلاغ', st === 'completed' ? 'done' : 'todo']]
         : [['تم الدفع', t.paid, 'done'], ['بانتظار التسليم', 'المحادثة مفتوحة مع المشتري', st === 'handover' && !io.sellerDelivered ? 'now' : 'done'], ['سلّمت القطعة', t.delivered || '', io.sellerDelivered || st === 'completed' ? (st === 'completed' ? 'done' : 'now') : 'todo'], ['مكتمل · الأرباح متاحة', st === 'completed' ? t.completed : 'بعد تأكيد المشتري', st === 'completed' ? 'done' : 'todo']];
       if (st === 'cancelled') steps = [['تم الدفع', t.paid, 'done'], ['ملغى', t.cancelled, 'done']];
       q2('[data-io-timeline]').innerHTML = steps.map(function (s, i) { return stepHTML(s[0], s[1] || '', s[2], i === steps.length - 1); }).join('');
@@ -1732,7 +1761,7 @@
       var m = screen.querySelector('[data-sup-msg]');
       if (m.value.trim().length < 10) { toast('اكتب تفاصيل أكتر شوية عشان نقدر نساعد'); m.focus(); return; }
       var ref = 'TCK-' + (3000 + Math.floor(Math.random() * 900));
-      m.value = ''; toast('وصلت رسالتك (' + ref + ')، هنرد عليك في الإشعارات والبريد');
+      m.value = ''; toast('وصلت رسالتك (' + ref + ')، الرد هيوصلك في الإشعارات');
     });
   }
 
@@ -1790,7 +1819,7 @@
       var bn = $a('[data-ap-banner]');
       if (bn) {
         if (editP.st === 'مرفوض') bn.lastElementChild.textContent = (editP.sub || '').replace(/^سبب الرفض: /, 'السبب: ') + '. عدّل اللي محتاج تعديل وابعته تاني.';
-        else { bn.style.background = '#FEF6E7'; bn.firstElementChild.style.color = '#9A5800'; bn.firstElementChild.textContent = editP.st === 'مخفي' ? 'المنتج مخفي دلوقتي' : 'المنتج منشور دلوقتي'; bn.lastElementChild.textContent = 'أي تعديل بيخفي المنتج من المشترين ويرجّعه للمراجعة لحد ما فريق outlet يوافق.'; }
+        else { bn.style.background = '#FEF6E7'; bn.firstElementChild.style.color = '#9A5800'; bn.firstElementChild.textContent = editP.st === 'مخفي' ? 'المنتج مخفي دلوقتي' : 'المنتج منشور دلوقتي'; bn.lastElementChild.textContent = editP.st === 'مخفي' ? 'أي تعديل بيرجّع المنتج للمراجعة، ومش هيظهر غير بعد موافقة فريق outlet.' : 'أي تعديل بيخفي المنتج من المشترين ويرجّعه للمراجعة لحد ما فريق outlet يوافق.'; }
       }
     }
     renderSizes(); paintAll();
@@ -1934,7 +1963,7 @@
         var on = +b.getAttribute('data-rate-star') <= stars, svg = b.querySelector('svg');
         b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.color = on ? '#EA580C' : '#D6CEC7'; svg.setAttribute('fill', on ? '#EA580C' : 'none');
       });
-      rq('[data-rate-label]').textContent = stars ? RATE_LABELS[stars] : 'دوس على النجوم';
+      rq('[data-rate-label]').textContent = stars ? RATE_LABELS[stars] : 'التقييم من 1 لـ 5 نجوم';
       rq('[data-rate-label]').style.color = stars ? '#C2410C' : '#8E857F';
       send.style.opacity = stars ? '1' : '0.4';
     };
@@ -1944,7 +1973,7 @@
       if (s) { e.preventDefault(); e.stopPropagation(); stars = +s.getAttribute('data-rate-star'); paintStars(); return; }
       if (e.target.closest('[data-rate-send]')) {
         e.preventDefault(); e.stopPropagation();
-        if (!stars) { toast('اختار عدد النجوم الأول'); return; }
+        if (!stars) { toast('عدد النجوم مطلوب'); return; }
         var all = ratings(); if (all[rkey]) { location.replace('rate-sent.html'); return; }
         all[rkey] = { stars: stars, text: txt.value.trim(), date: fmtDate(new Date(), true) };
         write('outlet-ratings', all); location.replace('rate-sent.html');
@@ -2012,7 +2041,7 @@
   var NOTIF_GO = {
     1: ['outlet-chat-view', 'OUT-24790', 'chat.html'], 2: ['outlet-order-view', 'OUT-24790', 'order.html'], 3: ['outlet-inc-view', 'OUT-24833', 'incoming-order.html'],
     4: ['outlet-inc-view', 'OUT-24810', 'incoming-order.html'], 5: [null, null, 'withdrawals.html'], 6: ['outlet-order-view', 'OUT-24655', 'dispute.html'],
-    7: [null, null, 'my-products.html'], 8: [null, null, 'wallet.html'], 9: [null, null, 'my-products.html']
+    7: ['outlet-pd-id', 1, 'product-status.html'], 8: [null, null, 'wallet.html'], 9: ['outlet-pd-id', 3, 'product-status.html']
   };
   function notifRead() { return read('outlet-notif-read', {}); }
   function notifUnread() { var r = notifRead(); return NOTIF_UNREAD.filter(function (i) { return !r[i]; }).length; }
@@ -2076,7 +2105,7 @@
     q3('[data-inv-order]').textContent = iv.no;
     q3('[data-inv-date]').textContent = (iv.times && iv.times.paid) ? iv.times.paid.replace(' · ', ' 2026 · ') : iv.date;
     q3('[data-inv-buyer]').textContent = read('outlet-profile', { name: 'لمى الحربي' }).name;
-    if (iv.status === 'cancelled') {
+    if (iv.status === 'cancelled' || effSt(iv) === 'refunded') {
       var paper = q3('[data-inv-paper]');
       paper.insertAdjacentHTML('afterbegin', '<div style="padding: 10px 12px; border-radius: 12px; background: #FEF3F2; font-size: 12px; line-height: 18px; font-weight: 700; color: #B42318">الطلب اتلغى، واتعمل إشعار دائن <span style="direction: ltr; display: inline-block">CN-2026-0' + digits + '</span> بنفس المبلغ ورجع لمحفظتك.</div>');
     }
@@ -2090,11 +2119,33 @@
     }, true);
   }
 
+  // ---------- review fix: a piece bought in a (non-cancelled) order is sold: no buying, gone from browse lists ----------
+  var SOLD_SRC = {};
+  allOrders().forEach(function (o) { if (o.status !== 'cancelled') (o.items || []).forEach(function (it) { if (it.src) SOLD_SRC[it.src.replace(/^.*\//, '')] = 1; }); });
+  var isSold = function (src) { return !!SOLD_SRC[(src || '').replace(/^.*\//, '')]; };
+  if (page === 'product.html') {
+    var spP = read('outlet-product', null);
+    if (spP && isSold(spP.src)) {
+      var spAdd = screen.querySelector('[data-act="add"]'), spBuy = screen.querySelector('[data-act="buy"]');
+      if (spAdd) spAdd.remove();
+      if (spBuy) { spBuy.removeAttribute('data-act'); spBuy.disabled = true; spBuy.textContent = 'القطعة اتباعت'; spBuy.style.background = '#F7F3F0'; spBuy.style.color = '#8E857F'; spBuy.style.cursor = 'default'; }
+      [].forEach.call(screen.querySelectorAll('p'), function (el) { if (/قطعة واحدة متاحة/.test(el.textContent)) el.lastChild.textContent = 'القطعة دي اتباعت ومبقتش متاحة للشراء.'; });
+    }
+  }
+  if (page === 'index.html' || page === 'category.html' || page === 'search.html') {
+    [].forEach.call(screen.querySelectorAll('img'), function (im) {
+      if (!isSold(im.getAttribute('src'))) return;
+      var card = im.closest('div[style*="border-radius: 18px"]');
+      while (card && card.parentElement && card.parentElement !== screen) { var ps = getComputedStyle(card.parentElement); if (ps.display === 'grid' || /auto|scroll/.test(ps.overflowX)) break; card = card.parentElement; }
+      if (card && card.parentElement !== screen) card.style.display = 'none';
+    });
+  }
+
   // ---------- U-23 seller product details & review status ----------
   var PD_SEED = {
     1: { cat: 'فساتين', size: 'M', color: 'تيراكوتا', brand: 'Zara', cond: 'ممتازة', uses: 2, desc: 'فستان ميدي بقصّة واسعة وأكمام طويلة، القماش خفيف ومناسب للمشاوير. اتلبس مرتين بس ومفيهوش أي عيوب.', date: '3 نوفمبر', views: 128, favs: 9 },
     2: { cat: 'ملابس', size: 'L', color: 'سماوي', brand: 'Massimo Dutti', cond: 'جديدة بالتيكت', uses: 0, desc: 'قميص كتان سماوي بقصّة واسعة، لسه بالتيكت وما اتلبسش. مناسب للصيف.', date: '7 نوفمبر' },
-    3: { cat: 'فساتين', size: 'S', color: 'أبيض', brand: 'بدون ماركة', cond: 'جيدة', uses: 4, desc: 'فستان طويل بلون عاجي وأكمام طويلة. فيه علامة خفيفة عند الطرف من تحت، وباينة في الصورة التالتة.', date: '6 نوفمبر' },
+    3: { cat: 'فساتين', size: 'S', color: 'أبيض', brand: 'Zara', cond: 'جيدة', uses: 2, desc: 'فستان طويل بلون عاجي وأكمام طويلة. فيه علامة خفيفة عند الطرف من تحت، وباينة في الصورة التالتة.', date: '6 نوفمبر' },
     4: { cat: 'فساتين', size: 'M', color: 'أسود', brand: 'Mango', cond: 'ممتازة', uses: 1, desc: 'فستان أسود كلاسيك بطول الركبة، اتلبس مرة واحدة في مناسبة.', date: '28 أكتوبر' },
     5: { cat: 'ملابس', size: 'M', color: 'كحلي وأبيض', brand: 'H&M', cond: 'ممتازة', uses: 3, desc: 'سويتر قطن مخطط، دافي ومش تقيل.', date: '20 أكتوبر' },
     6: { cat: 'ملابس', size: 'M', color: 'بيج', brand: 'بدون ماركة', cond: 'جيدة', uses: 5, desc: 'بنطلون واسع بخصر عالي، القماش مريح.', date: '18 أكتوبر' },
