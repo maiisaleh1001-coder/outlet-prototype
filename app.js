@@ -623,13 +623,20 @@
   var CURRENT = { preparing: 1, shipping: 1, arrived: 1, handover: 1, disputed: 1 };
   var REASONS = { mismatch: 'مش مطابقة للوصف', defect: 'فيها عيب مش مذكور', fake: 'القطعة مقلّدة', missing: 'ما وصلتش أو وصلت تالفة' };
   function demoOrders() {
-    var d = read('outlet-demo-orders', null);
+    var d = read('outlet-demo-orders-v2', null);
     if (d) return d;
     d = [
       { no: 'OUT-24790', date: '6 نوفمبر 2026', status: 'arrived', hoursLeft: 18,
         items: [{ src: 'assets/sneakers.jpg', alt: 'حذاء رياضي جلد أبيض', name: 'حذاء أبيض', size: '40', cond: 'ممتازة', priceNum: 150 }],
         seller: SELLERS[0], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 150, fee: 9, delivery: 25, total: 184, pay: 'بطاقة مدى',
         times: { paid: '6 نوفمبر · 3:20 م', preparing: '6 نوفمبر · 6:05 م', shipping: '7 نوفمبر · 11:40 ص', arrived: '8 نوفمبر · 1:15 م' } },
+      { no: 'OUT-24655', date: '30 أكتوبر 2026', status: 'disputed', prevStatus: 'arrived',
+        items: [{ src: 'assets/trench.jpg', alt: 'معطف ترنش بيج', name: 'معطف ترنش بيج', size: 'M', cond: 'ممتازة', priceNum: 264 }],
+        seller: SELLERS[1], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 264, fee: 9, delivery: 25, total: 298, pay: 'بطاقة مدى',
+        times: { paid: '30 أكتوبر · 2:10 م', preparing: '30 أكتوبر · 5:45 م', shipping: '31 أكتوبر · 10:20 ص', arrived: '1 نوفمبر · 6:20 م', disputed: '1 نوفمبر · 8:40 م' },
+        dispute: { ref: 'DSP-0981', reason: 'defect', text: 'فيه قطع صغير جنب الكم ما كانش ظاهر في الصور', shots: ['assets/trench.jpg'], date: '1 نوفمبر · 8:40 م',
+          reviewed: '2 نوفمبر · 12:15 م', decision: 'buyer', decided: '3 نوفمبر · 4:30 م', stage: 'return',
+          verdict: 'راجعنا الصور والمحادثة، والقطع اللي في الكم ما كانش مذكور في الإعلان، علشان كده البلاغ اتقبل.' } },
       { no: 'OUT-24611', date: '28 أكتوبر 2026', status: 'completed',
         items: [{ src: 'assets/pants.jpg', alt: 'بنطلون واسع بيج', name: 'بنطلون بيج', size: 'M', cond: 'كالجديدة', priceNum: 85 }],
         seller: SELLERS[3], method: 'direct', addr: '', addrLine: '', sub: 85, fee: 9, delivery: 0, total: 94, pay: 'Apple Pay',
@@ -639,12 +646,12 @@
         seller: SELLERS[2], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 320, fee: 9, delivery: 25, total: 354, pay: 'بطاقة ائتمانية',
         times: { paid: '20 أكتوبر · 2:45 م', cancelled: '20 أكتوبر · 4:10 م' } }
     ];
-    write('outlet-demo-orders', d);
+    write('outlet-demo-orders-v2', d);
     return d;
   }
   function allOrders() { return read('outlet-orders', []).concat(demoOrders()); }
   function saveOrder(o) {
-    ['outlet-orders', 'outlet-demo-orders'].forEach(function (k) {
+    ['outlet-orders', 'outlet-demo-orders-v2'].forEach(function (k) {
       var list = read(k, []), i = list.findIndex(function (x) { return x.no === o.no; });
       if (i !== -1) { list[i] = o; write(k, list); }
     });
@@ -657,6 +664,16 @@
     '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">' + no + '</button></div></section>',
     function (e, b) { if (b && b.getAttribute('data-act') === 'yes') { closeSheet(); setTimeout(onYes, 250); } }, null);
   }
+
+  var TICK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+  var stepHTML = function (title, time, state, last) {
+    var dot = state === 'done' ? '<span style="width: 22px; height: 22px; border-radius: 999px; background: #C2410C; display: flex; align-items: center; justify-content: center">' + TICK + '</span>'
+      : state === 'now' ? '<span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid #C2410C; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span></span>'
+      : '<span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid #E7DED6; background: #FFFFFF"></span>';
+    var conn = last ? '' : '<span aria-hidden="true" style="width: 2px; flex: 1; min-height: 14px; margin: 2px 0; border-radius: 2px; background: ' + (state === 'done' ? '#F3C9A9' : '#EFE6DE') + '"></span>';
+    var todo = state === 'todo';
+    return '<li style="display: flex; gap: 12px"><span style="display: flex; flex-direction: column; align-items: center; flex: none">' + dot + conn + '</span><span style="display: flex; flex-direction: column; padding-bottom: 10px"><span style="font-size: 14px; line-height: 22px; font-weight: ' + (todo ? 500 : 700) + '; color: ' + (todo ? '#8E857F' : '#1C1917') + '">' + title + '</span><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + (time || '') + '</span></span></li>';
+  };
 
   if (page === 'orders.html') {
     var listEl = screen.querySelector('[data-orders-list]');
@@ -761,17 +778,9 @@
     var o = allOrders().filter(function (x) { return x.no === viewNo; })[0] || demoOrders()[0];
     var itemsBox = screen.querySelector('[data-od-items]'), itemTpl = itemsBox.firstElementChild.cloneNode(true);
     var CLOCK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10Z"></path><path d="m15.71 15.18-3.1-1.85c-.54-.32-.98-1.09-.98-1.72v-4.1"></path></svg>';
-    var TICK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
-    var stepHTML = function (title, time, state, last) {
-      var dot = state === 'done' ? '<span style="width: 22px; height: 22px; border-radius: 999px; background: #C2410C; display: flex; align-items: center; justify-content: center">' + TICK + '</span>'
-        : state === 'now' ? '<span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid #C2410C; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span></span>'
-        : '<span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid #E7DED6; background: #FFFFFF"></span>';
-      var conn = last ? '' : '<span aria-hidden="true" style="width: 2px; flex: 1; min-height: 14px; margin: 2px 0; border-radius: 2px; background: ' + (state === 'done' ? '#F3C9A9' : '#EFE6DE') + '"></span>';
-      var todo = state === 'todo';
-      return '<li style="display: flex; gap: 12px"><span style="display: flex; flex-direction: column; align-items: center; flex: none">' + dot + conn + '</span><span style="display: flex; flex-direction: column; padding-bottom: 10px"><span style="font-size: 14px; line-height: 22px; font-weight: ' + (todo ? 500 : 700) + '; color: ' + (todo ? '#8E857F' : '#1C1917') + '">' + title + '</span><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + (time || '') + '</span></span></li>';
-    };
     var renderOrder = function () {
       var st = o.status || 'preparing', S = STATUS[st];
+      if (st === 'disputed' && o.dispute && o.dispute.decision === 'buyer') S = Object.assign({}, S, { card: '#ECF6EF', title: 'القرار لصالحك', sub: 'القطعة هترجع للبائع على حسابه، والمبلغ هيرجع لمحفظتك أول ما البائع يستلمها.' });
       screen.querySelector('[data-od-no]').textContent = o.no;
       screen.querySelector('[data-od-date]').textContent = o.date;
       var extra = st === 'arrived' ? '<span style="margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 700; color: #9A5800">' + CLOCK + 'باقي ' + (o.hoursLeft || 24) + ' ساعة، وبعدها الطلب بيكتمل تلقائيًا</span>'
@@ -784,7 +793,7 @@
       var steps = o.method === 'courier' ? [['paid', 'تم الدفع'], ['preparing', 'قيد التجهيز'], ['shipping', 'قيد التوصيل'], ['arrived', 'وصل المندوب'], ['completed', 'مكتمل']]
         : [['paid', 'تم الدفع'], ['handover', 'بانتظار التسليم'], ['completed', 'مكتمل']];
       if (st === 'cancelled') steps = [['paid', 'تم الدفع'], ['cancelled', 'ملغى']];
-      if (st === 'disputed') steps = steps.filter(function (s) { return s[0] !== 'completed' && (s[0] !== 'arrived' || (o.times || {}).arrived); }).concat([['disputed', 'البلاغ قيد المراجعة'], ['completed', 'مكتمل']]);
+      if (st === 'disputed') steps = steps.filter(function (s) { return s[0] !== 'completed' && (s[0] !== 'arrived' || (o.times || {}).arrived); }).concat([['disputed', o.dispute && o.dispute.decision === 'buyer' ? 'القرار لصالحك · الإرجاع' : 'البلاغ قيد المراجعة'], ['completed', 'مكتمل']]);
       var cur = steps.findIndex(function (s) { return s[0] === st; });
       if (st === 'preparing' && o.method !== 'courier') cur = 1;
       var t = o.times || {};
@@ -834,7 +843,7 @@
         o.status = 'cancelled'; o.times = o.times || {}; o.times.cancelled = stamp; saveOrder(o); renderOrder(); toast('اتلغى الطلب والمبلغ رجع للمحفظة'); });
       else if (act === 'chat') toast('محادثة الطلب لسه بتتصمم');
       else if (act === 'report') { write('outlet-order-view', o.no); location.href = 'report.html'; }
-      else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'report-sent.html'; }
+      else if (act === 'dispute') { write('outlet-order-view', o.no); location.href = 'dispute.html'; }
       else if (act === 'rate') toast('شاشة التقييم لسه بتتصمم');
       else if (act === 'invoice') toast('الفاتورة الضريبية لسه بتتصمم');
     }, true);
@@ -890,6 +899,7 @@
         var tile = photoTpl.cloneNode(true), im = tile.querySelector('img');
         im.src = URL.createObjectURL(f); im.alt = 'صورة مرفقة'; im.style.objectFit = 'cover'; im.style.mixBlendMode = 'normal';
         tile.style.padding = '0';
+        var shrink = new Image(); shrink.onload = function () { var k = Math.min(1, 240 / Math.max(shrink.width, shrink.height)), cv = document.createElement('canvas'); cv.width = Math.round(shrink.width * k); cv.height = Math.round(shrink.height * k); cv.getContext('2d').drawImage(shrink, 0, 0, cv.width, cv.height); tile.setAttribute('data-shot', cv.toDataURL('image/jpeg', 0.7)); }; shrink.src = im.src;
         photosBox.appendChild(tile);
       });
       picker.value = '';
@@ -905,7 +915,7 @@
       if (!reason) { toast('اختار سبب المشكلة الأول'); return; }
       var stamp = fmtDate(new Date(), true);
       ro.prevStatus = ro.status; ro.status = 'disputed';
-      ro.dispute = { ref: 'DSP-' + (1040 + Math.floor(Math.random() * 900)), reason: reason, text: txt.value.trim(), photos: photoCount(), date: stamp };
+      ro.dispute = { ref: 'DSP-' + (1040 + Math.floor(Math.random() * 900)), reason: reason, text: txt.value.trim(), photos: photoCount(), shots: [].map.call(photosBox.querySelectorAll('[data-shot]'), function (t) { return t.getAttribute('data-shot'); }), date: stamp };
       ro.times = ro.times || {}; ro.times.disputed = stamp;
       saveOrder(ro);
       location.replace('report-sent.html');
@@ -922,6 +932,54 @@
       if (so.dispute.reason === 'missing') screen.querySelector('[data-rs-outcome]').textContent = 'لو اتأكدنا إن الطلب ما وصلش أو وصل تالف، المبلغ بيرجع لمحفظتك. ولو لأ، الطلب بيكتمل.';
     }
     screen.querySelector('[data-rs-chat]').addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); toast('محادثة الطلب لسه بتتصمم'); }, true);
+  }
+
+  // ---------- U-18 dispute details ----------
+  if (page === 'dispute.html') {
+    var dno = read('outlet-order-view', 'OUT-24790');
+    var dor = allOrders().filter(function (x) { return x.no === dno; })[0];
+    if (!dor || !dor.dispute) { location.replace('order.html'); return; }
+    var D = dor.dispute, dec = D.decision, $ = function (s) { return screen.querySelector(s); };
+    $('[data-ds-ref]').textContent = D.ref;
+    $('[data-ds-date]').textContent = String(D.date).split(' · ')[0];
+    var C = !dec ? { card: '#FFF4EC', fg: '#9A3412', pill: 'قيد المراجعة', title: 'فريق outlet بيراجع بلاغك', sub: 'الطلب متوقف والمبلغ محجوز لحد القرار. هيوصلك إشعار أول ما القرار يطلع.' }
+      : dec === 'buyer' && D.stage === 'refunded' ? { card: '#ECF6EF', fg: '#1F7A4D', pill: 'تم الاسترداد', title: 'المبلغ رجع لمحفظتك', sub: 'البائع استلم القطعة والطلب اتلغى.' }
+      : dec === 'buyer' ? { card: '#ECF6EF', fg: '#1F7A4D', pill: 'البلاغ اتقبل', title: 'القرار لصالحك', sub: 'القطعة هترجع للبائع على حسابه، والمبلغ هيرجع لمحفظتك أول ما البائع يستلمها.' }
+      : { card: '#F7F3F093', fg: '#6B635D', pill: 'البلاغ اترفض', title: 'القرار لصالح البائع', sub: 'الطلب اكتمل والمبلغ اتحوّل للبائع.' };
+    var box = $('[data-ds-status]');
+    box.style.background = C.card;
+    box.innerHTML = '<span style="height: 26px; padding: 0 10px; border-radius: 999px; background: #FFFFFF; color: ' + C.fg + '; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; flex: none; align-self: flex-start">' + C.pill + '</span>' +
+      '<span style="font-size: 18px; line-height: 26px; font-weight: 700">' + C.title + '</span><span style="font-size: 13px; line-height: 20px; color: #6B635D">' + C.sub + '</span>';
+    var dsteps = !dec ? [['اتبعت البلاغ', D.date, 'done'], ['قيد المراجعة', 'بنراجع البلاغ والصور والمحادثة وسجل التوصيل', 'now'], ['القرار', '', 'todo']]
+      : dec === 'buyer' ? [['اتبعت البلاغ', D.date, 'done'], ['المراجعة', D.reviewed || '', 'done'], ['القرار لصالحك', D.decided || '', 'done'],
+          ['شحنة الإرجاع', D.stage === 'refunded' ? (D.returned || '') : 'المندوب هيستلم القطعة من عنوانك', D.stage === 'refunded' ? 'done' : 'now'],
+          ['المبلغ يرجع للمحفظة', D.stage === 'refunded' ? (D.refunded || '') : 'بعد ما البائع يستلم القطعة', D.stage === 'refunded' ? 'done' : 'todo']]
+      : [['اتبعت البلاغ', D.date, 'done'], ['المراجعة', D.reviewed || '', 'done'], ['القرار لصالح البائع', D.decided || '', 'done']];
+    $('[data-ds-timeline]').innerHTML = dsteps.map(function (s, i) { return stepHTML(s[0], s[1], s[2], i === dsteps.length - 1); }).join('');
+    var decBox = $('[data-ds-decision]');
+    if (dec) {
+      var sec = document.createElement('section');
+      sec.style.cssText = 'display: flex; flex-direction: column; gap: 10px';
+      sec.innerHTML = '<h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700">قرار الإدارة</h2><div style="padding: 14px; border-radius: 18px; background: #F7F3F093; display: flex; flex-direction: column; gap: 12px"><p style="margin: 0; font-size: 14px; line-height: 22px">' + esc(D.verdict || '') + '</p>' +
+        (dec === 'buyer' ? '<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px"><span style="font-size: 13px; line-height: 20px; color: #6B635D">' + (D.stage === 'refunded' ? 'رجع لمحفظتك' : 'هيرجع لمحفظتك') + '</span><span style="direction: ltr; display: inline-flex; align-items: center; gap: 5px; font-size: 18px; font-weight: 700">' + riyal(11, 12) + dor.total + '</span></div>' : '') + '</div>';
+      decBox.replaceWith(sec);
+    } else if (decBox) decBox.remove();
+    $('[data-ds-reason]').textContent = REASONS[D.reason];
+    if (D.text) $('[data-ds-text]').textContent = D.text; else $('[data-ds-text-row]').remove();
+    var shots = D.shots || [];
+    if (shots.length) {
+      $('[data-ds-photos]').innerHTML = shots.map(function (src) { return '<span style="width: 64px; height: 64px; flex: none; border-radius: 14px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center"><img src="' + src + '" alt="صورة مرفقة بالبلاغ" style="width: 100%; height: 100%; object-fit: cover"></span>'; }).join('');
+    } else $('[data-ds-photos-row]').remove();
+    var dIt = dor.items[0], dImg = $('[data-ds-thumb]'); dImg.src = dIt.src; dImg.alt = dIt.alt || dIt.name;
+    $('[data-ds-name]').textContent = dIt.name + (dor.items.length > 1 ? ' + ' + (dor.items.length - 1) + ' قطع' : '');
+    $('[data-ds-meta]').textContent = dor.no + ' · من ' + dor.seller[0];
+    $('[data-ds-total]').innerHTML = riyal(11, 12) + dor.total;
+    $('[data-ds-note]').textContent = !dec ? 'محادثة الطلب مع البائع متاحة طول فترة المراجعة.' : dec === 'buyer' && D.stage !== 'refunded' ? 'محادثة الطلب مع البائع متاحة لحد ما الإرجاع يخلص.' : 'البلاغ اتقفل.';
+    screen.addEventListener('click', function (e) {
+      var c = e.target.closest('[data-ds-chat]'), od = e.target.closest('[data-ds-order]');
+      if (c) { e.preventDefault(); e.stopPropagation(); toast('محادثة الطلب لسه بتتصمم'); }
+      else if (od) { e.preventDefault(); e.stopPropagation(); location.href = 'order.html'; }
+    }, true);
   }
 
   // ---------- search ----------

@@ -18,6 +18,7 @@ $pages = @(
   @('U16-OrderDetails.dc.html', 'order.html', 'outlet · تفاصيل الطلب'),
   @('U17-Report.dc.html', 'report.html', 'outlet · الإبلاغ عن مشكلة'),
   @('U17b-ReportSent.dc.html', 'report-sent.html', 'outlet · وصلنا بلاغك'),
+  @('U18-Dispute.dc.html', 'dispute.html', 'outlet · تفاصيل البلاغ'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
@@ -215,6 +216,7 @@ const CORE = [
   './account.html',
   './report.html',
   './report-sent.html',
+  './dispute.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
