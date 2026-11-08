@@ -435,8 +435,78 @@
       e.preventDefault(); e.stopPropagation();
       if (b.getAttribute('data-act') === 'remove') {
         cart.splice(parseInt(b.getAttribute('data-i'), 10), 1); saveCart(); paintCart(false); renderCart(); toast('اتشالت من السلة');
-      } else if (b.getAttribute('data-act') === 'checkout') { toast('صفحة إتمام الطلب لسه بتتصمم'); }
+      } else if (b.getAttribute('data-act') === 'checkout') { location.href = 'checkout.html'; }
       else { toast('صفحة البائع لسه بتتصمم'); }
+    }, true);
+  }
+
+  // ---------- checkout ----------
+  if (page === 'checkout.html') {
+    if (!cart.length) { location.replace('cart.html'); return; }
+    // saved addresses; delivery fee is set by region (null = courier does not cover that region)
+    var ADDRS = [
+      { label: 'البيت', line: 'حي النرجس، شارع الأمير سعود بن عبدالله، الرياض', fee: 25 },
+      { label: 'الشغل', line: 'حي الروضة، طريق الأمير سلطان، جدة', fee: 30 },
+      { label: 'بيت العيلة', line: 'حي الخالدية، القريات', fee: null }
+    ];
+    var co = read('outlet-checkout', { addr: 0, method: 'courier' });
+    var thumbsBox = screen.querySelector('[data-co-thumbs]');
+    var thumbTpl = thumbsBox.firstElementChild.cloneNode(true);
+    var paintRadio = function (btn, on, disabled) {
+      btn.setAttribute('aria-checked', on ? 'true' : 'false');
+      btn.disabled = !!disabled; btn.style.opacity = disabled ? '0.45' : '1';
+      btn.style.background = on ? '#FFF4EC' : '#F7F3F0';
+      var ring = btn.firstElementChild;
+      ring.style.borderColor = on ? '#C2410C' : '#C9BFB7';
+      ring.innerHTML = on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '';
+    };
+    var renderCheckout = function () {
+      var a = ADDRS[co.addr];
+      if (a.fee === null && co.method === 'courier') co.method = 'direct';
+      write('outlet-checkout', co);
+      screen.querySelector('[data-addr-label]').textContent = a.label;
+      screen.querySelector('[data-addr-line]').textContent = a.line;
+      var courier = screen.querySelector('[data-method="courier"]'), direct = screen.querySelector('[data-method="direct"]');
+      paintRadio(courier, co.method === 'courier', a.fee === null);
+      paintRadio(direct, co.method === 'direct', false);
+      screen.querySelector('[data-courier-fee]').innerHTML = a.fee === null ? 'غير متاح' : riyal(11, 12) + a.fee;
+      screen.querySelector('[data-courier-off]').style.display = a.fee === null ? 'block' : 'none';
+      thumbsBox.innerHTML = '';
+      cart.forEach(function (it) { var t = thumbTpl.cloneNode(true), im = t.querySelector('img'); im.src = it.src; im.alt = it.name; thumbsBox.appendChild(t); });
+      var countEl = screen.querySelector('[data-co-count]');
+      countEl.innerHTML = pieces(cart.length) + ' من <b data-co-seller style="color: #1C1917">' + esc(cart[0].seller[0]) + '</b>';
+      var sub = cart.reduce(function (s, it) { return s + it.priceNum; }, 0), fee = 9;
+      var delivery = co.method === 'courier' ? a.fee : 0;
+      screen.querySelector('[data-sum-subtotal]').innerHTML = riyal(10, 11) + sub;
+      screen.querySelector('[data-sum-fee]').innerHTML = riyal(10, 11) + fee;
+      screen.querySelector('[data-sum-delivery]').innerHTML = delivery ? riyal(10, 11) + delivery : 'مجانًا';
+      screen.querySelectorAll('[data-sum-total]').forEach(function (el, k) { el.innerHTML = (k === 0 ? riyal(14, 15) : riyal(12, 13)) + (sub + fee + delivery); });
+    };
+    var openAddresses = function (opener) {
+      var rows = ADDRS.map(function (a, i) {
+        var on = i === co.addr;
+        return '<button type="button" role="radio" aria-checked="' + on + '" data-addr="' + i + '" style="width: 100%; border: 0; border-radius: 18px; background: ' + (on ? '#FFF4EC' : '#F7F3F0') + '; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right">' +
+          '<span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>' +
+          '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + a.label + '</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">' + a.line + '</span>' +
+          (a.fee === null ? '<span style="font-size: 11px; line-height: 16px; color: #9A3412">التوصيل بالمندوب مش متاح هنا، والتسليم المباشر متاح</span>' : '') + '</span></button>';
+      }).join('');
+      var html = '<section role="dialog" aria-modal="true" aria-label="اختيار عنوان الاستلام" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
+        '<div style="padding: 0 18px 28px; display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0 0 4px; font-size: 20px; line-height: 28px; font-weight: 700">عنوان الاستلام</h2>' + rows +
+        '<button type="button" data-act="new-address" style="height: 48px; border: 0; border-radius: 999px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 700; color: #C2410C; display: flex; align-items: center; justify-content: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 18V6"></path></svg>إضافة عنوان جديد</button></div></section>';
+      mountSheet(html, function (e) {
+        var r = e.target.closest('[data-addr]'), n = e.target.closest('[data-act="new-address"]');
+        if (r) { co.addr = parseInt(r.getAttribute('data-addr'), 10); renderCheckout(); closeSheet(); }
+        else if (n) { toast('شاشة إضافة عنوان لسه بتتصمم'); }
+      }, opener);
+    };
+    renderCheckout();
+    screen.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-method], [data-act="change-address"], [data-act="pay"]');
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      if (b.hasAttribute('data-method')) { if (!b.disabled) { co.method = b.getAttribute('data-method'); renderCheckout(); } }
+      else if (b.getAttribute('data-act') === 'change-address') openAddresses(b);
+      else toast('شاشة الدفع لسه بتتصمم');
     }, true);
   }
 

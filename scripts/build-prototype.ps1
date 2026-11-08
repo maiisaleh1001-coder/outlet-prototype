@@ -9,7 +9,8 @@ $pages = @(
   @('U07a-Categories.dc.html', 'categories.html', 'outlet · الأقسام'),
   @('U07d-Search.dc.html', 'search.html', 'outlet · البحث'),
   @('U08-Product.dc.html', 'product.html', 'outlet · تفاصيل المنتج'),
-  @('U11-Cart.dc.html', 'cart.html', 'outlet · السلة')
+  @('U11-Cart.dc.html', 'cart.html', 'outlet · السلة'),
+  @('U12-Checkout.dc.html', 'checkout.html', 'outlet · إتمام الطلب')
 )
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
 $filterSrc = [System.IO.File]::ReadAllText((Join-Path $af 'U07c-Filter.dc.html'), [System.Text.Encoding]::UTF8)
@@ -194,6 +195,7 @@ const CORE = [
   './search.html',
   './product.html',
   './cart.html',
+  './checkout.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

@@ -8,6 +8,7 @@ const CORE = [
   './search.html',
   './product.html',
   './cart.html',
+  './checkout.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
