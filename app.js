@@ -16,6 +16,89 @@
   }
   function read(key, fallback) { try { var v = sessionStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } }
   function write(key, value) { try { sessionStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+  // ---------- first launch + auth: splash → onboarding → login / register / guest ----------
+  // the home page sends a fresh visit (one per browser tab) through the splash first
+  if (page === 'index.html' && !read('outlet-intro-seen', false) && !/[?&]skip/.test(location.search)) { write('outlet-intro-seen', true); location.replace('splash.html'); return; }
+  var goHome = function (as, msg) { write('outlet-intro-seen', true); write('outlet-auth', as); if (msg) write('outlet-flash-home', msg); location.href = './'; };
+  if (page === 'index.html') { var fh = read('outlet-flash-home', ''); if (fh) { write('outlet-flash-home', ''); setTimeout(function () { toast(fh); }, 400); } }
+  if (page === 'splash.html') {
+    write('outlet-intro-seen', true);
+    setTimeout(function () { location.replace('onboarding.html'); }, 1600);
+    screen.addEventListener('click', function () { location.replace('onboarding.html'); });
+  }
+  if (page === 'onboarding.html') {
+    var obKnob = screen.querySelector('button[aria-label^="السحب"]');
+    if (obKnob) {
+      var obTrack = obKnob.parentElement, obMax = 278, obDx = 0, obStart = 0, obDrag = false, obMoved = false;
+      var obFill = [].filter.call(obTrack.children, function (c) { return /width: 56px/.test(c.getAttribute('style') || ''); })[0];
+      var obLabel = [].filter.call(obTrack.querySelectorAll('span, div'), function (c) { return c.textContent.trim() === 'اسحب للبدء'; })[0];
+      var obPaint = function (anim) {
+        obKnob.style.transition = anim ? 'transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none';
+        obKnob.style.transform = 'translateX(' + obDx + 'px)';
+        if (obFill) { obFill.style.transition = anim ? 'width 520ms cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'; obFill.style.width = (56 + Math.abs(obDx)) + 'px'; }
+        if (obLabel) obLabel.style.opacity = Math.max(0, 1 - Math.abs(obDx) / obMax * 1.8);
+      };
+      var obFinish = function () { obDx = -obMax; obPaint(true); if (obLabel) { obLabel.textContent = 'أهلًا بك في outlet'; obLabel.style.opacity = 1; } setTimeout(function () { goHome('guest'); }, 650); };
+      obKnob.addEventListener('pointerdown', function (e) { obKnob.setPointerCapture(e.pointerId); obStart = e.clientX; obDrag = true; obMoved = false; });
+      obKnob.addEventListener('pointermove', function (e) { if (!obDrag) return; var d = e.clientX - obStart; if (Math.abs(d) > 4) obMoved = true; obDx = Math.max(-obMax, Math.min(0, d)); obPaint(false); });
+      var obUp = function () { if (!obDrag) return; obDrag = false; if (Math.abs(obDx) >= obMax * 0.8) obFinish(); else { obDx = 0; obPaint(true); } };
+      obKnob.addEventListener('pointerup', obUp); obKnob.addEventListener('pointercancel', obUp);
+      obKnob.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); if (!obMoved) obFinish(); obMoved = false; });
+    }
+  }
+  if (page === 'login.html') {
+    screen.addEventListener('click', function (e) {
+      var a = e.target.closest('a[href="#home"]'); if (!a) return;
+      e.preventDefault(); e.stopPropagation();
+      if (/زائر/.test(a.textContent)) return goHome('guest');
+      var ph = (screen.querySelector('#phone') || {}).value || '', pw = (screen.querySelector('#pass') || {}).value || '';
+      if (ph.replace(/\D/g, '').length !== 9) return toast('رقم الجوال غير صحيح');
+      if (pw.length < 8) return toast('كلمة المرور غير صحيحة');
+      goHome('user', 'أهلًا بك من جديد');
+    }, true);
+  }
+  if (page === 'register.html') {
+    screen.addEventListener('click', function (e) {
+      var lk = e.target.closest('a[href="#terms"], a[href="#privacy"]');
+      if (lk) { e.preventDefault(); e.stopPropagation(); location.href = 'policies.html'; return; }
+      var a = e.target.closest('a[href="otp.html"]'); if (!a) return;
+      var q = function (s) { return screen.querySelector(s); };
+      var err = !q('#name').value.trim() ? 'الاسم مطلوب' : q('#phone').value.replace(/\D/g, '').length !== 9 ? 'رقم الجوال غير صحيح'
+        : !/^(?=.*\d)(?=.*[A-Za-z؀-ۿ]).{8,}$/.test(q('#pass').value) ? 'كلمة المرور 8 أحرف على الأقل وفيها حرف ورقم'
+        : q('#pass2').value !== q('#pass').value ? 'كلمتا المرور غير متطابقتين' : !q('#terms').checked ? 'الموافقة على الشروط مطلوبة' : '';
+      if (err) { e.preventDefault(); e.stopPropagation(); toast(err); return; }
+      write('outlet-otp-for', 'register');
+    }, true);
+    var p2 = screen.querySelector('#pass2'); if (p2) p2.value = '';
+  }
+  if (page === 'otp.html') {
+    var otpIns = [].slice.call(screen.querySelectorAll('input[inputmode="numeric"]')), otpBtn = screen.querySelector('button[disabled], button');
+    var otpPaint = function () { var full = otpIns.every(function (i) { return /^\d$/.test(i.value); }); if (otpBtn) { otpBtn.disabled = !full; otpBtn.style.opacity = full ? '1' : ''; } };
+    otpIns.forEach(function (inp, i) {
+      inp.addEventListener('input', function () { inp.value = inp.value.replace(/\D/g, '').slice(-1); if (inp.value && otpIns[i + 1]) otpIns[i + 1].focus(); otpPaint(); });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !inp.value && otpIns[i - 1]) otpIns[i - 1].focus(); });
+    });
+    otpPaint();
+    if (otpBtn) otpBtn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var code = otpIns.map(function (i) { return i.value; }).join('');
+      if (code.length !== 4) return toast('رمز التحقق 4 أرقام');
+      goHome('user', 'تم إنشاء الحساب، أهلًا بك في outlet');
+    }, true);
+  }
+  if (page === 'new-password.html') {
+    var np = screen.querySelector('#np'), np2 = screen.querySelector('#np2'), npErr = screen.querySelector('#np2-err');
+    if (np2 && np) { np2.value = np.value; np2.setAttribute('aria-invalid', 'false'); }
+    if (npErr) npErr.style.display = 'none';
+    screen.addEventListener('click', function (e) {
+      var a = e.target.closest('a[href="login.html"]'); if (!a || a.getAttribute('aria-label')) return;
+      if (np.value.length < 8 || !/\d/.test(np.value)) { e.preventDefault(); e.stopPropagation(); toast('كلمة المرور 8 أحرف على الأقل وفيها حرف ورقم'); return; }
+      if (np2.value !== np.value) { e.preventDefault(); e.stopPropagation(); if (npErr) npErr.style.display = ''; return; }
+      write('outlet-flash-login', 'تم حفظ كلمة المرور الجديدة');
+    }, true);
+  }
+  if (page === 'login.html') { var fl = read('outlet-flash-login', ''); if (fl) { write('outlet-flash-login', ''); setTimeout(function () { toast(fl); }, 400); } }
+
   function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
   function norm(s) {
     return (s || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim();
@@ -872,7 +955,7 @@
       if (key === 'orders') { location.href = 'orders.html'; return; }
       var NAV = { favorites: 'favorites.html', listings: 'my-products.html', incoming: 'incoming.html', wallet: 'wallet.html', withdraw: 'withdraw.html', addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
       if (NAV[key]) { location.href = NAV[key]; return; }
-      if (key === 'logout') return askSheet('تسجيل الخروج؟', 'سيلزم تسجيل الدخول برقم الجوال وكلمة المرور مرة أخرى للشراء أو البيع.', 'تسجيل الخروج', 'رجوع', function () { toast('تم تسجيل الخروج (تجريبي)'); });
+      if (key === 'logout') return askSheet('تسجيل الخروج؟', 'سيلزم تسجيل الدخول برقم الجوال وكلمة المرور مرة أخرى للشراء أو البيع.', 'تسجيل الخروج', 'رجوع', function () { write('outlet-auth', ''); location.href = 'login.html'; });
       if (!key) { if (t.getAttribute('href') === '#notifications') location.href = 'notifications.html'; else toast('تعديل الملف ما زال قيد التصميم'); return; }
       toast(SOON[key] || 'هذه الشاشة ما زالت قيد التصميم');
     }, true);

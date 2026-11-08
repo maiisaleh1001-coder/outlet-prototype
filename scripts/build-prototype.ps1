@@ -48,8 +48,17 @@ $pages = @(
   @('U24-EditProduct.dc.html', 'edit-product.html', 'outlet · تعديل المنتج'),
   @('U09-SellerProfile.dc.html', 'seller.html', 'outlet · صفحة البائع'),
   @('U23-ProductStatus.dc.html', 'product-status.html', 'outlet · تفاصيل المنتج'),
+  @('U01-Splash.dc.html', 'splash.html', 'outlet'),
+  @('O01-Onboarding.dc.html', 'onboarding.html', 'outlet · أهلًا بك'),
+  @('U04-Login.dc.html', 'login.html', 'outlet · تسجيل الدخول'),
+  @('U02-Register.dc.html', 'register.html', 'outlet · إنشاء حساب'),
+  @('U03-OTP.dc.html', 'otp.html', 'outlet · رمز التحقق'),
+  @('U05-Forgot.dc.html', 'forgot.html', 'outlet · استعادة كلمة المرور'),
+  @('U05b-NewPassword.dc.html', 'new-password.html', 'outlet · كلمة مرور جديدة'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
+# boards with live DCLogic values ({{name}}) get their first-frame values; their handlers are dropped (app.js drives them)
+$tplDefaults = @{ knobX = '0'; knobS = '1'; iconR = '0'; knobTr = 'transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1)'; fillW = '56'; fillTr = 'width 520ms ease'; fadeTr = 'opacity 300ms ease'; label = 'اسحب للبدء'; labelOp = '1'; arrowsOp = '1'; a1 = '0.25'; a2 = '0.25' }
 # the filter sheet is designed on its own artboard and injected into the dresses page as a template
 $filterSrc = [System.IO.File]::ReadAllText((Join-Path $af 'U07c-Filter.dc.html'), [System.Text.Encoding]::UTF8)
 $filterSheet = [regex]::Match($filterSrc, '(?s)<section role="dialog"[^>]*aria-label="فلترة وترتيب".*?</section>').Value
@@ -75,6 +84,7 @@ $map = [ordered]@{
   '6ff2f52077bcc2ac6b030c6858f5cded' = @('img6\dress-pink.jpg', 'dress-pink.jpg')
   '0c6822045e8fd422a348d4459bb4def9' = @('img6\dress-pleated.jpg', 'dress-pleated.jpg')
   'ba18cb3dd8dc3bbfa3155fd553126d1e' = @('cut\dress-green-cut.png', 'dress-green-cut.png')
+  '4c277a9b9cafb6ebb47447ecabe3d521' = @('img7\4c277a9b9cafb6ebb47447ecabe3d521.jpg', 'login-still.jpg')
 }
 # transparent cut-outs for the product page (no colour taken from the platform) and on-model photos when present
 Get-ChildItem (Join-Path $Scratch 'outlet-canvas\cut') -Filter '*-cut.png' | ForEach-Object { Copy-Item $_.FullName (Join-Path $Out ('assets\' + $_.Name)) -Force }
@@ -93,6 +103,10 @@ foreach ($pg in $pages) {
 $src = [System.IO.File]::ReadAllText((Join-Path $af $pg[0]), [System.Text.Encoding]::UTF8)
 foreach ($k in $map.Keys) { $src = $src.Replace('/_blob/' + $k, 'assets/' + $map[$k][1]) }
 if ($src -match '/_blob/') { throw "unmapped blob left in $($pg[0])" }
+if ($src -match '\{\{') {
+  $src = [regex]::Replace($src, '\s+on[A-Za-z]+="\{\{\w+\}\}"', '')
+  $src = [regex]::Replace($src, '\{\{(\w+)\}\}', { param($m) if ($tplDefaults.ContainsKey($m.Groups[1].Value)) { $tplDefaults[$m.Groups[1].Value] } else { '' } })
+}
 foreach ($p2 in $pages) { $src = $src.Replace('href="' + $p2[0] + '"', 'href="' + $(if ($p2[1] -eq 'index.html') { './' } else { $p2[1] }) + '"') }
 $src = $src.Replace('href="U35-Account.dc.html"', 'href="account.html"')  # option A link from older boards
 $title = $pg[2]
@@ -275,6 +289,13 @@ const CORE = [
   './edit-product.html',
   './seller.html',
   './product-status.html',
+  './splash.html',
+  './onboarding.html',
+  './login.html',
+  './register.html',
+  './otp.html',
+  './forgot.html',
+  './new-password.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
