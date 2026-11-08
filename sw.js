@@ -41,6 +41,7 @@ const CORE = [
   './seller-setup.html',
   './rate.html',
   './rate-sent.html',
+  './favorites.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

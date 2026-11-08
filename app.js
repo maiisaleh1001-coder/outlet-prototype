@@ -73,9 +73,9 @@
     btn.setAttribute('aria-label', on ? 'شيل من المفضلة' : 'أضف للمفضلة');
     if (svg) { svg.setAttribute('fill', on ? '#EA580C' : 'none'); svg.setAttribute('stroke', on ? '#EA580C' : 'currentColor'); }
   }
-  function toggleFav(key) {
+  function toggleFav(key, info) {
     var on = !favs[key];
-    if (on) favs[key] = 1; else delete favs[key];
+    if (on) favs[key] = info || 1; else delete favs[key];
     write('outlet-favs', favs);
     toast(on ? 'اتضافت للمفضلة' : 'اتشالت من المفضلة');
     return on;
@@ -109,6 +109,18 @@
     };
   }
   function openProduct(card) { write('outlet-product', productInfo(card)); location.href = 'product.html'; }
+  // product info without a card (favourites seed, old saves)
+  function infoFor(src, name, alt, priceNum, sellerIdx, st) {
+    var h = hash(name), cond = ['ممتازة', 'كالجديدة', 'ممتازة', 'جيدة جدًا'][h % 4], size = sizeOf(name);
+    var col = colors.filter(function (c) { return (name + ' ' + alt).indexOf(c[0]) !== -1; })[0] || ['متعدد', 'conic-gradient(#C2410C, #233A5E, #EFE6D2, #C2410C)'];
+    return { src: src, alt: alt || name, name: name, price: riyal(13, 14) + priceNum, priceNum: priceNum, old: '', oldNum: 0, off: '', size: size, cond: cond, color: col[0], colorDot: col[1], seller: sellers[sellerIdx % sellers.length], st: st || '',
+      desc: (alt || name) + '. قطعة مستعملة بحالة ' + cond + '، نظيفة ومن غير عيوب ظاهرة، والمقاس ' + size + '.' };
+  }
+  if (read('outlet-favs', null) === null) {
+    [infoFor('assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر بتصميم لف', 145, 1), infoFor('assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160, 2), infoFor('assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320, 2),
+     infoFor('assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520, 1, 'اتباعت'), infoFor('assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60, 3, 'مش متاح دلوقتي')].forEach(function (p) { favs[p.src] = p; });
+    write('outlet-favs', favs);
+  }
 
   // ---------- bottom sheets ----------
   var sheetOpen = null;
@@ -201,7 +213,7 @@
       if (act === 'soon') { e.preventDefault(); toast('الشاشة دي لسه بتتصمم'); }
       else if (act === 'details') { e.preventDefault(); openProduct(card); }
       else if (act === 'fav') {
-        var now = toggleFav(p.src);
+        var now = toggleFav(p.src, p);
         paintFav(b, now);
         var cardFav = card.querySelector('button[aria-label="أضف للمفضلة"], button[aria-pressed]');
         if (cardFav) paintFav(cardFav, now);
@@ -378,7 +390,7 @@
       if (!b) return;
       e.stopPropagation(); e.preventDefault();
       if (b.hasAttribute('data-pager')) { flipTo(b.getAttribute('data-pager') === 'next' ? 1 : -1); }
-      else if (b.getAttribute('data-p') === 'fav') { paintFav(b, toggleFav(key)); }
+      else if (b.getAttribute('data-p') === 'fav') { paintFav(b, toggleFav(key, p || null)); }
       else if (b.getAttribute('data-p') === 'seller-link') { toast('صفحة البائع لسه بتتصمم'); }
       else if (b.getAttribute('data-act') === 'more') {
         var d = document.querySelector('[data-p="desc"]'), open = d.style.webkitLineClamp === 'unset';
@@ -780,7 +792,7 @@
         o.status = 'completed'; o.times = o.times || {}; o.times.completed = fmtDate(new Date(), true); saveOrder(o); renderAcc(); toast('تم تأكيد الاستلام، شكرًا!'); });
       var key = t.getAttribute('data-row');
       if (key === 'orders') { location.href = 'orders.html'; return; }
-      var NAV = { listings: 'my-products.html', incoming: 'incoming.html', wallet: 'wallet.html', withdraw: 'withdraw.html', addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
+      var NAV = { favorites: 'favorites.html', listings: 'my-products.html', incoming: 'incoming.html', wallet: 'wallet.html', withdraw: 'withdraw.html', addresses: 'addresses.html', pickup: 'addresses.html', bank: 'bank.html', settings: 'settings.html' };
       if (NAV[key]) { location.href = NAV[key]; return; }
       if (key === 'logout') return askSheet('تسجيل الخروج؟', 'هتحتاج تدخل برقم الجوال وكلمة المرور تاني عشان تشتري أو تبيع.', 'تسجيل الخروج', 'رجوع', function () { toast('اتسجل الخروج (تجريبي)'); });
       if (!key) return toast(t.getAttribute('href') === '#notifications' ? 'الإشعارات لسه بتتصمم' : 'تعديل الملف لسه بيتصمم');
@@ -1935,6 +1947,43 @@
     }, true);
   }
 
+  // ---------- U-10 favourites ----------
+  if (page === 'favorites.html') {
+    var fg = screen.querySelector('[data-fav-grid]'), fc = screen.querySelector('[data-fav-count]');
+    var HEART_D = 'M12.62 20.81c-.34.12-.9.12-1.24 0C8.48 19.82 2 15.69 2 8.69 2 5.6 4.49 3.1 7.56 3.1c1.82 0 3.43.88 4.44 2.24a5.53 5.53 0 0 1 4.44-2.24C19.51 3.1 22 5.6 22 8.69c0 7-6.48 11.13-9.38 12.12Z';
+    var favList = function () { return Object.keys(favs).map(function (k) { var v = favs[k]; return typeof v === 'object' ? v : infoFor(k, k.replace(/^.*\//, '').replace(/\.\w+$/, ''), '', 0, 0); }); };
+    var renderFav = function () {
+      var L = favList();
+      fc.textContent = L.length ? L.length + (L.length > 10 || L.length < 3 ? ' قطعة' : ' قطع') : '';
+      if (!L.length) {
+        fg.parentNode.innerHTML = '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 60px 12px 0"><span aria-hidden="true" style="width: 88px; height: 88px; border-radius: 999px; background: #FFF4EC; color: #EA580C; display: flex; align-items: center; justify-content: center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="' + HEART_D + '"></path></svg></span><h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 700">لا توجد منتجات في المفضلة</h2><p style="margin: 0; font-size: 14px; line-height: 22px; color: #6B635D">دوس على القلب في أي قطعة عشان ترجعلها بعدين.</p><a href="./" style="margin-top: 8px; height: 50px; padding: 0 28px; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">تصفّح القطع</a></div>';
+        return;
+      }
+      fg.innerHTML = L.map(function (p) {
+        var off = !!p.st, sold = p.st === 'اتباعت';
+        return '<div data-fav-card data-src="' + p.src + '" style="display: flex; flex-direction: column; gap: 6px; min-width: 0; cursor: pointer"><span style="position: relative; aspect-ratio: 3 / 4; border-radius: 18px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box"><img src="' + p.src + '" alt="' + esc(p.alt || p.name) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;' + (off ? ' opacity: 0.45;' : '') + '">' +
+          '<button type="button" data-fav-remove aria-label="شيل ' + esc(p.name) + ' من المفضلة" style="position: absolute; top: 8px; left: 8px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #FFFFFF; color: #EA580C; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 8px rgba(28,25,23,0.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#EA580C" stroke="#EA580C" stroke-width="1.4" aria-hidden="true"><path d="' + HEART_D + '"></path></svg></button>' +
+          (off ? '<span style="position: absolute; bottom: 8px; right: 8px; height: 24px; padding: 0 10px; border-radius: 999px; background: ' + (sold ? '#1C1917; color: #FFFFFF' : '#FFFFFF; color: #6B635D') + '; font-size: 11px; font-weight: 700; display: flex; align-items: center">' + p.st + '</span>' : '') + '</span>' +
+          '<span style="font-size: 14px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' + (off ? ' color: #8E857F;' : '') + '">' + esc(p.name) + '</span>' +
+          '<span style="display: flex; align-items: center; justify-content: space-between; gap: 6px"><span style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; color: ' + (off ? '#8E857F' : '#1C1917') + '">' + riyal(10, 11) + (p.priceNum || '') + '</span><span style="font-size: 11px; line-height: 16px; color: #8E857F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc((p.seller || [''])[0]) + '</span></span></div>';
+      }).join('');
+    };
+    renderFav();
+    screen.addEventListener('click', function (e) {
+      var card = e.target.closest('[data-fav-card]'); if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      var src = card.getAttribute('data-src'), p = favs[src];
+      if (e.target.closest('[data-fav-remove]')) {
+        delete favs[src]; write('outlet-favs', favs);
+        card.style.transition = 'opacity .2s, transform .2s'; card.style.opacity = '0'; card.style.transform = 'scale(.96)';
+        setTimeout(renderFav, 200); toast('اتشالت من المفضلة'); return;
+      }
+      if (p && p.st === 'اتباعت') { toast('القطعة دي اتباعت، ومينفعش تتشرى'); return; }
+      if (p && p.st) { toast('القطعة مش متاحة للعرض دلوقتي'); return; }
+      write('outlet-product', typeof p === 'object' ? p : infoFor(src, '', '', 0, 0)); location.href = 'product.html';
+    }, true);
+  }
+
   // ---------- search ----------
   var extra = { 'فساتين': 'فستان', 'قمصان': 'قميص بلوزه', 'بناطيل': 'بنطلون بنطال', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز', 'جواكيت': 'جاكيت معطف بالطو' };
   function indexItems(list) {
@@ -2023,10 +2072,12 @@
     var fav = t.closest('button[aria-pressed], button[aria-label="أضف للمفضلة"]');
     if (fav && !fav.closest('[role="dialog"]')) {
       var img = fav.parentNode.querySelector('img');
-      paintFav(fav, toggleFav(img ? img.getAttribute('src') : ''));
+      var favCard = cardOf(fav);
+      paintFav(fav, toggleFav(img ? img.getAttribute('src') : '', favCard ? productInfo(favCard) : null));
       return;
     }
     // "حسابي" in the bottom bar (pages built before the account screen still link to #profile)
+    if (t.closest('nav a[href="#favorites"]')) { e.preventDefault(); location.href = 'favorites.html'; return; }
     if (t.closest('nav a[href="#sell"]')) { e.preventDefault(); location.href = 'add-product.html'; return; }
     if (t.closest('nav a[href="#messages"]')) { e.preventDefault(); location.href = 'messages.html'; return; }
     if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'account.html'; return; }
