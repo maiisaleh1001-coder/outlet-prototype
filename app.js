@@ -233,6 +233,42 @@
     }
   }
 
+  // ---------- the 4 BRD categories: فساتين / ملابس / شنط / أحذية (category.html?cat=…) ----------
+  var CAT_HASH = { '#dresses': 'فساتين', '#clothes': 'ملابس', '#bags': 'شنط', '#shoes': 'أحذية' };
+  var CAT_ITEMS = {
+    'ملابس': [['assets/sweater.jpg', 'كنزة صوف كريمي بألوان كحلي وأحمر', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن أزرق فاتح', 'قميص قطن مريح', 76], ['assets/trench.jpg', 'معطف ترنش بيج', 'معطف ترنش كلاسيكي', 520], ['assets/pants.jpg', 'بنطلون واسع بيج', 'بنطلون بيج', 85]],
+    'شنط': [['assets/bag.jpg', 'شنطة يد جلد بلون بني فاتح', 'شنطة جلد كلاسيكية', 320]],
+    'أحذية': [['assets/sneakers.jpg', 'حذاء رياضي جلد أبيض', 'حذاء أبيض', 150]]
+  };
+  if (page === 'category.html') {
+    var curCat = new URLSearchParams(location.search).get('cat') || 'فساتين';
+    if (!CAT_ITEMS[curCat]) curCat = 'فساتين';
+    var catChips = [].slice.call(document.querySelectorAll('nav[aria-label="التصنيفات"] a'));
+    var onA = catChips.filter(function (a) { return a.getAttribute('aria-current'); })[0], offA = catChips.filter(function (a) { return !a.getAttribute('aria-current'); })[0];
+    var chipOn = onA ? onA.getAttribute('style') : '', chipOff = offA ? offA.getAttribute('style') : '';
+    catChips.forEach(function (a) { var on = a.textContent.trim() === curCat; a.setAttribute('style', on ? chipOn : chipOff); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    var CAT_THE = { 'فساتين': 'الفساتين', 'ملابس': 'الملابس', 'شنط': 'الشنط', 'أحذية': 'الأحذية' };
+    var h1c = document.querySelector('.screen h1'); if (h1c) h1c.textContent = curCat;
+    var sIn = document.querySelector('.screen input[type="search"]'); if (sIn) { sIn.placeholder = 'ابحث في ' + CAT_THE[curCat] + '...'; sIn.setAttribute('aria-label', 'ابحث في ' + CAT_THE[curCat]); }
+    document.title = 'outlet · ' + curCat;
+    var g0 = document.querySelector('.screen div[style*="grid-template-columns: repeat(2"]');
+    if (g0 && curCat !== 'فساتين') {
+      var ctpl = g0.children[0].cloneNode(true);
+      [].forEach.call(ctpl.querySelectorAll('s'), function (x) { x.remove(); });
+      [].forEach.call(ctpl.querySelectorAll('span'), function (x) { if (/^خصم/.test(x.textContent.trim())) x.remove(); });
+      g0.innerHTML = '';
+      CAT_ITEMS[curCat].forEach(function (c) {
+        var n = ctpl.cloneNode(true), im = n.querySelector('img'); im.src = c[0]; im.alt = c[1];
+        n.querySelector('span[style*="ellipsis"]').textContent = c[2];
+        var pr = n.querySelector('span[style*="font-size: 16px"]'); if (pr) pr.lastChild.textContent = c[3];
+        var ab = n.querySelector('button[aria-label$=" للسلة"]'); if (ab) ab.setAttribute('aria-label', 'أضف ' + c[2] + ' للسلة');
+        g0.appendChild(n);
+      });
+      var cnt = h1c && h1c.nextElementSibling; if (cnt) cnt.textContent = g0.children.length ? g0.children.length + (g0.children.length === 1 ? ' قطعة' : ' قطع') : '';
+      if (!g0.children.length) g0.outerHTML = '<div style="padding: 60px 30px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><b style="font-size: 17px; line-height: 24px">لا توجد منتجات متاحة</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">مفيش قطع في ' + CAT_THE[curCat] + ' دلوقتي. القطع الجديدة بتنزل بعد مراجعة فريق outlet.</span></div>';
+    }
+  }
+
   // ---------- filter + sort (dresses page) ----------
   var filterState = read('outlet-filter', { sort: 'new', sizes: [], min: 0, max: 600 });
   var grid = document.querySelector('.screen div[style*="grid-template-columns: repeat(2"]');
@@ -2139,6 +2175,11 @@
       while (card && card.parentElement && card.parentElement !== screen) { var ps = getComputedStyle(card.parentElement); if (ps.display === 'grid' || /auto|scroll/.test(ps.overflowX)) break; card = card.parentElement; }
       if (card && card.parentElement !== screen) card.style.display = 'none';
     });
+    var gg = page === 'category.html' && screen.querySelector('div[style*="grid-template-columns: repeat(2"]');
+    var ggN = gg ? [].filter.call(gg.children, function (c) { return c.style.display !== 'none'; }).length : 0, ggC = gg && screen.querySelector('h1') && screen.querySelector('h1').nextElementSibling;
+    var ggCat = new URLSearchParams(location.search).get('cat');
+    if (ggC && ggCat && ggCat !== 'فساتين') ggC.textContent = ggN ? ggN + (ggN === 1 ? ' قطعة' : ggN === 2 ? ' قطعتين' : ' قطع') : '';
+    if (gg && gg.children.length && !ggN) gg.insertAdjacentHTML('afterend', '<div style="padding: 60px 30px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><b style="font-size: 17px; line-height: 24px">لا توجد منتجات متاحة</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">القطع اللي هنا اتباعت. القطع الجديدة بتنزل بعد مراجعة فريق outlet.</span></div>');
   }
 
   // ---------- U-23 seller product details & review status ----------
@@ -2221,7 +2262,7 @@
   var CATALOG = [
     ['assets/dress-pleated.jpg', 'فستان بليسيه طويل', 'فستان شيفون وردي بليسيه بأكمام طويلة', 210], ['assets/dress-terracotta.jpg', 'فستان تريكو طويل', 'فستان تريكو طويل', 175],
     ['assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160], ['assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر هادي بتصميم لف وأكمام قصيرة', 145],
-    ['assets/banner-coat.jpg', 'كنزة صوف ملونة', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن مريح', 'قميص قطن مريح', 76], ['assets/sneakers.jpg', 'حذاء أبيض', 'حذاء رياضي جلد أبيض', 150],
+    ['assets/sweater.jpg', 'كنزة صوف كريمي بألوان كحلي وأحمر', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن مريح', 'قميص قطن مريح', 76], ['assets/sneakers.jpg', 'حذاء أبيض', 'حذاء رياضي جلد أبيض', 150],
     ['assets/dress-ivory.jpg', 'فستان قطن أبيض', 'فستان قطن أبيض', 95], ['assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520],
     ['assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320], ['assets/dress-polka.jpg', 'فستان منقّط كحلي', 'فستان منقّط كحلي', 120], ['assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60],
     ['assets/pants.jpg', 'بنطلون بيج', 'بنطلون واسع بيج', 85], ['assets/dress.jpg', 'فستان أحمر', 'فستان أحمر', 120]
@@ -2285,7 +2326,7 @@
   }
 
   // ---------- search ----------
-  var extra = { 'فساتين': 'فستان', 'قمصان': 'قميص بلوزه', 'بناطيل': 'بنطلون بنطال', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز', 'جواكيت': 'جاكيت معطف بالطو' };
+  var extra = { 'فساتين': 'فستان', 'ملابس': 'قميص بلوزه بنطلون بنطال جاكيت معطف بالطو كنزه', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز' };
   function indexItems(list) {
     list.forEach(function (el) {
       var alts = [].map.call(el.querySelectorAll('img'), function (i) { return i.alt; }).join(' ');
@@ -2390,7 +2431,9 @@
     var card = t.closest('div[style*="border-radius: 18px"]');
     if (card && card.querySelector('button[aria-label$=" للسلة"]') && !t.closest('button')) { openProduct(card); return; }
     var chip = t.closest('nav[aria-label="التصنيفات"] a');
-    if (chip && chip.getAttribute('href').charAt(0) === '#') { e.preventDefault(); toast('القسم ده لسه بيتصمم، جرّب فساتين'); return; }
+    if (chip && chip.getAttribute('href').charAt(0) === '#') { e.preventDefault(); var ch = chip.getAttribute('href'); location.href = ch === '#all' ? 'search.html' : 'category.html?cat=' + encodeURIComponent(CAT_HASH[ch] || 'فساتين'); return; }
+    var catLink = t.closest('a[href="#clothes"], a[href="#bags"], a[href="#shoes"], a[href="#dresses"]');
+    if (catLink) { e.preventDefault(); location.href = 'category.html?cat=' + encodeURIComponent(CAT_HASH[catLink.getAttribute('href')]); return; }
     var dead = t.closest('a[href^="#"], button');
     if (dead && !dead.closest('label')) { e.preventDefault(); toast('الشاشة دي لسه بتتصمم'); }
   });

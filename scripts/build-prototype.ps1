@@ -6,7 +6,7 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 $pages = @(
   @('U06c-Home-Reference.dc.html', 'index.html', 'outlet · الرئيسية'),
   @('U07-Category.dc.html', 'category.html', 'outlet · فساتين'),
-  @('U07a-Categories.dc.html', 'categories.html', 'outlet · الأقسام'),
+  @('U07a-Categories.dc.html', 'categories.html', 'outlet · التصنيفات'),
   @('U07d-Search.dc.html', 'search.html', 'outlet · البحث'),
   @('U08-Product.dc.html', 'product.html', 'outlet · تفاصيل المنتج'),
   @('U11-Cart.dc.html', 'cart.html', 'outlet · السلة'),
