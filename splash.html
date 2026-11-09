@@ -20,19 +20,31 @@
 </script>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..700&amp;display=swap">
-<style>body{margin:0}</style>
+<style>body{margin:0}
+.sp-mark{animation:sp-mark 1000ms cubic-bezier(.2,.8,.2,1) both}
+.sp-line{animation:sp-up 600ms ease-out 550ms both}
+.sp-glow{animation:sp-glow 2400ms ease-in-out infinite}
+.sp-dot{animation:sp-dot 1200ms ease-in-out infinite}
+.sp-dot2{animation-delay:150ms}.sp-dot3{animation-delay:300ms}
+@keyframes sp-mark{0%{opacity:0;transform:translateY(12px) scale(.96);letter-spacing:.14em;filter:blur(6px)}100%{opacity:1;transform:none;letter-spacing:-.01em;filter:none}}
+@keyframes sp-up{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+@keyframes sp-glow{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes sp-dot{0%,60%,100%{background:#1C1917;opacity:.25;transform:none}30%{background:#EA580C;opacity:1;transform:translateY(-5px)}}
+@media (prefers-reduced-motion: reduce){.sp-mark,.sp-line,.sp-glow,.sp-dot{animation:none}}
+</style>
 </head>
 <body>
 <main class="stage">
 <div class="device">
-<div class="screen" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: radial-gradient(ellipse 80% 45% at 50% 46%, rgba(234,88,12,0.16), rgba(250,247,244,0) 70%), #FAF7F4; color: #1C1917; font-family: 'Thmanyah Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; direction: rtl">
-<span style="font-family: 'Bodoni Moda', Didot, Georgia, serif; font-size: 64px; line-height: 68px; font-weight: 600; letter-spacing: -0.01em; color: #1C1917; direction: ltr">outlet</span>
+<div class="screen" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FAF7F4; color: #1C1917; font-family: 'Thmanyah Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; direction: rtl">
+<span aria-hidden="true" class="sp-glow" style="position: absolute; inset: 0; background: radial-gradient(ellipse 80% 45% at 50% 46%, rgba(234,88,12,0.16), rgba(250,247,244,0) 70%)"></span>
+<span class="sp-mark" style="position: relative; font-family: 'Bodoni Moda', Didot, Georgia, serif; font-size: 64px; line-height: 68px; font-weight: 600; letter-spacing: -0.01em; color: #1C1917; direction: ltr">outlet</span>
 <div style="position: absolute; bottom: 120px; display: flex; gap: 8px">
-<span style="width: 8px; height: 8px; border-radius: 999px; background: #EA580C"></span>
-<span style="width: 8px; height: 8px; border-radius: 999px; background: #1C1917; opacity: 0.25"></span>
-<span style="width: 8px; height: 8px; border-radius: 999px; background: #1C1917; opacity: 0.25"></span>
+<span class="sp-dot" style="width: 8px; height: 8px; border-radius: 999px; background: #EA580C"></span>
+<span class="sp-dot sp-dot2" style="width: 8px; height: 8px; border-radius: 999px; background: #1C1917; opacity: 0.25"></span>
+<span class="sp-dot sp-dot3" style="width: 8px; height: 8px; border-radius: 999px; background: #1C1917; opacity: 0.25"></span>
 </div>
-<p style="margin: 0; font-size: 15px; line-height: 22px; color: #6B635D">سوق الملابس المستعملة بثقة البوتيك</p>
+<p class="sp-line" style="position: relative; margin: 0; font-size: 15px; line-height: 22px; color: #6B635D">سوق الملابس المستعملة بثقة البوتيك</p>
 </div>
 </div>
 </main>

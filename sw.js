@@ -54,6 +54,8 @@ const CORE = [
   './otp.html',
   './forgot.html',
   './new-password.html',
+  './account-created.html',
+  './password-changed.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',

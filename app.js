@@ -25,7 +25,7 @@
   if (page === 'index.html') { var fh = read('outlet-flash-home', ''); if (fh) { write('outlet-flash-home', ''); setTimeout(function () { toast(fh); }, 400); } }
   if (page === 'splash.html') {
     write('outlet-intro-seen', true);
-    setTimeout(function () { location.replace('login.html'); }, 1600);
+    setTimeout(function () { location.replace('login.html'); }, 2400); // long enough for the wordmark animation to land
     screen.addEventListener('click', function () { location.replace('login.html'); });
   }
   if (page === 'onboarding.html') {
@@ -85,7 +85,7 @@
       e.preventDefault(); e.stopPropagation();
       var code = otpIns.map(function (i) { return i.value; }).join('');
       if (code.length !== 4) return toast('رمز التحقق 4 أرقام');
-      goHome('user', 'تم إنشاء الحساب، أهلًا بك في outlet');
+      location.href = 'account-created.html';
     }, true);
   }
   if (page === 'new-password.html') {
@@ -93,10 +93,18 @@
     if (np2 && np) { np2.value = np.value; np2.setAttribute('aria-invalid', 'false'); }
     if (npErr) npErr.style.display = 'none';
     screen.addEventListener('click', function (e) {
-      var a = e.target.closest('a[href="login.html"]'); if (!a || a.getAttribute('aria-label')) return;
+      var a = e.target.closest('a[href="password-changed.html"]'); if (!a) return;
       if (np.value.length < 8 || !/\d/.test(np.value)) { e.preventDefault(); e.stopPropagation(); toast('كلمة المرور 8 أحرف على الأقل وفيها حرف ورقم'); return; }
       if (np2.value !== np.value) { e.preventDefault(); e.stopPropagation(); if (npErr) npErr.style.display = ''; return; }
-      write('outlet-flash-login', 'تم حفظ كلمة المرور الجديدة');
+    }, true);
+  }
+  // success screens: the bar fills (CSS, 0.4s + 3s), then the flow carries on; the button skips the wait
+  if (page === 'account-created.html' || page === 'password-changed.html') {
+    var doneNext = page === 'account-created.html' ? function () { goHome('user'); } : function () { location.replace('login.html'); };
+    var doneT = setTimeout(doneNext, 3400);
+    screen.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-done-go]')) return;
+      e.preventDefault(); e.stopPropagation(); clearTimeout(doneT); doneNext();
     }, true);
   }
   if (page === 'login.html') { var fl = read('outlet-flash-login', ''); if (fl) { write('outlet-flash-login', ''); setTimeout(function () { toast(fl); }, 400); } }

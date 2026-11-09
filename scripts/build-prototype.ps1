@@ -55,6 +55,8 @@ $pages = @(
   @('U03-OTP.dc.html', 'otp.html', 'outlet · رمز التحقق'),
   @('U05-Forgot.dc.html', 'forgot.html', 'outlet · استعادة كلمة المرور'),
   @('U05b-NewPassword.dc.html', 'new-password.html', 'outlet · كلمة مرور جديدة'),
+  @('U03b-AccountCreated.dc.html', 'account-created.html', 'outlet · تم إنشاء الحساب'),
+  @('U05c-PasswordChanged.dc.html', 'password-changed.html', 'outlet · تم تغيير كلمة المرور'),
   @('U35c-Account-Modes.dc.html', 'account.html', 'outlet · حسابي')
 )
 # boards with live DCLogic values ({{name}}) get their first-frame values; their handlers are dropped (app.js drives them)
@@ -297,6 +299,8 @@ const CORE = [
   './otp.html',
   './forgot.html',
   './new-password.html',
+  './account-created.html',
+  './password-changed.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
