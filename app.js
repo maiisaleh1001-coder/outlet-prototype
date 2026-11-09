@@ -142,7 +142,7 @@
   function cartItem(p) { return { src: p.src, alt: p.alt, name: p.name, size: p.size, cond: p.cond, priceNum: p.priceNum, oldNum: p.oldNum || 0, seller: p.seller }; }
   // adds p; when the cart belongs to another seller, asks first. then() runs once the piece is in the cart.
   function addToCart(p, then) {
-    var done = function () { saveCart(); paintCart(true); if (then) then(); else toast('تمت الإضافة للسلة'); };
+    var done = function (msg) { saveCart(); paintCart(true); if (then) then(); else toast(msg || 'تمت الإضافة للسلة'); };
     if (cart.some(function (c) { return c.src === p.src && c.name === p.name; })) { toast('هذه القطعة في السلة بالفعل'); if (then) then(); return; }
     if (cart.length && cart[0].seller[0] !== p.seller[0]) {
       var html = '<section role="dialog" aria-modal="true" aria-label="تبدأ سلة جديدة؟" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
@@ -153,7 +153,7 @@
         '<button type="button" data-act="close" style="height: 52px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700">خليني في السلة الحالية</button></div></section>';
       setTimeout(function () {
         mountSheet(html, function (e, b) {
-          if (b && b.getAttribute('data-act') === 'replace') { cart = [cartItem(p)]; closeSheet(); setTimeout(done, 200); }
+          if (b && b.getAttribute('data-act') === 'replace') { cart = [cartItem(p)]; closeSheet(); setTimeout(function () { done('بدأت سلة جديدة من «' + p.seller[0] + '»'); }, 200); }
         }, null);
       }, sheetOpen ? 340 : 0);
       return;
@@ -538,7 +538,7 @@
     };
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('[data-pager], [data-act], [data-p="fav"], [data-p="seller-link"]');
-      if (!b) return;
+      if (!b || b.closest('.proto-sheet-wrap')) return; // sheets opened over the page handle their own buttons
       e.stopPropagation(); e.preventDefault();
       if (b.hasAttribute('data-pager')) { flipTo(b.getAttribute('data-pager') === 'next' ? 1 : -1); }
       else if (b.getAttribute('data-p') === 'fav') { paintFav(b, toggleFav(key, p || null)); }
