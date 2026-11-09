@@ -87,6 +87,8 @@ $map = [ordered]@{
   '0c6822045e8fd422a348d4459bb4def9' = @('img6\dress-pleated.jpg', 'dress-pleated.jpg')
   'ba18cb3dd8dc3bbfa3155fd553126d1e' = @('cut\dress-green-cut.png', 'dress-green-cut.png')
   '4c277a9b9cafb6ebb47447ecabe3d521' = @('img7\4c277a9b9cafb6ebb47447ecabe3d521.jpg', 'login-still.jpg')
+  'd503dfd2e80f4b7f6971c6d25de5dd9b' = @('img\onb-bag.jpg', 'card-bag-dark.jpg')
+  'd76abeb6dfaa30b3771a3448578fecfe' = @('img\login-still.jpg', 'card-still-dark.jpg')
 }
 # transparent cut-outs for the product page (no colour taken from the platform) and on-model photos when present
 Get-ChildItem (Join-Path $Scratch 'outlet-canvas\cut') -Filter '*-cut.png' | ForEach-Object { Copy-Item $_.FullName (Join-Path $Out ('assets\' + $_.Name)) -Force }

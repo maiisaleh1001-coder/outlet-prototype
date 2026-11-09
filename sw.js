@@ -70,6 +70,8 @@ const CORE = [
   './assets/bag-cut.png',
   './assets/bag.jpg',
   './assets/banner-coat.jpg',
+  './assets/card-bag-dark.jpg',
+  './assets/card-still-dark.jpg',
   './assets/dress-black.jpg',
   './assets/dress-cut.png',
   './assets/dress-green-cut.png',
