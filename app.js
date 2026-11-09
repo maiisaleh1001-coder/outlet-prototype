@@ -69,7 +69,7 @@
       if (err) { e.preventDefault(); e.stopPropagation(); toast(err); return; }
       write('outlet-otp-for', 'register');
     }, true);
-    var p2 = screen.querySelector('#pass2'); if (p2) p2.value = '';
+    // demo build: the form arrives filled in, so one tap goes through
   }
   if (page === 'otp.html') {
     var otpIns = [].slice.call(screen.querySelectorAll('input[inputmode="numeric"]')), otpBtn = screen.querySelector('button[disabled], button');
