@@ -141,9 +141,20 @@
   }
   function cartItem(p) { return { src: p.src, alt: p.alt, name: p.name, size: p.size, cond: p.cond, priceNum: p.priceNum, oldNum: p.oldNum || 0, seller: p.seller }; }
   // adds p; when the cart belongs to another seller, asks first. then() runs once the piece is in the cart.
-  function addToCart(p, then) {
-    var done = function (msg) { saveCart(); paintCart(true); if (then) then(); else toast(msg || 'تمت الإضافة للسلة'); };
-    if (cart.some(function (c) { return c.src === p.src && c.name === p.name; })) { toast('هذه القطعة في السلة بالفعل'); if (then) then(); return; }
+  function inCart(p) { return cart.some(function (c) { return c.src === p.src && c.name === p.name; }); }
+  var ICON_TICK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 12.5l4.2 4.2 8.8-9"></path></svg>';
+  // the round + on a card turns into a dark tick once its piece is in the cart (label kept, so a tap still opens the piece)
+  function markAddBtn(btn) { if (!btn) return; btn.innerHTML = ICON_TICK; btn.style.background = '#1C1917'; }
+  // the wide «إضافة للسلة» button on the product page
+  function paintAddedBtn(btn, label) {
+    if (!btn) return;
+    btn.innerHTML = '<span style="display: inline-flex; align-items: center; justify-content: center; gap: 8px">' + ICON_TICK + label + '</span>';
+    btn.style.borderColor = '#C2410C'; btn.style.background = '#FFF4EC'; btn.style.color = '#C2410C';
+  }
+  // adds p; when the cart belongs to another seller, asks first. then() replaces the toast; added() runs whenever the piece ends up in the cart.
+  function addToCart(p, then, added) {
+    var done = function (msg) { saveCart(); paintCart(true); if (added) added(); if (then) then(); else toast(msg || 'تمت الإضافة للسلة'); };
+    if (inCart(p)) { toast('هذه القطعة في السلة بالفعل'); if (added) added(); if (then) then(); return; }
     if (cart.length && cart[0].seller[0] !== p.seller[0]) {
       var html = '<section role="dialog" aria-modal="true" aria-label="تبدأ سلة جديدة؟" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
         '<div style="padding: 4px 18px 8px; display: flex; flex-direction: column; gap: 8px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">تبدأ سلة جديدة؟</h2>' +
@@ -174,6 +185,13 @@
     return on;
   }
   paintCart(false);
+  // cards whose piece is already in the cart show the tick instead of +
+  setTimeout(function () {
+    [].forEach.call(document.querySelectorAll('button[aria-label$=" للسلة"]'), function (btn) {
+      if (btn.hasAttribute('data-sp-add')) return;
+      var cd = cardOf(btn); if (cd && cd.querySelector('img') && inCart(productInfo(cd))) markAddBtn(btn);
+    });
+  }, 0);
 
   // ---------- product data (read from a card) ----------
   var sellers = [['خزانة لمى', '4.9', 'الرياض', 38], ['دولاب سارة', '4.8', 'جدة', 21], ['ركن هند', '5.0', 'الدمام', 54], ['ستايل نوف', '4.7', 'الخبر', 12]];
@@ -316,7 +334,7 @@
         paintFav(b, now);
         var cardFav = card.querySelector('button[aria-label="إضافة للمفضلة"], button[aria-pressed]');
         if (cardFav) paintFav(cardFav, now);
-      } else if (act === 'add') { closeSheet(); setTimeout(function () { addToCart(p); }, 340); }
+      } else if (act === 'add') { closeSheet(); setTimeout(function () { addToCart(p, null, function () { markAddBtn(card.querySelector('button[aria-label$=" للسلة"]')); }); }, 340); }
     }, opener);
     if (wrap && on) paintFav(wrap.querySelector('[data-act="fav"]'), true);
     if (wrap) {
@@ -536,6 +554,7 @@
         setTimeout(function () { flipping = false; }, 240);
       }, 200);
     };
+    if (inCart(p || PAGE_DEFAULT)) paintAddedBtn(screen.querySelector('[data-act="add"]'), 'في السلة');
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('[data-pager], [data-act], [data-p="fav"], [data-p="seller-link"]');
       if (!b || b.closest('.proto-sheet-wrap')) return; // sheets opened over the page handle their own buttons
@@ -548,7 +567,7 @@
         d.style.webkitLineClamp = open ? '3' : 'unset'; d.style.display = open ? '-webkit-box' : 'block';
         b.textContent = open ? 'قراءة المزيد' : 'عرض أقل';
       }
-      else if (b.getAttribute('data-act') === 'add') { addToCart(p || PAGE_DEFAULT); }
+      else if (b.getAttribute('data-act') === 'add') { addToCart(p || PAGE_DEFAULT, null, function () { paintAddedBtn(b, 'تمت الإضافة'); }); }
       else if (b.getAttribute('data-act') === 'buy') { addToCart(p || PAGE_DEFAULT, function () { location.href = 'cart.html'; }); }
     }, true);
   }
@@ -2451,10 +2470,11 @@
       tabs.querySelector('[data-sp-tab-r]').textContent = sInfo[3] + mine.length;
       if (tab === 'items') {
         panel.innerHTML = items.length ? '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px 10px">' + items.map(function (c) {
-          var on = !!favs[c[0]];
+          var on = !!favs[c[0]], has = inCart(infoFor(c[0], c[1], c[2], c[3], sIdx));
           return '<div data-sp-card data-src="' + c[0] + '" style="display: flex; flex-direction: column; gap: 6px; min-width: 0; cursor: pointer"><span style="position: relative; aspect-ratio: 3 / 4; border-radius: 18px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box"><img src="' + c[0] + '" alt="' + esc(c[2]) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply">' +
             '<button type="button" data-sp-fav aria-pressed="' + on + '" aria-label="' + (on ? 'إزالة من المفضلة' : 'إضافة للمفضلة') + '" style="position: absolute; top: 8px; left: 8px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #FFFFFF; color: ' + (on ? '#EA580C' : '#1C1917') + '; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="' + (on ? '#EA580C' : 'none') + '" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="' + HEART + '"></path></svg></button></span>' +
-            '<span style="font-size: 14px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc(c[1]) + '</span><span style="direction: ltr; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700">' + riyal(10, 11) + c[3] + '</span></div>';
+            '<span style="font-size: 14px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + esc(c[1]) + '</span><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700">' + riyal(10, 11) + c[3] + '</span>' +
+            '<button type="button" data-sp-add aria-label="' + (has ? esc(c[1]) + ' في السلة' : 'إضافة ' + esc(c[1]) + ' للسلة') + '" style="width: 32px; height: 32px; flex: none; border: 0; border-radius: 999px; background: ' + (has ? '#1C1917' : '#EA580C') + '; color: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0">' + (has ? ICON_TICK : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 18V6"></path></svg>') + '</button></div></div>';
         }).join('') + '</div>' : '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">لا توجد قطع معروضة حاليًا.</p>';
       } else {
         // star counts that add up to the shown average (one 3-star, the rest 4s and 5s)
@@ -2473,6 +2493,7 @@
       e.preventDefault(); e.stopPropagation();
       var c = CATALOG.filter(function (x) { return x[0] === card.getAttribute('data-src'); })[0], info = infoFor(c[0], c[1], c[2], c[3], sIdx);
       if (e.target.closest('[data-sp-fav]')) { toggleFav(c[0], info); render(); return; }
+      if (e.target.closest('[data-sp-add]')) { addToCart(info, null, render); return; }
       write('outlet-product', info); location.href = 'product.html';
     }, true);
   }
@@ -2576,7 +2597,7 @@
     if (t.closest('nav a[href="#profile"]')) { e.preventDefault(); location.href = 'account.html'; return; }
     var cartLink = t.closest('a[aria-label^="سلة التسوق"]');
     if (cartLink) { e.preventDefault(); location.href = 'cart.html'; return; }
-    var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"]');
+    var add = t.closest('button[aria-label^="أضف "][aria-label$=" للسلة"], button[aria-label^="إضافة "][aria-label$=" للسلة"]');
     if (add) { var c = cardOf(add); if (c) openQuickAdd(c, add); return; }
     var opensFilter = t.closest('button[aria-label^="الفلاتر"], button[aria-label^="ترتيب حسب"]');
     if (opensFilter && document.getElementById('tpl-filter')) { openFilter(opensFilter); return; }
