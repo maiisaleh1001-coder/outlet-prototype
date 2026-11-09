@@ -19,12 +19,14 @@
   // ---------- first launch + auth: splash → onboarding → login / register / guest ----------
   // the home page sends a fresh visit (one per browser tab) through the splash first
   if (page === 'index.html' && !read('outlet-intro-seen', false) && !/[?&]skip/.test(location.search)) { write('outlet-intro-seen', true); location.replace('splash.html'); return; }
+  // demo build: forms come filled so a click-through never stops on an empty field
+  var demoFill = function (el, v) { if (el && !el.value) el.value = v; };
   var goHome = function (as, msg) { write('outlet-intro-seen', true); write('outlet-auth', as); if (msg) write('outlet-flash-home', msg); location.href = './'; };
   if (page === 'index.html') { var fh = read('outlet-flash-home', ''); if (fh) { write('outlet-flash-home', ''); setTimeout(function () { toast(fh); }, 400); } }
   if (page === 'splash.html') {
     write('outlet-intro-seen', true);
-    setTimeout(function () { location.replace('onboarding.html'); }, 1600);
-    screen.addEventListener('click', function () { location.replace('onboarding.html'); });
+    setTimeout(function () { location.replace('login.html'); }, 1600);
+    screen.addEventListener('click', function () { location.replace('login.html'); });
   }
   if (page === 'onboarding.html') {
     var obKnob = screen.querySelector('button[aria-label^="السحب"]');
@@ -650,7 +652,7 @@
       var rows = ADDRS.map(function (a, i) {
         var on = i === co.addr;
         return '<button type="button" role="radio" aria-checked="' + on + '" data-addr="' + i + '" style="width: 100%; border: 0; border-radius: 18px; background: ' + (on ? '#FFF4EC' : '#F7F3F0') + '; padding: 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #1C1917; text-align: right">' +
-          '<span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>' +
+          '<span aria-hidden="true" style="order: 2; width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>' +
           '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 22px; font-weight: 700">' + a.label + '</span><span style="font-size: 12px; line-height: 18px; color: #6B635D">' + a.line + '</span>' +
           (a.fee === null ? '<span style="font-size: 11px; line-height: 16px; color: #9A3412">التوصيل بالمندوب غير متاح هنا، والتسليم المباشر متاح</span>' : '') + '</span></button>';
       }).join('');
@@ -697,6 +699,8 @@
     paintPay();
     // light formatting for the card fields (nothing is stored or sent anywhere)
     var num = screen.querySelector('[data-card="number"]'), exp = screen.querySelector('[data-card="exp"]'), cvv = screen.querySelector('[data-card="cvv"]');
+    // demo build: card fields come filled with a test card
+    demoFill(num, '4847 8300 1234 5678'); demoFill(exp, '08 / 28'); demoFill(cvv, '123'); demoFill(screen.querySelector('[data-card="name"]'), 'SARA ALOTAIBI');
     num.addEventListener('input', function () { num.value = num.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 '); });
     exp.addEventListener('input', function () { var d = exp.value.replace(/\D/g, '').slice(0, 4); exp.value = d.length > 2 ? d.slice(0, 2) + ' / ' + d.slice(2) : d; });
     cvv.addEventListener('input', function () { cvv.value = cvv.value.replace(/\D/g, '').slice(0, 4); });
@@ -1062,7 +1066,7 @@
     var pillBox = document.createElement('span'); pillBox.innerHTML = statusPill(effSt(ro));
     screen.querySelector('[data-rp-status]').replaceWith(pillBox.firstChild);
     var notYet = !(effSt(ro) === 'arrived' || effSt(ro) === 'handed');
-    var reasonBtns = [].slice.call(screen.querySelectorAll('[data-reason]')), reason = null;
+    var reasonBtns = [].slice.call(screen.querySelectorAll('[data-reason]')), reason = 'mismatch'; // demo build: the first reason comes picked, as on the board
     var sendBtn = screen.querySelector('[data-rp-send]');
     var paintReasons = function () {
       reasonBtns.forEach(function (b) {
@@ -1087,9 +1091,10 @@
     reasonBtns.forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); if (b.disabled) return; reason = b.getAttribute('data-reason'); paintReasons(); }); });
     var txt = screen.querySelector('[data-rp-text]'), cnt = screen.querySelector('[data-rp-count]');
     txt.addEventListener('input', function () { cnt.textContent = txt.value.length + ' / 500'; });
+    demoFill(txt, 'المقاس المكتوب في الإعلان 40، والحذاء اللي وصلني مقاسه 38.'); cnt.textContent = txt.value.length + ' / 500';
     // photos: real file picker, previews only (nothing is uploaded in the prototype)
     var photosBox = screen.querySelector('[data-rp-photos]'), addTile = screen.querySelector('[data-rp-add]'), photoTpl = screen.querySelector('[data-rp-photo]');
-    photoTpl.remove();
+    photoTpl = photoTpl.cloneNode(true); // demo build: the board's sample photo stays attached
     var picker = document.createElement('input'); picker.type = 'file'; picker.accept = 'image/*'; picker.multiple = true; picker.hidden = true; screen.appendChild(picker);
     var photoCount = function () { return photosBox.querySelectorAll('[data-rp-photo]').length; };
     addTile.addEventListener('click', function (e) { e.stopPropagation(); picker.click(); });
@@ -1517,7 +1522,7 @@
   function pickSheet(title, options, current, onPick) {
     mountSheet('<section role="dialog" aria-modal="true" aria-label="' + title + '" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
       '<h2 style="margin: 0; padding: 0 18px 8px; font-size: 20px; line-height: 28px; font-weight: 700">' + title + '</h2><div style="display: flex; flex-direction: column; gap: 8px; padding: 0 18px 28px">' +
-      options.map(function (o) { var on = o === current; return '<button type="button" data-act="pick" data-val="' + o + '" style="min-height: 52px; border: 0; border-radius: 16px; background: ' + (on ? '#FFF4EC' : '#F7F3F093') + '; padding: 0 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; font-size: 15px; font-weight: ' + (on ? 700 : 500) + '; color: #1C1917; text-align: right"><span aria-hidden="true" style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>' + o + '</button>'; }).join('') +
+      options.map(function (o) { var on = o === current; return '<button type="button" data-act="pick" data-val="' + o + '" style="min-height: 52px; border: 0; border-radius: 16px; background: ' + (on ? '#FFF4EC' : '#F7F3F093') + '; padding: 0 14px; display: flex; align-items: center; gap: 12px; font-family: inherit; font-size: 15px; font-weight: ' + (on ? 700 : 500) + '; color: #1C1917; text-align: right"><span aria-hidden="true" style="order: 2; margin-right: auto; width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>' + o + '</button>'; }).join('') +
       '</div></section>', function (e, b) { if (b && b.getAttribute('data-act') === 'pick') { var v = b.getAttribute('data-val'); closeSheet(); setTimeout(function () { onPick(v); }, 200); } }, null);
   }
   var fieldBox = 'min-height: 52px; border-radius: 16px; background: #F7F3F0; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box';
@@ -1536,7 +1541,7 @@
         return '<section role="dialog" aria-modal="true" aria-label="تغيير رقم الجوال" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
           '<div style="padding: 0 18px 28px; display: flex; flex-direction: column; gap: 12px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + (step === 1 ? 'رقم الجوال الجديد' : 'رمز التحقق مطلوب') + '</h2>' +
           '<p style="margin: 0; font-size: 13px; line-height: 20px; color: #6B635D">' + (step === 1 ? 'سنرسل رمز تحقق من 4 أرقام إلى الرقم الجديد.' : 'بعتنا الرمز على <b style="direction: ltr; display: inline-block">+966 ' + esc(num) + '</b>. (في البروتوتايب يمكن إدخال أي 4 أرقام)') + '</p>' +
-          '<label style="' + fieldBox + '; direction: ltr">' + (step === 1 ? '<span style="font-weight: 700; color: #6B635D">+966</span>' : '') + '<input data-ph-in type="tel" inputmode="numeric" maxlength="' + (step === 1 ? 11 : 4) + '" placeholder="' + (step === 1 ? '5X XXX XXXX' : '• • • •') + '" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 17px; letter-spacing: ' + (step === 1 ? '0.5px' : '8px') + '; color: #1C1917; text-align: left"></label>' +
+          '<label style="' + fieldBox + '; direction: ltr">' + (step === 1 ? '<span style="font-weight: 700; color: #6B635D">+966</span>' : '') + '<input data-ph-in type="tel" inputmode="numeric" value="' + (step === 1 ? '55 987 6543' : '4719') + '" maxlength="' + (step === 1 ? 11 : 4) + '" placeholder="' + (step === 1 ? '5X XXX XXXX' : '• • • •') + '" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 17px; letter-spacing: ' + (step === 1 ? '0.5px' : '8px') + '; color: #1C1917; text-align: left"></label>' +
           '<button type="button" data-act="next" style="height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700">' + (step === 1 ? 'إرسال رمز التحقق' : 'تأكيد') + '</button></div></section>';
       };
       var handler = function (ev, b) {
@@ -1610,6 +1615,7 @@
     var ei = read('outlet-addr-edit', -1), ea = ADDRS[ei] || null;
     var cur = ea ? { label: ea.label, city: ea.city || 'الرياض', detail: ea.detail || ea.line, def: !!ea.def, pickup: !!ea.pickup } : { label: 'البيت', city: 'الرياض', detail: '', def: !ADDRS.length, pickup: false };
     screen.querySelector('h1').textContent = ea ? 'تعديل العنوان' : 'عنوان جديد';
+    if (!cur.detail) cur.detail = 'حي النرجس، شارع الأمير سعود، مبنى 12، شقة 4'; // demo build: a new address comes filled
     var line = screen.querySelector('[data-af-line]'); line.value = cur.detail;
     var cityVal = screen.querySelector('[data-af-city-value]'); cityVal.textContent = cur.city;
     var labels = [].slice.call(screen.querySelectorAll('[data-af-label]'));
@@ -1723,6 +1729,7 @@
   }
 
   if (page === 'delete-account.html') {
+    demoFill(screen.querySelector('[data-del-pass]'), 'outlet2026');
     var dOrders = allOrders(), act = dOrders.filter(function (x) { return CURRENT[effSt(x)] && effSt(x) !== 'disputed'; }).length
       + SELL_ORDERS.filter(function (x) { return CURRENT[x.status] && x.status !== 'disputed'; }).length;
     var disp = dOrders.filter(function (x) { return effSt(x) === 'disputed'; }).length;
@@ -1911,6 +1918,7 @@
   }
 
   if (page === 'support.html') {
+    demoFill(screen.querySelector('[data-sup-msg]'), 'طلبت فستان من أسبوع وما وصلني أي تحديث عن موعد التوصيل، ممكن تساعدوني؟');
     var topic = 'طلب', supOrder = 'OUT-24790';
     var tps = [].slice.call(screen.querySelectorAll('[data-sup-topic]'));
     var paintT = function () { tps.forEach(function (b) { var on = b.getAttribute('data-sup-topic') === topic; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500'; }); };
@@ -1939,12 +1947,13 @@
     if (EDIT && !editP) { location.replace('my-products.html'); return; }
     var $a = function (s) { return screen.querySelector(s); }, $$a = function (s) { return [].slice.call(screen.querySelectorAll(s)); };
     var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلية', nobrand: false };
-    // start empty: the board shows a filled example
-    var phBox = $a('[data-ap-photos]'), phTpl = $a('[data-ap-photo]'), addBtn = $a('[data-ap-add]');
-    phTpl.remove();
+    // demo build: a new product starts from the board's filled example; edit mode fills from the product below
+    var phBox = $a('[data-ap-photos]'), phTpl = $a('[data-ap-photo]').cloneNode(true), addBtn = $a('[data-ap-add]');
+    if (EDIT) $a('[data-ap-photo]').remove();
     var nameIn = $a('[data-ap-name]'), brandIn = $a('[data-ap-brand]'), priceIn = $a('[data-ap-price]'), usesIn = $a('[data-ap-uses]'), descIn = $a('[data-ap-desc]');
-    nameIn.value = ''; brandIn.value = ''; priceIn.value = ''; usesIn.value = '0'; descIn.value = '';
-    $a('[data-ap-desc-count]').textContent = '0 / 500';
+    if (EDIT) { nameIn.value = ''; brandIn.value = ''; priceIn.value = ''; usesIn.value = '0'; descIn.value = ''; }
+    else { ['cat', 'size', 'color', 'cond'].forEach(function (k) { var b = $a('[data-ap-' + k + '][aria-pressed="true"]'); if (b) st[k] = b.getAttribute('data-ap-' + k); }); }
+    $a('[data-ap-desc-count]').textContent = descIn.value.length + ' / 500';
     $a('[data-ap-city-value]').textContent = profile().city;
     var colorOther = null;
     var paintAll = function () {
@@ -2074,6 +2083,7 @@
   }
 
   if (page === 'seller-setup.html') {
+    demoFill(screen.querySelector('[data-ss-id]'), '1098765432'); demoFill(screen.querySelector('[data-ss-iban]'), '80 1000 0000 1234 5678 9012');
     var ssAddr = (ADDRS.filter(function (a) { return a.pickup; })[0] || ADDRS[0]);
     var ssV = screen.querySelector('[data-ss-addr-value]');
     ssV.textContent = ssAddr ? ssAddr.label + ' · ' + ssAddr.line : 'اختيار عنوان';
@@ -2123,8 +2133,8 @@
     rq('[data-rate-sub]').innerHTML = rt.who + ' · طلب <span style="direction: ltr; display: inline-block">' + rt.o.no + '</span> · ' + esc(rt.o.items[0].name);
     var rimg = rq('[data-rate-thumb]'); rimg.src = rt.o.items[0].src; rimg.alt = rt.o.items[0].alt || rt.o.items[0].name;
     var note = rq('[data-rate-text]').closest('div').nextElementSibling; if (note) note.lastElementChild.textContent = rv.role === 'sell' ? 'يصل تقييمك للمشتري إلى فريق outlet ولا يظهر للعامة، ولا يمكن تعديله بعد الإرسال.' : 'يُنشر التقييم مباشرة في صفحة البائع، ولا يمكن تعديله بعد الإرسال.';
-    var stars = 0, txt = rq('[data-rate-text]'), cnt = rq('[data-rate-count]'), send = rq('[data-rate-send]');
-    txt.value = ''; cnt.textContent = '0 / 300';
+    var stars = 5, txt = rq('[data-rate-text]'), cnt = rq('[data-rate-count]'), send = rq('[data-rate-send]');
+    txt.value = rv.role === 'sell' ? 'تواصل سريع واستلم في الموعد. شكرًا!' : 'القطعة نفس الوصف بالضبط، والتغليف مرتب والتعامل راقي.'; cnt.textContent = txt.value.length + ' / 300';
     var paintStars = function () {
       [].forEach.call(screen.querySelectorAll('[data-rate-star]'), function (b) {
         var on = +b.getAttribute('data-rate-star') <= stars, svg = b.querySelector('svg');
