@@ -50,7 +50,7 @@ $pages = @(
   @('U23-ProductStatus.dc.html', 'product-status.html', 'outlet · تفاصيل المنتج'),
   @('U01-Splash.dc.html', 'splash.html', 'outlet'),
   @('O01-Onboarding.dc.html', 'onboarding.html', 'outlet · أهلًا بك'),
-  @('U04-Login.dc.html', 'login.html', 'outlet · تسجيل الدخول'),
+  @('U04i-Login-Carousel.dc.html', 'login.html', 'outlet · تسجيل الدخول'),
   @('U02-Register.dc.html', 'register.html', 'outlet · إنشاء حساب'),
   @('U03-OTP.dc.html', 'otp.html', 'outlet · رمز التحقق'),
   @('U05-Forgot.dc.html', 'forgot.html', 'outlet · استعادة كلمة المرور'),
@@ -109,6 +109,7 @@ if ($src -match '\{\{') {
 }
 foreach ($p2 in $pages) { $src = $src.Replace('href="' + $p2[0] + '"', 'href="' + $(if ($p2[1] -eq 'index.html') { './' } else { $p2[1] }) + '"') }
 $src = $src.Replace('href="U35-Account.dc.html"', 'href="account.html"')  # option A link from older boards
+$src = $src.Replace('href="U04-Login.dc.html"', 'href="login.html"')  # the carousel login (U04i) replaced the first login board
 $title = $pg[2]
 $helmet = [regex]::Match($src, '(?s)<helmet>(.*?)</helmet>').Groups[1].Value.Trim()
 $body = [regex]::Match($src, '(?s)</helmet>(.*?)</x-dc>').Groups[1].Value.Trim()
