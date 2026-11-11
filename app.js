@@ -1489,10 +1489,11 @@
   if (page === 'withdraw.html') {
     var dw = wallet(), dsum = walletSums(dw), bi = bankInfo();
     var amIn = screen.querySelector('[data-wd-amount]');
-    screen.querySelector('[data-wd-avail]').innerHTML = 'المتاح للسحب: <b style="color: #1C1917">' + dsum.free + ' ريال</b>';
+    var wdHint = screen.querySelector('[data-wd-avail]'), wdBox = screen.querySelector('[data-wd-box]'), wdGo = screen.querySelector('[data-wd-submit]');
+    var wdIcon = wdHint.querySelector('svg') ? wdHint.querySelector('svg').outerHTML : '';
     screen.querySelector('[data-wd-bank]').textContent = bi.bank;
     screen.querySelector('[data-wd-iban]').textContent = bi.masked + ' · ' + bi.name;
-    amIn.value = dsum.free > 0 ? dsum.free : 0;
+    amIn.value = dsum.free > 0 ? Math.min(300, dsum.free) : ''; // demo build: a typical amount, under the balance
     var quick = [].slice.call(screen.querySelectorAll('[data-wd-quick]'));
     var paintQ = function (k) { quick.forEach(function (b) { var on = b.getAttribute('data-wd-quick') === k; b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500'; }); };
     var recalc = function () {
@@ -1500,7 +1501,13 @@
       screen.querySelector('[data-wd-sum]').innerHTML = money(v, 13);
       screen.querySelector('[data-wd-fee]').innerHTML = money(WD_FEE, 13);
       screen.querySelector('[data-wd-net]').innerHTML = money(Math.max(0, v - WD_FEE), 18);
-      paintQ(v === dsum.free ? 'all' : v === Math.floor(dsum.free / 2) ? 'half' : '');
+      paintQ(v && v === dsum.free ? 'all' : v && v === Math.floor(dsum.free / 2) ? 'half' : '');
+      // the limit sits right under the field and turns red the moment the amount goes over it
+      var over = v > dsum.free;
+      wdHint.style.color = over ? '#B42318' : '#6B635D';
+      wdHint.innerHTML = wdIcon + '<span>' + (!dsum.free ? 'لا يوجد رصيد متاح للسحب الآن' : over ? 'المبلغ أكبر من رصيدك المتاح. الحد الأقصى <b>' + dsum.free + ' ريال</b>' : 'لا يمكن أن يتجاوز المبلغ رصيدك المتاح: <b style="color: #1C1917">' + dsum.free + ' ريال</b>') + '</span>';
+      if (wdBox) wdBox.style.boxShadow = over ? 'inset 0 0 0 1.5px #B42318' : 'none';
+      wdGo.style.opacity = over || !v || !dsum.free ? '0.45' : '1';
       return v;
     };
     recalc();
@@ -1982,7 +1989,14 @@
     else { ['cat', 'size', 'color', 'cond'].forEach(function (k) { var b = $a('[data-ap-' + k + '][aria-pressed="true"]'); if (b) st[k] = b.getAttribute('data-ap-' + k); }); }
     $a('[data-ap-desc-count]').textContent = descIn.value.length + ' / 500';
     $a('[data-ap-city-value]').textContent = profile().city;
-    var colorOther = null;
+    var colorOther = null, sizeOther = null;
+    // «مقاس آخر»: a free-text size under the chips, the same way «لون آخر» works
+    var openSizeOther = function (val, focus) {
+      if (!sizeOther) { sizeOther = document.createElement('span'); sizeOther.style.cssText = fieldBox; sizeOther.innerHTML = '<input data-ap-size-other type="text" maxlength="12" placeholder="اكتب المقاس، مثل 46 أو 3XL" aria-label="مقاس آخر" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 15px; color: #1C1917">'; $a('[data-ap-sizes]').after(sizeOther); sizeOther.querySelector('input').addEventListener('input', function () { clearErr('size'); }); }
+      if (val != null) sizeOther.querySelector('input').value = val;
+      if (focus) sizeOther.querySelector('input').focus();
+    };
+    var closeSizeOther = function () { if (sizeOther) { sizeOther.remove(); sizeOther = null; } };
     var paintAll = function () {
       $$a('[data-ap-cat]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-cat') === st.cat); });
       $$a('[data-ap-size]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-size') === st.size); });
@@ -2002,7 +2016,7 @@
       $a('[data-ap-net]').textContent = p ? 'سيصلك ' + (Math.round(p * 0.85 * 10) / 10) + ' ريال بعد عمولة المنصة (15%)' : 'تُخصم عمولة المنصة 15% من السعر عند بيع القطعة.';
     };
     var renderSizes = function () {
-      $a('[data-ap-sizes]').innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px">' + (SIZES[st.cat] || []).map(function (s) { return chipH('data-ap-size', s); }).join('') + '</div>';
+      $a('[data-ap-sizes]').innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px">' + (SIZES[st.cat] || []).map(function (s) { return chipH('data-ap-size', s); }).join('') + (st.cat && st.cat !== 'شنط' ? chipH('data-ap-size', 'آخر').replace('>آخر</button>', '>مقاس آخر</button>') : '') + '</div>';
     };
     if (editP) {
       var guessCat = editP.cat || (/فستان/.test(editP.name) ? 'فساتين' : /حذاء|كوتشي/.test(editP.name) ? 'أحذية' : /شنط/.test(editP.name) ? 'شنط' : 'ملابس');
@@ -2021,14 +2035,17 @@
         else { bn.style.background = '#FEF6E7'; bn.firstElementChild.style.color = '#9A5800'; bn.firstElementChild.textContent = editP.st === 'مخفي' ? 'المنتج مخفي الآن' : 'المنتج منشور الآن'; bn.lastElementChild.textContent = editP.st === 'مخفي' ? 'أي تعديل يعيد المنتج للمراجعة، ولن يظهر إلا بعد موافقة فريق outlet.' : 'أي تعديل يخفي المنتج عن المشترين ويعيده للمراجعة حتى يوافق فريق outlet.'; }
       }
     }
+    var customSize = '';
+    if (editP && st.size && (SIZES[st.cat] || []).indexOf(st.size) === -1) { customSize = st.size; st.size = 'آخر'; }
     renderSizes(); paintAll();
+    if (st.size === 'آخر') openSizeOther(customSize, false);
     var clearErr = function (k) { var f = $a('[data-ap-field="' + k + '"]'), e = f && f.querySelector('[data-ap-err]'); if (e) e.remove(); };
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('[data-ap-cat], [data-ap-size], [data-ap-color], [data-ap-cond], [data-ap-auth], [data-ap-nobrand], [data-ap-dec], [data-ap-inc], [data-ap-city], [data-ap-add], [data-ap-remove], [data-ap-submit], [data-ap-rules]');
       if (!b || b.closest('.proto-sheet-wrap')) return;
       e.preventDefault(); e.stopPropagation();
-      if (b.hasAttribute('data-ap-cat')) { var c = b.getAttribute('data-ap-cat'); if (c !== st.cat) { st.cat = c; st.size = c === 'شنط' ? 'مقاس واحد' : ''; renderSizes(); } clearErr('cat'); }
-      else if (b.hasAttribute('data-ap-size')) { st.size = b.getAttribute('data-ap-size'); clearErr('size'); }
+      if (b.hasAttribute('data-ap-cat')) { var c = b.getAttribute('data-ap-cat'); if (c !== st.cat) { st.cat = c; st.size = c === 'شنط' ? 'مقاس واحد' : ''; renderSizes(); closeSizeOther(); } clearErr('cat'); }
+      else if (b.hasAttribute('data-ap-size')) { st.size = b.getAttribute('data-ap-size'); clearErr('size'); if (st.size === 'آخر') openSizeOther(null, true); else closeSizeOther(); }
       else if (b.hasAttribute('data-ap-color')) {
         st.color = b.getAttribute('data-ap-color'); clearErr('color');
         if (st.color === 'آخر' && !colorOther) { colorOther = document.createElement('span'); colorOther.style.cssText = fieldBox; colorOther.innerHTML = '<input data-ap-color-other type="text" maxlength="20" placeholder="اللون مطلوب" aria-label="لون آخر" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 15px; color: #1C1917">'; b.parentNode.after(colorOther); colorOther.querySelector('input').focus(); }
@@ -2080,10 +2097,11 @@
     var submit = function () {
       var name = nameIn.value.trim(), price = parseInt(priceIn.value, 10) || 0, uses = usesIn.value === '' ? NaN : parseInt(usesIn.value, 10);
       var color = st.color === 'آخر' ? (colorOther && colorOther.querySelector('input').value.trim()) : st.color;
+      var size = st.size === 'آخر' ? (sizeOther && sizeOther.querySelector('input').value.trim()) : st.size;
       if (!tiles().length) return fail('photos', 'يلزم رفع صورة واحدة على الأقل');
       if (name.length < 3) return fail('name', 'اسم المنتج مطلوب');
       if (!st.cat) return fail('cat', 'التصنيف مطلوب');
-      if (!st.size && st.cat !== 'شنط') return fail('size', 'المقاس مطلوب');
+      if (!size && st.cat !== 'شنط') return fail('size', st.size === 'آخر' ? 'اكتب المقاس' : 'المقاس مطلوب');
       if (!color) return fail('color', 'اللون مطلوب');
       if (!st.nobrand && !brandIn.value.trim()) return fail('brand', 'الماركة مطلوبة، أو اختيار «بدون ماركة»');
       if (!st.cond) return fail('cond', 'حالة المنتج مطلوبة');
@@ -2092,7 +2110,7 @@
       var PRL = products(), id = editP ? editP.id : Date.now();
       if (editP) PRL = PRL.filter(function (x) { return x.id !== editP.id; });
       PRL.unshift({ id: id, src: tiles()[0].querySelector('img').src, alt: name, name: name, price: price, st: 'قيد المراجعة', sub: 'تم إرساله للمراجعة الآن، ولم يظهر للمشترين بعد',
-        cat: st.cat, size: st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : brandIn.value.trim(), cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
+        cat: st.cat, size: size || st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : brandIn.value.trim(), cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
       write('outlet-products', PRL); write('outlet-ap-last', id);
       if (editP) { write('outlet-flash', 'تم حفظ التعديل وعاد المنتج للمراجعة'); location.replace('my-products.html'); return; }
       location.replace('add-product-sent.html');
