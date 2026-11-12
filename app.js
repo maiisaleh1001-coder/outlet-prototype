@@ -512,7 +512,10 @@
     views.push({ src: cut, t: 'scale(1.35)', o: '50% 22%' });
     if (views.length < 3) views.push({ src: cut, t: 'scale(1.35)', o: '50% 85%' });
     var view = 0, flipping = false, frame = null;
-    if (heroImg) {
+    // U-08 now shows one whole photo (no arrows on the board): the piece's own photo, nothing else; the 3D/flip version is kept as U08x
+    var singlePhoto = !document.querySelector('[data-pager]');
+    if (heroImg && singlePhoto) { if (key) heroImg.src = key; }
+    else if (heroImg) {
       heroImg.src = cut;
       frame = document.createElement('div');
       ['position', 'top', 'left', 'width', 'height', 'marginLeft'].forEach(function (k) { frame.style[k] = heroImg.style[k]; });
