@@ -2355,7 +2355,7 @@
       [].forEach.call(screen.querySelectorAll('p'), function (el) { if (/قطعة واحدة متاحة/.test(el.textContent)) el.lastChild.textContent = 'تم بيع هذه القطعة ولم تعد متاحة للشراء.'; });
     }
   }
-  if (page === 'index.html' || page === 'category.html' || page === 'search.html' || page === 'offers.html') {
+  if (page === 'index.html' || page === 'category.html' || page === 'search.html' || page === 'offers.html' || page === 'featured.html') {
     [].forEach.call(screen.querySelectorAll('img'), function (im) {
       if (!isSold(im.getAttribute('src'))) return;
       var card = im.closest('div[style*="border-radius: 18px"]');
@@ -2370,7 +2370,9 @@
   }
 
   // ---------- U-07e best offers (عرض الكل from the home offers row): category chips filter the discounted pieces ----------
-  if (page === 'offers.html') {
+  // U-07f «مختارات لك» uses the same page logic, without the discount wording
+  if (page === 'offers.html' || page === 'featured.html') {
+    var ofDeals = page === 'offers.html';
     var ofGrid = screen.querySelector('div[style*="grid-template-columns: repeat(2"]');
     var ofCards = ofGrid ? [].slice.call(ofGrid.children) : [];
     var ofName = function (c) { var n = c.querySelector('span[style*="ellipsis"]'); return n ? n.textContent.trim() : ''; };
@@ -2391,9 +2393,10 @@
         var ok = ofCat === 'الكل' || catOfName(ofName(c)) === ofCat;
         c._filtered = !ok; c.classList.toggle('proto-hide', !ok); if (ok) shown++;
       });
-      if (ofCount) ofCount.textContent = shown ? (shown === 1 ? 'قطعة واحدة' : shown === 2 ? 'قطعتين' : shown + ' قطع') + ' عليها خصم' : 'لا توجد عروض الآن';
+      var ofWord = ofDeals ? 'عروض' : 'مختارات';
+      if (ofCount) ofCount.textContent = shown ? (shown === 1 ? 'قطعة واحدة' : shown === 2 ? 'قطعتين' : shown + ' قطع') + (ofDeals ? ' عليها خصم' : '') : 'لا توجد ' + ofWord + ' الآن';
       ofEmpty.style.display = shown ? 'none' : 'flex';
-      ofEmpty.innerHTML = '<b style="font-size: 17px; line-height: 24px">لا توجد عروض ' + (ofCat === 'الكل' ? 'الآن' : 'في ' + ofCat + ' الآن') + '</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">تظهر هنا القطع اللي خفّض البائعين سعرها.</span>';
+      ofEmpty.innerHTML = '<b style="font-size: 17px; line-height: 24px">لا توجد ' + ofWord + ' ' + (ofCat === 'الكل' ? 'الآن' : 'في ' + ofCat + ' الآن') + '</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">' + (ofDeals ? 'تظهر هنا القطع اللي خفّض البائعين سعرها.' : 'نضيف هنا قطعًا جديدة على حسب تصفحك ومفضلتك.') + '</span>';
     };
     ofPaint();
     screen.addEventListener('click', function (e) {

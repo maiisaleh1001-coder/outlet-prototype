@@ -7,6 +7,7 @@ const CORE = [
   './categories.html',
   './search.html',
   './offers.html',
+  './featured.html',
   './product.html',
   './cart.html',
   './checkout.html',
