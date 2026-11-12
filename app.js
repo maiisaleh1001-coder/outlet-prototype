@@ -2344,7 +2344,8 @@
 
   // ---------- review fix: a piece bought in a (non-cancelled) order is sold: no buying, gone from browse lists ----------
   var SOLD_SRC = {};
-  allOrders().forEach(function (o) { if (o.status !== 'cancelled') (o.items || []).forEach(function (it) { if (it.src) SOLD_SRC[it.src.replace(/^.*\//, '')] = 1; }); });
+  // only pieces bought in this session leave the lists; the seeded demo orders keep the home rows and listing pages full
+  read('outlet-orders', []).forEach(function (o) { if (o.status !== 'cancelled') (o.items || []).forEach(function (it) { if (it.src) SOLD_SRC[it.src.replace(/^.*\//, '')] = 1; }); });
   var isSold = function (src) { return !!SOLD_SRC[(src || '').replace(/^.*\//, '')]; };
   if (page === 'product.html') {
     var spP = read('outlet-product', null);
