@@ -114,6 +114,7 @@ if ($src -match '\{\{') {
 }
 foreach ($p2 in $pages) { $src = $src.Replace('href="' + $p2[0] + '"', 'href="' + $(if ($p2[1] -eq 'index.html') { './' } else { $p2[1] }) + '"') }
 $src = $src.Replace('href="U35-Account.dc.html"', 'href="account.html"')  # option A link from older boards
+$src = $src.Replace('href="U35c2-Account-Selling.dc.html"', 'href="account.html"')  # selling side of the account page
 $src = $src.Replace('href="U04-Login.dc.html"', 'href="login.html"')  # the carousel login (U04i) replaced the first login board
 $title = $pg[2]
 $helmet = [regex]::Match($src, '(?s)<helmet>(.*?)</helmet>').Groups[1].Value.Trim()

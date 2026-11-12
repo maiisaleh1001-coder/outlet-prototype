@@ -2668,6 +2668,7 @@
     var t = e.target;
     var back = t.closest('a[aria-label="رجوع"]');
     if (back) {
+      if (back.hasAttribute('data-go-home')) return; // e.g. منتجاتي: back always lands on the home page
       var fromHere = false;
       try { fromHere = document.referrer && new URL(document.referrer).origin === location.origin; } catch (err) {}
       if (fromHere && history.length > 1) { e.preventDefault(); history.back(); }
