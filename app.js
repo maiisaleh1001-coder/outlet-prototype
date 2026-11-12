@@ -1847,7 +1847,7 @@
   }
   function products() {
     return read('outlet-products', null) || [
-      { id: 1, src: 'assets/dress-terracotta.jpg', alt: 'فستان تيراكوتا', name: 'فستان تيراكوتا ميدي', price: 190, off: 20, st: 'منشور', sub: 'ظاهر للمشترين من 3 نوفمبر' },
+      { id: 1, src: 'assets/dress-terracotta.jpg', alt: 'فستان تيراكوتا', name: 'فستان تيراكوتا ميدي', price: 190, disc: 38, st: 'منشور', sub: 'ظاهر للمشترين من 3 نوفمبر' },
       { id: 2, src: 'assets/shirt.jpg', alt: 'قميص كتان سماوي', name: 'قميص كتان سماوي', price: 95, st: 'قيد المراجعة', sub: 'فريق outlet يراجعه، ولم يظهر للمشترين بعد' },
       { id: 3, src: 'assets/dress-ivory.jpg', alt: 'فستان عاجي طويل', name: 'فستان عاجي طويل', price: 220, st: 'مرفوض', sub: 'سبب الرفض: الصور غير واضحة، يُفضّل تصوير القطعة في ضوء النهار' },
       { id: 4, src: 'assets/dress-black.jpg', alt: 'فستان أسود', name: 'فستان أسود كلاسيك', price: 210, st: 'مخفي', sub: 'غير ظاهر للمشترين، ويمكن إعادة إظهاره بدون مراجعة' },
@@ -1858,8 +1858,10 @@
       { id: 8, src: 'assets/dress-polka.jpg', alt: 'فستان منقط', name: 'فستان منقط', price: 300, st: 'مباع', sub: 'اكتمل · OUT-24420' }
     ];
   }
-  // a seller's discount: the buyer pays price after «off»%, and sees «خصم X٪» with the old price struck
-  var finalPrice = function (p) { return p.off ? Math.round(p.price * (100 - p.off) / 100) : p.price; };
+  // a seller's discount is a riyal amount (p.disc); the buyer pays price − disc and sees «خصم X٪» (rounded) with the old price struck
+  var discOf = function (p) { return p.disc || (p.off ? Math.round(p.price * p.off / 100) : 0); };
+  var pctOf = function (p) { return Math.max(1, Math.round(discOf(p) / p.price * 100)); };
+  var finalPrice = function (p) { return p.price - discOf(p); };
   var offBadge = function (n) { return '<span style="height: 20px; padding: 0 7px; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; flex: none">خصم ' + n + '٪</span>'; };
   var oldPrice = function (v, w, h, fs) { return '<span style="direction: ltr; display: inline-flex; align-items: center; gap: 3px; font-size: ' + fs + 'px; color: #8E857F; text-decoration: line-through">' + riyal(w, h) + v + '</span>'; };
   function saveSell() { write('outlet-sell-orders', SELL_ORDERS); }
@@ -1875,7 +1877,7 @@
           : p.order ? '<button type="button" data-p-act="order" style="' + linkBtn + '; color: #C2410C">عرض الطلب</button>' : '';
         return '<div data-prod="' + p.id + '" style="cursor: pointer; padding: 12px; border-radius: 18px; background: #F7F3F093; display: flex; gap: 12px"><span style="width: 64px; height: 76px; flex: none; border-radius: 12px; background: #FFFFFF; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box"><img src="' + p.src + '" alt="' + esc(p.alt) + '" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply"></span>' +
           '<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span style="display: flex; align-items: flex-start; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 14px; line-height: 20px; font-weight: 700">' + esc(p.name) + '</span>' + ppill(p.st) + '</span>' +
-          (p.off ? '<span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap"><span style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700">' + riyal(10, 11) + finalPrice(p) + '</span>' + oldPrice(p.price, 8, 9, 11) + offBadge(p.off) + '</span>'
+          (discOf(p) ? '<span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap"><span style="direction: ltr; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700">' + riyal(10, 11) + finalPrice(p) + '</span>' + oldPrice(p.price, 8, 9, 11) + offBadge(pctOf(p)) + '</span>'
             : '<span style="direction: ltr; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700">' + riyal(10, 11) + p.price + '</span>') +
           (p.sub ? '<span style="font-size: 12px; line-height: 18px; color: ' + (p.st === 'مرفوض' ? '#B42318' : '#6B635D') + '">' + esc(p.sub) + '</span>' : '') +
           (acts ? '<span style="display: flex; gap: 18px; padding-top: 2px">' + acts + '</span>' : '') + '</span></div>';
@@ -2035,10 +2037,9 @@
     var EDIT = page === 'edit-product.html', editId = read('outlet-edit-id', 0), editP = EDIT ? products().filter(function (x) { return x.id === editId; })[0] : null;
     if (EDIT && !editP) { location.replace('my-products.html'); return; }
     var $a = function (s) { return screen.querySelector(s); }, $$a = function (s) { return [].slice.call(screen.querySelectorAll(s)); };
-    var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلية', nobrand: false, disc: false, pct: 20 };
-    var dOn = $a('[data-ap-disc-on="1"]'), dChip = $a('[data-ap-disc][aria-pressed="true"]');
+    var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلية', nobrand: false, disc: false };
+    var dOn = $a('[data-ap-disc-on="1"]'), amtIn = $a('[data-ap-disc-amt]');
     if (dOn) st.disc = dOn.getAttribute('aria-checked') === 'true';
-    if (dChip) st.pct = +dChip.getAttribute('data-ap-disc');
     // demo build: a new product starts from the board's filled example; edit mode fills from the product below
     var phBox = $a('[data-ap-photos]'), phTpl = $a('[data-ap-photo]').cloneNode(true), addBtn = $a('[data-ap-add]');
     if (EDIT) $a('[data-ap-photo]').remove();
@@ -2070,14 +2071,13 @@
       sizeField.style.display = st.cat ? 'flex' : 'none';
       sizeField.firstElementChild.innerHTML = 'المقاس ' + (st.cat === 'شنط' ? '<span style="font-weight: 500; color: #8E857F">(اختياري)</span>' : '<span style="color: #C2410C">*</span>');
       if (st.cond === 'جديدة بالتيكت') { usesIn.value = '0'; usesIn.disabled = true; } else usesIn.disabled = false;
-      var p = parseInt(priceIn.value.replace(/\D/g, ''), 10) || 0, fp = st.disc ? Math.round(p * (100 - st.pct) / 100) : p;
-      $a('[data-ap-net]').textContent = p ? 'سيصلك ' + (Math.round(fp * 0.85 * 10) / 10) + ' ريال بعد ' + (st.disc ? 'الخصم و' : '') + 'عمولة المنصة (15%)' : 'تُخصم عمولة المنصة 15% من السعر عند بيع القطعة.';
+      var p = parseInt(priceIn.value.replace(/\D/g, ''), 10) || 0, amt = amtIn ? parseInt(amtIn.value, 10) || 0 : 0, okAmt = st.disc && amt > 0 && amt < p, fp = okAmt ? p - amt : p;
+      $a('[data-ap-net]').textContent = p ? 'سيصلك ' + (Math.round(fp * 0.85 * 10) / 10) + ' ريال بعد ' + (okAmt ? 'الخصم و' : '') + 'عمولة المنصة (15%)' : 'تُخصم عمولة المنصة 15% من السعر عند بيع القطعة.';
       $$a('[data-ap-disc-on]').forEach(function (b) { var on = (b.getAttribute('data-ap-disc-on') === '1') === st.disc; b.setAttribute('aria-checked', on ? 'true' : 'false'); b.style.background = on ? '#FFFFFF' : 'transparent'; b.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none'; b.style.fontWeight = on ? '700' : '500'; b.style.color = on ? '#1C1917' : '#6B635D'; });
-      $$a('[data-ap-disc]').forEach(function (b) { chipPaint(b, +b.getAttribute('data-ap-disc') === st.pct); });
       var dBox = $a('[data-ap-disc-box]');
       if (dBox) {
         dBox.style.display = st.disc ? 'flex' : 'none';
-        $a('[data-ap-disc-badge]').textContent = 'خصم ' + st.pct + '٪';
+        $a('[data-ap-disc-badge]').textContent = 'خصم ' + (okAmt ? Math.max(1, Math.round(amt / p * 100)) : 0) + '٪';
         $a('[data-ap-disc-new]').innerHTML = riyal(12, 13) + (p ? fp : 0);
         $a('[data-ap-disc-old]').innerHTML = riyal(9, 10) + p;
       }
@@ -2090,7 +2090,7 @@
       st.cat = guessCat; st.size = editP.size || (guessCat === 'شنط' ? 'مقاس واحد' : guessCat === 'أحذية' ? '40' : 'M');
       var guessCol = ['أسود', 'أبيض', 'بيج', 'بني', 'تيراكوتا', 'وردي', 'أخضر', 'أزرق'].filter(function (c) { return (editP.color || editP.name).indexOf(c) !== -1; })[0];
       st.color = editP.color && !guessCol ? 'آخر' : (guessCol || (/عاجي|أبيض/.test(editP.name) ? 'أبيض' : 'أسود'));
-      st.cond = editP.cond || 'ممتازة'; st.auth = editP.auth || 'أصلية'; st.disc = !!editP.off; st.pct = editP.off || 20;
+      st.cond = editP.cond || 'ممتازة'; st.auth = editP.auth || 'أصلية'; st.disc = !!discOf(editP); if (amtIn) amtIn.value = discOf(editP) || '';
       nameIn.value = editP.name; priceIn.value = editP.price; usesIn.value = editP.uses != null ? editP.uses : 2; descIn.value = editP.desc || '';
       if (editP.brand === 'بدون ماركة' || !editP.brand) st.nobrand = !editP.brand ? false : true; brandIn.value = editP.brand && editP.brand !== 'بدون ماركة' ? editP.brand : '';
       if (!editP.brand) { st.nobrand = true; }
@@ -2108,7 +2108,7 @@
     if (st.size === 'آخر') openSizeOther(customSize, false);
     var clearErr = function (k) { var f = $a('[data-ap-field="' + k + '"]'), e = f && f.querySelector('[data-ap-err]'); if (e) e.remove(); };
     screen.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-ap-cat], [data-ap-size], [data-ap-color], [data-ap-cond], [data-ap-auth], [data-ap-disc-on], [data-ap-disc], [data-ap-nobrand], [data-ap-dec], [data-ap-inc], [data-ap-city], [data-ap-add], [data-ap-remove], [data-ap-submit], [data-ap-rules]');
+      var b = e.target.closest('[data-ap-cat], [data-ap-size], [data-ap-color], [data-ap-cond], [data-ap-auth], [data-ap-disc-on], [data-ap-nobrand], [data-ap-dec], [data-ap-inc], [data-ap-city], [data-ap-add], [data-ap-remove], [data-ap-submit], [data-ap-rules]');
       if (!b || b.closest('.proto-sheet-wrap')) return;
       e.preventDefault(); e.stopPropagation();
       if (b.hasAttribute('data-ap-cat')) { var c = b.getAttribute('data-ap-cat'); if (c !== st.cat) { st.cat = c; st.size = c === 'شنط' ? 'مقاس واحد' : ''; renderSizes(); closeSizeOther(); } clearErr('cat'); }
@@ -2120,8 +2120,7 @@
       }
       else if (b.hasAttribute('data-ap-cond')) { st.cond = b.getAttribute('data-ap-cond'); clearErr('cond'); }
       else if (b.hasAttribute('data-ap-auth')) st.auth = b.getAttribute('data-ap-auth');
-      else if (b.hasAttribute('data-ap-disc-on')) st.disc = b.getAttribute('data-ap-disc-on') === '1';
-      else if (b.hasAttribute('data-ap-disc')) st.pct = +b.getAttribute('data-ap-disc');
+      else if (b.hasAttribute('data-ap-disc-on')) { st.disc = b.getAttribute('data-ap-disc-on') === '1'; clearErr('disc'); if (st.disc && amtIn && !amtIn.value) setTimeout(function () { amtIn.focus(); }, 0); }
       else if (b.hasAttribute('data-ap-nobrand')) { st.nobrand = !st.nobrand; if (st.nobrand) brandIn.value = ''; clearErr('brand'); }
       else if (b.hasAttribute('data-ap-dec') || b.hasAttribute('data-ap-inc')) { if (usesIn.disabled) return; var n = (parseInt(usesIn.value, 10) || 0) + (b.hasAttribute('data-ap-inc') ? 1 : -1); usesIn.value = Math.max(0, Math.min(99, n)); }
       else if (b.hasAttribute('data-ap-city')) { pickSheet('المدينة', CITIES.map(function (x) { return x[0]; }), $a('[data-ap-city-value]').textContent, function (v) { $a('[data-ap-city-value]').textContent = v; }); }
@@ -2131,6 +2130,7 @@
       else if (b.hasAttribute('data-ap-submit')) { submit(); return; }
       paintAll();
     }, true);
+    if (amtIn) amtIn.addEventListener('input', function () { amtIn.value = amtIn.value.replace(/D/g, '').slice(0, 6); clearErr('disc'); paintAll(); });
     priceIn.addEventListener('input', function () { priceIn.value = priceIn.value.replace(/\D/g, '').slice(0, 6); clearErr('price'); paintAll(); });
     usesIn.addEventListener('input', function () { usesIn.value = usesIn.value.replace(/\D/g, '').slice(0, 2); });
     nameIn.addEventListener('input', function () { clearErr('name'); });
@@ -2176,9 +2176,12 @@
       if (!st.cond) return fail('cond', 'حالة المنتج مطلوبة');
       if (isNaN(uses) || uses < 0) return fail('uses', 'عدد مرات الاستخدام مطلوب');
       if (price <= 0) return fail('price', 'يلزم إدخال سعر صحيح');
+      var amt = amtIn ? parseInt(amtIn.value, 10) || 0 : 0;
+      if (st.disc && amt <= 0) return fail('disc', 'اكتب قيمة الخصم');
+      if (st.disc && amt >= price) return fail('disc', 'الخصم لازم يكون أقل من السعر');
       var PRL = products(), id = editP ? editP.id : Date.now();
       if (editP) PRL = PRL.filter(function (x) { return x.id !== editP.id; });
-      PRL.unshift({ id: id, src: tiles()[0].querySelector('img').src, alt: name, name: name, price: price, off: st.disc ? st.pct : 0, st: 'قيد المراجعة', sub: 'تم إرساله للمراجعة الآن، ولم يظهر للمشترين بعد',
+      PRL.unshift({ id: id, src: tiles()[0].querySelector('img').src, alt: name, name: name, price: price, disc: st.disc ? amt : 0, st: 'قيد المراجعة', sub: 'تم إرساله للمراجعة الآن، ولم يظهر للمشترين بعد',
         cat: st.cat, size: size || st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : brandIn.value.trim(), cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
       write('outlet-products', PRL); write('outlet-ap-last', id);
       if (editP) { write('outlet-flash', 'تم حفظ التعديل وعاد المنتج للمراجعة'); location.replace('my-products.html'); return; }
@@ -2192,7 +2195,7 @@
       var li = screen.querySelector('[data-aps-img]'); li.src = lp.src; li.alt = lp.name;
       if (lp.src.indexOf('data:') === 0) { li.style.objectFit = 'cover'; li.style.mixBlendMode = 'normal'; li.parentNode.style.padding = '0'; }
       screen.querySelector('[data-aps-name]').textContent = lp.name;
-      screen.querySelector('[data-aps-price]').innerHTML = riyal(10, 11) + (lp.off ? Math.round(lp.price * (100 - lp.off) / 100) + ' <span style="font-size: 11px; font-weight: 500; color: #8E857F; text-decoration: line-through">' + lp.price + '</span> <span style="color: #C2410C; font-size: 11px">خصم ' + lp.off + '٪</span>' : lp.price);
+      screen.querySelector('[data-aps-price]').innerHTML = riyal(10, 11) + (discOf(lp) ? finalPrice(lp) + ' <span style="font-size: 11px; font-weight: 500; color: #8E857F; text-decoration: line-through">' + lp.price + '</span> <span style="color: #C2410C; font-size: 11px">خصم ' + pctOf(lp) + '٪</span>' : lp.price);
     }
   }
 
@@ -2535,7 +2538,7 @@
         '<div style="position: relative; height: 300px; flex: none; border-radius: 24px; background: #F7F3F0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: ' + (isData ? '0' : '18px') + '; box-sizing: border-box"><img src="' + pd.src + '" alt="' + esc(pd.alt || pd.name) + '" style="width: 100%; height: 100%; object-fit: ' + (isData ? 'cover' : 'contain') + '; mix-blend-mode: ' + (isData ? 'normal' : 'multiply') + '; opacity: ' + (st === 'مخفي' || st === 'غير متوفر' ? '0.55' : '1') + '">' +
         '<span style="position: absolute; top: 12px; right: 12px; height: 26px; padding: 0 10px; border-radius: 999px; background: #FFFFFF; color: ' + c[1] + '; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: ' + c[1] + '"></span>' + st + '</span></div>' +
         '<section aria-label="حالة المراجعة" style="padding: 14px; border-radius: 20px; background: ' + c[0] + '; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 16px; line-height: 24px; font-weight: 700; color: ' + c[1] + '">' + S[0] + '</span><span style="font-size: 13px; line-height: 20px; color: #4A4440">' + S[1] + '</span>' + S[2] + '</section>' +
-        '<div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + esc(pd.name) + '</h2>' + (pd.off ? '<span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px">' : '') + '<span style="direction: ltr; flex: none; display: inline-flex; align-items: center; gap: 5px; font-size: 20px; line-height: 28px; font-weight: 700">' + riyal(14, 15) + finalPrice(pd) + '</span>' + (pd.off ? '<span style="display: flex; align-items: center; gap: 6px">' + offBadge(pd.off) + oldPrice(pd.price, 10, 11, 13) + '</span></span>' : '') + '</div><span style="font-size: 12px; line-height: 18px; color: #6B635D">' + (st === 'مباع' ? 'صافي أرباحك ' + net + ' ريال بعد ' + (pd.off ? 'الخصم و' : '') + 'عمولة المنصة (15%)' : 'سيصلك ' + net + ' ريال بعد ' + (pd.off ? 'الخصم و' : '') + 'عمولة المنصة (15%)') + '</span></div>' +
+        '<div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px"><h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700">' + esc(pd.name) + '</h2>' + (discOf(pd) ? '<span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px">' : '') + '<span style="direction: ltr; flex: none; display: inline-flex; align-items: center; gap: 5px; font-size: 20px; line-height: 28px; font-weight: 700">' + riyal(14, 15) + finalPrice(pd) + '</span>' + (discOf(pd) ? '<span style="display: flex; align-items: center; gap: 6px">' + offBadge(pctOf(pd)) + oldPrice(pd.price, 10, 11, 13) + '</span></span>' : '') + '</div><span style="font-size: 12px; line-height: 18px; color: #6B635D">' + (st === 'مباع' ? 'صافي أرباحك ' + net + ' ريال بعد ' + (discOf(pd) ? 'الخصم و' : '') + 'عمولة المنصة (15%)' : 'سيصلك ' + net + ' ريال بعد ' + (discOf(pd) ? 'الخصم و' : '') + 'عمولة المنصة (15%)') + '</span></div>' +
         (st === 'منشور' ? '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">' + statT('<path d="M15.58 12c0 1.98-1.6 3.58-3.58 3.58S8.42 13.98 8.42 12 10.02 8.42 12 8.42s3.58 1.6 3.58 3.58Z"></path><path d="M12 20.27c3.53 0 6.82-2.08 9.11-5.68.9-1.41.9-3.78 0-5.19-2.29-3.6-5.58-5.68-9.11-5.68-3.53 0-6.82 2.08-9.11 5.68-.9 1.41-.9 3.78 0 5.19 2.29 3.6 5.58 5.68 9.11 5.68Z"></path>', d.views || 0, 'مشاهدة') + statT('<path d="M12.62 20.81c-.34.12-.9.12-1.24 0C8.48 19.82 2 15.69 2 8.69 2 5.6 4.49 3.1 7.56 3.1c1.82 0 3.43.88 4.44 2.24a5.53 5.53 0 0 1 4.44-2.24C19.51 3.1 22 5.6 22 8.69c0 7-6.48 11.13-9.38 12.12Z"></path>', d.favs || 0, 'في المفضلة') + '</div>' : '') +
         '<section style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 700">البيانات</h3><div style="padding: 4px 14px; border-radius: 20px; background: #F7F3F093; display: flex; flex-direction: column">' + rows.map(function (r) { return '<div style="display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 14px; line-height: 20px"><span style="color: #6B635D">' + r[0] + '</span><b style="font-weight: 700; text-align: left">' + esc(String(r[1])) + '</b></div>'; }).join('') + '</div></section>' +
         (d.desc ? '<section style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 700">الوصف</h3><p style="margin: 0; font-size: 14px; line-height: 23px; color: #4A4440">' + esc(d.desc) + '</p></section>' : '') +
