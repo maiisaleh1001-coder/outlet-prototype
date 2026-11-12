@@ -2355,7 +2355,7 @@
       [].forEach.call(screen.querySelectorAll('p'), function (el) { if (/قطعة واحدة متاحة/.test(el.textContent)) el.lastChild.textContent = 'تم بيع هذه القطعة ولم تعد متاحة للشراء.'; });
     }
   }
-  if (page === 'index.html' || page === 'category.html' || page === 'search.html') {
+  if (page === 'index.html' || page === 'category.html' || page === 'search.html' || page === 'offers.html') {
     [].forEach.call(screen.querySelectorAll('img'), function (im) {
       if (!isSold(im.getAttribute('src'))) return;
       var card = im.closest('div[style*="border-radius: 18px"]');
@@ -2367,6 +2367,39 @@
     var ggCat = new URLSearchParams(location.search).get('cat');
     if (ggC && ggCat && ggCat !== 'فساتين') ggC.textContent = ggN ? ggN + (ggN === 1 ? ' قطعة' : ggN === 2 ? ' قطعتين' : ' قطع') : '';
     if (gg && gg.children.length && !ggN) gg.insertAdjacentHTML('afterend', '<div style="padding: 60px 30px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><b style="font-size: 17px; line-height: 24px">لا توجد منتجات متاحة</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">القطع هنا تم بيعها. تُضاف القطع الجديدة بعد مراجعة فريق outlet.</span></div>');
+  }
+
+  // ---------- U-07e best offers (عرض الكل from the home offers row): category chips filter the discounted pieces ----------
+  if (page === 'offers.html') {
+    var ofGrid = screen.querySelector('div[style*="grid-template-columns: repeat(2"]');
+    var ofCards = ofGrid ? [].slice.call(ofGrid.children) : [];
+    var ofName = function (c) { var n = c.querySelector('span[style*="ellipsis"]'); return n ? n.textContent.trim() : ''; };
+    ofCards.forEach(function (c) { var mt = c.querySelector('[data-meta]'); if (mt) mt.textContent = metaOf(ofName(c)); });
+    var ofChips = [].slice.call(screen.querySelectorAll('nav[aria-label="التصنيفات"] a'));
+    var ofOnA = ofChips.filter(function (a) { return a.getAttribute('aria-current'); })[0], ofOffA = ofChips.filter(function (a) { return !a.getAttribute('aria-current'); })[0];
+    var ofOn = ofOnA ? ofOnA.getAttribute('style') : '', ofOff = ofOffA ? ofOffA.getAttribute('style') : '';
+    var ofCount = screen.querySelector('h1') && screen.querySelector('h1').nextElementSibling;
+    var ofEmpty = document.createElement('div');
+    ofEmpty.style.cssText = 'padding: 50px 30px; display: none; flex-direction: column; align-items: center; gap: 8px; text-align: center';
+    if (ofGrid) ofGrid.after(ofEmpty);
+    var ofCat = 'الكل';
+    var ofPaint = function () {
+      var shown = 0;
+      ofChips.forEach(function (a) { var on = a.textContent.trim() === ofCat; a.setAttribute('style', on ? ofOn : ofOff); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+      ofCards.forEach(function (c) {
+        if (c.style.display === 'none') return; // sold
+        var ok = ofCat === 'الكل' || catOfName(ofName(c)) === ofCat;
+        c._filtered = !ok; c.classList.toggle('proto-hide', !ok); if (ok) shown++;
+      });
+      if (ofCount) ofCount.textContent = shown ? (shown === 1 ? 'قطعة واحدة' : shown === 2 ? 'قطعتين' : shown + ' قطع') + ' عليها خصم' : 'لا توجد عروض الآن';
+      ofEmpty.style.display = shown ? 'none' : 'flex';
+      ofEmpty.innerHTML = '<b style="font-size: 17px; line-height: 24px">لا توجد عروض ' + (ofCat === 'الكل' ? 'الآن' : 'في ' + ofCat + ' الآن') + '</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">تظهر هنا القطع اللي خفّض البائعين سعرها.</span>';
+    };
+    ofPaint();
+    screen.addEventListener('click', function (e) {
+      var a = e.target.closest('nav[aria-label="التصنيفات"] a'); if (!a) return;
+      e.preventDefault(); e.stopPropagation(); ofCat = a.textContent.trim(); ofPaint();
+    }, true);
   }
 
   // ---------- U-23 seller product details & review status ----------
