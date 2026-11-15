@@ -227,7 +227,7 @@ $app = [System.IO.File]::ReadAllText((Join-Path $Scratch 'proto-app.js'), [Syste
 
 $manifest = @'
 {
-  "name": "outlet · سوق الملابس المستعملة",
+  "name": "outlet · سوق الماركات المستعملة",
   "short_name": "outlet",
   "description": "نموذج تفاعلي للشاشة الرئيسية لتطبيق outlet",
   "lang": "ar",
