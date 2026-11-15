@@ -220,7 +220,7 @@
   function sizeOf(name) { return /حذاء/.test(name) ? '40' : /شنط/.test(name) ? 'مقاس واحد' : ['S', 'M', 'L', 'XL', 'M', 'XS', 'L'][hash(name) % 7]; }
   function cardOf(el) { var b = el.querySelector ? el : null; return el.closest('div[style*="border-radius: 18px"]'); }
   // BRD card details: type · condition · times used (same rule on the board and here)
-  function catOfName(n) { return /فستان/.test(n) ? 'فساتين' : /شنط/.test(n) ? 'شنط' : /حذاء/.test(n) ? 'أحذية' : 'ملابس'; }
+  function catOfName(n) { return /فستان/.test(n) ? 'فساتين' : /شنط/.test(n) ? 'شنط' : 'ملابس'; }
   function usesOf(n) { return [2, 1, 0, 3, 2, 4][Math.floor(hash(n) / 7) % 6]; }
   function usesLabel(u) { return u === 0 ? 'لم تُستخدم' : u === 1 ? 'استُخدمت مرة' : u === 2 ? 'استُخدمت مرتين' : 'استُخدمت ' + u + ' مرات'; }
   function metaOf(n) { return catOfName(n) + ' · ' + ['ممتازة', 'كالجديدة', 'ممتازة', 'جيدة'][hash(n) % 4] + ' · ' + usesLabel(usesOf(n)); }
@@ -369,12 +369,11 @@
     }
   }
 
-  // ---------- the 4 BRD categories: فساتين / ملابس / شنط / أحذية (category.html?cat=…) ----------
-  var CAT_HASH = { '#dresses': 'فساتين', '#clothes': 'ملابس', '#bags': 'شنط', '#shoes': 'أحذية' };
+  // ---------- 3 categories: فساتين / ملابس / شنط (the client dropped أحذية) (category.html?cat=…) ----------
+  var CAT_HASH = { '#dresses': 'فساتين', '#clothes': 'ملابس', '#bags': 'شنط' };
   var CAT_ITEMS = {
     'ملابس': [['assets/sweater.jpg', 'كنزة صوف كريمي بألوان كحلي وأحمر', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن أزرق فاتح', 'قميص قطن مريح', 76], ['assets/trench.jpg', 'معطف ترنش بيج', 'معطف ترنش كلاسيكي', 520], ['assets/pants.jpg', 'بنطلون واسع بيج', 'بنطلون بيج', 85]],
-    'شنط': [['assets/bag.jpg', 'شنطة يد جلد بلون بني فاتح', 'شنطة جلد كلاسيكية', 320]],
-    'أحذية': [['assets/sneakers.jpg', 'حذاء رياضي جلد أبيض', 'حذاء أبيض', 150]]
+    'شنط': [['assets/bag.jpg', 'شنطة يد جلد بلون بني فاتح', 'شنطة جلد كلاسيكية', 320]]
   };
   if (page === 'category.html') {
     var curCat = new URLSearchParams(location.search).get('cat') || 'فساتين';
@@ -383,7 +382,7 @@
     var onA = catChips.filter(function (a) { return a.getAttribute('aria-current'); })[0], offA = catChips.filter(function (a) { return !a.getAttribute('aria-current'); })[0];
     var chipOn = onA ? onA.getAttribute('style') : '', chipOff = offA ? offA.getAttribute('style') : '';
     catChips.forEach(function (a) { var on = a.textContent.trim() === curCat; a.setAttribute('style', on ? chipOn : chipOff); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-    var CAT_THE = { 'فساتين': 'الفساتين', 'ملابس': 'الملابس', 'شنط': 'الشنط', 'أحذية': 'الأحذية' };
+    var CAT_THE = { 'فساتين': 'الفساتين', 'ملابس': 'الملابس', 'شنط': 'الشنط' };
     var h1c = document.querySelector('.screen h1'); if (h1c) h1c.textContent = curCat;
     var sIn = document.querySelector('.screen input[type="search"]'); if (sIn) { sIn.placeholder = 'ابحث في ' + CAT_THE[curCat] + '...'; sIn.setAttribute('aria-label', 'ابحث في ' + CAT_THE[curCat]); }
     document.title = 'outlet · ' + curCat;
@@ -840,11 +839,11 @@
   }
   var REASONS = { mismatch: 'غير مطابقة للوصف', defect: 'فيها عيب غير مذكور', fake: 'القطعة مقلّدة', missing: 'لم تصل أو وصلت تالفة' };
   function demoOrders() {
-    var d = read('outlet-demo-orders-v2', null);
+    var d = read('outlet-demo-orders-v3', null);
     if (d) return d;
     d = [
       { no: 'OUT-24790', date: '6 نوفمبر 2026', status: 'arrived', hoursLeft: 18,
-        items: [{ src: 'assets/sneakers.jpg', alt: 'حذاء رياضي جلد أبيض', name: 'حذاء أبيض', size: '40', cond: 'ممتازة', priceNum: 150 }],
+        items: [{ src: 'assets/bag.jpg', alt: 'شنطة يد جلد بلون بني فاتح', name: 'شنطة يد جلد', size: 'مقاس واحد', cond: 'ممتازة', priceNum: 150 }],
         seller: SELLERS[0], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 150, fee: 9, delivery: 25, total: 184, pay: 'بطاقة مدى',
         times: { paid: '6 نوفمبر · 3:20 م', preparing: '6 نوفمبر · 6:05 م', shipping: '7 نوفمبر · 11:40 ص', arrived: '8 نوفمبر · 1:15 م' } },
       { no: 'OUT-24655', date: '30 أكتوبر 2026', status: 'disputed', prevStatus: 'arrived',
@@ -863,7 +862,7 @@
         seller: SELLERS[2], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 320, fee: 9, delivery: 25, total: 354, pay: 'بطاقة ائتمانية',
         times: { paid: '20 أكتوبر · 2:45 م', cancelled: '20 أكتوبر · 4:10 م' } }
     ];
-    write('outlet-demo-orders-v2', d);
+    write('outlet-demo-orders-v3', d);
     return d;
   }
   var SELL_ORDERS = read('outlet-sell-orders', null) || [
@@ -884,7 +883,7 @@
     return mine.concat(demoOrders());
   }
   function saveOrder(o) {
-    ['outlet-orders', 'outlet-demo-orders-v2'].forEach(function (k) {
+    ['outlet-orders', 'outlet-demo-orders-v3'].forEach(function (k) {
       var list = read(k, []), i = list.findIndex(function (x) { return x.no === o.no; });
       if (i !== -1) { list[i] = o; write(k, list); }
     });
@@ -1141,7 +1140,7 @@
     reasonBtns.forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); if (b.disabled) return; reason = b.getAttribute('data-reason'); paintReasons(); }); });
     var txt = screen.querySelector('[data-rp-text]'), cnt = screen.querySelector('[data-rp-count]');
     txt.addEventListener('input', function () { cnt.textContent = txt.value.length + ' / 500'; });
-    demoFill(txt, 'المقاس المكتوب في الإعلان 40، والحذاء اللي وصلني مقاسه 38.'); cnt.textContent = txt.value.length + ' / 500';
+    demoFill(txt, 'اللون في الصور بني فاتح، والشنطة اللي وصلتني أغمق بكثير وفيها خدش على الجنب.'); cnt.textContent = txt.value.length + ' / 500';
     // photos: real file picker, previews only (nothing is uploaded in the prototype)
     var photosBox = screen.querySelector('[data-rp-photos]'), addTile = screen.querySelector('[data-rp-add]'), photoTpl = screen.querySelector('[data-rp-photo]');
     photoTpl = photoTpl.cloneNode(true); // demo build: the board's sample photo stays attached
@@ -1244,8 +1243,8 @@
     if (c) return c;
     c = {
       'OUT-24790': { unread: 1, msgs: [['day', '6 نوفمبر'], ['sys', 'تم الدفع وفُتحت المحادثة'], ['safe'],
-        ['them', 'أهلًا! شكرًا على الطلب، سأجهّز الحذاء اليوم.', '3:25 م'], ['me', 'تمام، هل هو نظيف من الداخل؟', '3:31 م'],
-        ['them', 'نعم، مغسول ومُلمّع. هذه صورته قبل التغليف.', '3:40 م', 'assets/sneakers.jpg'],
+        ['them', 'أهلًا! شكرًا على الطلب، سأجهّز الشنطة اليوم.', '3:25 م'], ['me', 'تمام، هل هي نظيفة من الداخل؟', '3:31 م'],
+        ['them', 'نعم، نظيفة ومُلمّعة. هذه صورتها قبل التغليف.', '3:40 م', 'assets/bag.jpg'],
         ['day', 'اليوم'], ['sys', 'المندوب سلّم الطلب'], ['them', 'هل سلّمه المندوب؟ لو فيه أي شيء أرجو إبلاغي هنا.', '1:20 م']] },
       'OUT-24833': { unread: 2, msgs: [['day', 'اليوم'], ['sys', 'تم الدفع وفُتحت المحادثة'], ['safe'],
         ['them', 'أهلًا، اشتريت السويتر.', '12:04 م'], ['them', 'متى سيمر المندوب للاستلام؟', '12:05 م']] },
@@ -2028,7 +2027,7 @@
   }
 
   // ---------- U-22 add product, U-20 seller setup ----------
-  var SIZES = { 'فساتين': ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'ملابس': ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'أحذية': ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'], 'شنط': ['مقاس واحد'] };
+  var SIZES = { 'فساتين': ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'ملابس': ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'شنط': ['مقاس واحد'] };
   var chipPaint = function (b, on) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.background = on ? '#1C1917' : '#F7F3F0'; b.style.color = on ? '#FFFFFF' : '#1C1917'; b.style.fontWeight = on ? '700' : '500'; };
   var chipH = function (attr, v) { return '<button type="button" ' + attr + '="' + v + '" aria-pressed="false" style="height: 38px; padding: 0 14px; flex: none; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-weight: 500; font-family: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px">' + v + '</button>'; };
 
@@ -2086,8 +2085,8 @@
       $a('[data-ap-sizes]').innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px">' + (SIZES[st.cat] || []).map(function (s) { return chipH('data-ap-size', s); }).join('') + (st.cat && st.cat !== 'شنط' ? chipH('data-ap-size', 'آخر').replace('>آخر</button>', '>مقاس آخر</button>') : '') + '</div>';
     };
     if (editP) {
-      var guessCat = editP.cat || (/فستان/.test(editP.name) ? 'فساتين' : /حذاء|كوتشي/.test(editP.name) ? 'أحذية' : /شنط/.test(editP.name) ? 'شنط' : 'ملابس');
-      st.cat = guessCat; st.size = editP.size || (guessCat === 'شنط' ? 'مقاس واحد' : guessCat === 'أحذية' ? '40' : 'M');
+      var guessCat = editP.cat || (/فستان/.test(editP.name) ? 'فساتين' : /شنط/.test(editP.name) ? 'شنط' : 'ملابس');
+      st.cat = guessCat; st.size = editP.size || (guessCat === 'شنط' ? 'مقاس واحد' : 'M');
       var guessCol = ['أسود', 'أبيض', 'بيج', 'بني', 'تيراكوتا', 'وردي', 'أخضر', 'أزرق'].filter(function (c) { return (editP.color || editP.name).indexOf(c) !== -1; })[0];
       st.color = editP.color && !guessCol ? 'آخر' : (guessCol || (/عاجي|أبيض/.test(editP.name) ? 'أبيض' : 'أسود'));
       st.cond = editP.cond || 'ممتازة'; st.auth = editP.auth || 'أصلية'; st.disc = !!discOf(editP); if (amtIn) amtIn.value = discOf(editP) || '';
@@ -2454,8 +2453,8 @@
   // ---------- U-07e best offers (عرض الكل from the home offers row): category chips filter the discounted pieces ----------
   // U-07f «مختارات لك» uses the same page logic, without the discount wording
   // ---------- brands: home row / brands.html → brand.html (the brand's 4 categories, then its pieces) ----------
-  var BRANDS = { 'Zara': [32, 38, 9, 7], 'Mango': [21, 24, 6, 3], 'H&M': [18, 33, 4, 6], 'Massimo Dutti': [6, 12, 3, 2], 'Nike': [0, 14, 2, 22], 'Adidas': [0, 12, 3, 16], 'Michael Kors': [2, 0, 8, 2], 'Coach': [0, 0, 7, 2] };
-  var BR_CATS = ['فساتين', 'ملابس', 'شنط', 'أحذية'];
+  var BRANDS = { 'Zara': [32, 38, 9], 'Mango': [21, 24, 6], 'H&M': [18, 33, 4], 'Massimo Dutti': [6, 12, 3], 'Nike': [0, 14, 2], 'Adidas': [0, 12, 3], 'Michael Kors': [2, 0, 8], 'Coach': [0, 0, 7] };
+  var BR_CATS = ['فساتين', 'ملابس', 'شنط'];
   document.addEventListener('click', function (e) { var br = e.target.closest && e.target.closest('a[data-brand]'); if (br) write('outlet-brand', br.getAttribute('data-brand')); }, true);
   var brTotal = function (b) { return BRANDS[b].reduce(function (a, n) { return a + n; }, 0); };
   if (page === 'brands.html') {
@@ -2626,7 +2625,7 @@
   var CATALOG = [
     ['assets/dress-pleated.jpg', 'فستان بليسيه طويل', 'فستان شيفون وردي بليسيه بأكمام طويلة', 210], ['assets/dress-terracotta.jpg', 'فستان تريكو طويل', 'فستان تريكو طويل', 175],
     ['assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160], ['assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر هادئ بتصميم لف وأكمام قصيرة', 145],
-    ['assets/sweater.jpg', 'كنزة صوف كريمي بألوان كحلي وأحمر', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن مريح', 'قميص قطن مريح', 76], ['assets/sneakers.jpg', 'حذاء أبيض', 'حذاء رياضي جلد أبيض', 150],
+    ['assets/sweater.jpg', 'كنزة صوف كريمي بألوان كحلي وأحمر', 'كنزة صوف ملونة', 98], ['assets/shirt.jpg', 'قميص قطن مريح', 'قميص قطن مريح', 76],
     ['assets/dress-ivory.jpg', 'فستان قطن أبيض', 'فستان قطن أبيض', 95], ['assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520],
     ['assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320], ['assets/dress-polka.jpg', 'فستان منقّط كحلي', 'فستان منقّط كحلي', 120], ['assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60],
     ['assets/pants.jpg', 'بنطلون بيج', 'بنطلون واسع بيج', 85], ['assets/dress.jpg', 'فستان أحمر', 'فستان أحمر', 120]
@@ -2695,7 +2694,7 @@
   }
 
   // ---------- search ----------
-  var extra = { 'فساتين': 'فستان', 'ملابس': 'قميص بلوزه بنطلون بنطال جاكيت معطف بالطو كنزه', 'شنط': 'شنطه حقيبه', 'أحذية': 'حذاء جزمه كوتشي سنيكرز' };
+  var extra = { 'فساتين': 'فستان', 'ملابس': 'قميص بلوزه بنطلون بنطال جاكيت معطف بالطو كنزه', 'شنط': 'شنطه حقيبه' };
   function indexItems(list) {
     list.forEach(function (el) {
       var alts = [].map.call(el.querySelectorAll('img'), function (i) { return i.alt; }).join(' ');
