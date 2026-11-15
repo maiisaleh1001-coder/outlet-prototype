@@ -10,6 +10,8 @@ $pages = @(
   @('U07d-Search.dc.html', 'search.html', 'outlet · البحث'),
   @('U07e-Offers.dc.html', 'offers.html', 'outlet · العروض'),
   @('U07f-Featured.dc.html', 'featured.html', 'outlet · مختارات لك'),
+  @('U07g-Brands.dc.html', 'brands.html', 'outlet · الماركات'),
+  @('U07h-Brand.dc.html', 'brand.html', 'outlet · الماركة'),
   @('U08-Product.dc.html', 'product.html', 'outlet · تفاصيل المنتج'),
   @('U11-Cart.dc.html', 'cart.html', 'outlet · السلة'),
   @('U12-Checkout.dc.html', 'checkout.html', 'outlet · إتمام الطلب'),
@@ -248,7 +250,7 @@ $manifest = @'
 $assetList = (Get-ChildItem (Join-Path $Out 'assets') -File | ForEach-Object { "  './assets/" + $_.Name + "'," }) -join "`n"
 $sw = @"
 // Network first, so every push shows up on the next open; the cache is only a fallback for offline.
-const CACHE = 'outlet-proto-v3';
+const CACHE = 'outlet-proto-v4';
 const CORE = [
   './',
   './index.html',
@@ -257,6 +259,8 @@ const CORE = [
   './search.html',
   './offers.html',
   './featured.html',
+  './brands.html',
+  './brand.html',
   './product.html',
   './cart.html',
   './checkout.html',

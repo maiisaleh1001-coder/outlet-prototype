@@ -2453,6 +2453,65 @@
 
   // ---------- U-07e best offers (عرض الكل from the home offers row): category chips filter the discounted pieces ----------
   // U-07f «مختارات لك» uses the same page logic, without the discount wording
+  // ---------- brands: home row / brands.html → brand.html (the brand's 4 categories, then its pieces) ----------
+  var BRANDS = { 'Zara': [32, 38, 9, 7], 'Mango': [21, 24, 6, 3], 'H&M': [18, 33, 4, 6], 'Massimo Dutti': [6, 12, 3, 2], 'Nike': [0, 14, 2, 22], 'Adidas': [0, 12, 3, 16], 'Michael Kors': [2, 0, 8, 2], 'Coach': [0, 0, 7, 2] };
+  var BR_CATS = ['فساتين', 'ملابس', 'شنط', 'أحذية'];
+  document.addEventListener('click', function (e) { var br = e.target.closest && e.target.closest('a[data-brand]'); if (br) write('outlet-brand', br.getAttribute('data-brand')); }, true);
+  var brTotal = function (b) { return BRANDS[b].reduce(function (a, n) { return a + n; }, 0); };
+  if (page === 'brands.html') {
+    var bsIn = screen.querySelector('input[type="search"]'), bsGrid = screen.querySelector('[data-brands-grid]');
+    if (bsIn && bsGrid) bsIn.addEventListener('input', function () {
+      var q = bsIn.value.trim().toLowerCase(), n = 0;
+      [].forEach.call(bsGrid.children, function (a) { var on = !q || a.getAttribute('data-brand').toLowerCase().indexOf(q) !== -1; a.style.display = on ? '' : 'none'; if (on) n++; });
+      var em = screen.querySelector('[data-brands-empty]');
+      if (!n && !em) bsGrid.insertAdjacentHTML('afterend', '<p data-brands-empty style="margin: 40px 0; text-align: center; font-size: 14px; line-height: 22px; color: #6B635D">لا توجد ماركة بهذا الاسم حاليًا.</p>');
+      else if (n && em) em.remove();
+    });
+  }
+  if (page === 'brand.html') {
+    var brName = read('outlet-brand', 'Zara'); if (!BRANDS[brName]) brName = 'Zara';
+    var brCounts = BRANDS[brName], brAll = brTotal(brName);
+    var brNm = screen.querySelector('[data-brand-name]'); if (brNm) brNm.textContent = brName;
+    if (brNm) { var brSub = brNm.parentNode.nextElementSibling; if (brSub) brSub.textContent = 'ماركة · ' + brAll + ' قطعة مستعملة'; }
+    document.title = 'outlet · ' + brName;
+    var brIn = screen.querySelector('input[type="search"]'); if (brIn) { brIn.placeholder = 'ابحث في ' + brName + '...'; brIn.setAttribute('aria-label', 'ابحث في ' + brName); }
+    var brTiles = [].slice.call(screen.querySelectorAll('[data-brand-cat]'));
+    brTiles.forEach(function (t, i) {
+      var n = brCounts[BR_CATS.indexOf(t.getAttribute('data-brand-cat'))] || 0;
+      t.setAttribute('aria-label', t.getAttribute('data-brand-cat') + ' من ' + brName + '، ' + n + ' قطعة');
+      var lab = t.querySelector('span[style*="font-size: 11px"]'); if (lab) lab.textContent = n ? n + ' قطعة' : 'لا توجد قطع';
+      if (!n) t.style.opacity = '0.55';
+    });
+    var brGrid = screen.querySelector('[data-brand-grid]'), brCards = brGrid ? [].slice.call(brGrid.children) : [];
+    var brNameOf = function (c) { var s = c.querySelector('span[style*="ellipsis"]'); return s ? s.textContent.trim() : ''; };
+    brCards.forEach(function (c) {
+      var nm = brNameOf(c), mt = c.querySelector('[data-meta]'); if (mt) mt.textContent = metaOf(nm);
+      c._cat = catOfName(nm); c._sold = isSold((c.querySelector('img') || {}).getAttribute ? c.querySelector('img').getAttribute('src') : '');
+      // the demo shows Zara's six pieces; other brands get a few of them, and only in categories they carry
+      c._mine = brName === 'Zara' || (brCounts[BR_CATS.indexOf(c._cat)] > 0 && hash(nm + brName) % 3 !== 0);
+    });
+    var brPick = '';
+    var brPaint = function () {
+      var q = brIn ? brIn.value.trim() : '', shown = 0;
+      brCards.forEach(function (c) { var on = c._mine && !c._sold && (!brPick || c._cat === brPick) && (!q || brNameOf(c).indexOf(q) !== -1); c.style.display = on ? '' : 'none'; if (on) shown++; });
+      brTiles.forEach(function (t) { var on = t.getAttribute('data-brand-cat') === brPick; t.setAttribute('aria-pressed', on ? 'true' : 'false'); t.style.background = on ? '#FFF4EC' : '#F7F3F0'; t.style.boxShadow = on ? 'inset 0 0 0 2px #C2410C' : 'none'; });
+      var hd = screen.querySelector('[data-brand-head]'), ct = screen.querySelector('[data-brand-count]');
+      if (hd) hd.textContent = brPick ? brPick + ' من ' + brName : 'كل قطع ' + brName;
+      if (ct) { var n = brPick ? brCounts[BR_CATS.indexOf(brPick)] : brAll; ct.textContent = n + ' قطعة'; }
+      var em = screen.querySelector('[data-brand-empty]');
+      if (!shown && !em) brGrid.insertAdjacentHTML('afterend', '<p data-brand-empty style="margin: 24px 0; text-align: center; font-size: 14px; line-height: 22px; color: #6B635D">' + (q ? 'لا توجد نتائج لـ«' + esc(q) + '» في ' + brName + '.' : 'لا توجد قطع ' + (brPick || '') + ' من ' + brName + ' حاليًا.') + '</p>');
+      else if (em) { if (shown) em.remove(); else em.textContent = q ? 'لا توجد نتائج لـ«' + q + '» في ' + brName + '.' : 'لا توجد قطع ' + (brPick || '') + ' من ' + brName + ' حاليًا.'; }
+    };
+    brPaint();
+    screen.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-brand-cat]'); if (!t || t.closest('.proto-sheet-wrap')) return;
+      e.preventDefault(); e.stopPropagation();
+      var c = t.getAttribute('data-brand-cat'); brPick = brPick === c ? '' : c; brPaint();
+      var hd = screen.querySelector('[data-brand-head]'); if (hd && brPick) hd.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, true);
+    if (brIn) brIn.addEventListener('input', brPaint);
+  }
+
   if (page === 'offers.html' || page === 'featured.html') {
     var ofDeals = page === 'offers.html';
     var ofGrid = screen.querySelector('div[style*="grid-template-columns: repeat(2"]');

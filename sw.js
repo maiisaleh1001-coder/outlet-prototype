@@ -1,5 +1,5 @@
 // Network first, so every push shows up on the next open; the cache is only a fallback for offline.
-const CACHE = 'outlet-proto-v3';
+const CACHE = 'outlet-proto-v4';
 const CORE = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ const CORE = [
   './search.html',
   './offers.html',
   './featured.html',
+  './brands.html',
+  './brand.html',
   './product.html',
   './cart.html',
   './checkout.html',
