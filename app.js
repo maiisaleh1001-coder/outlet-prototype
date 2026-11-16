@@ -2462,6 +2462,33 @@
 
   // ---------- U-07e best offers (عرض الكل from the home offers row): category chips filter the discounted pieces ----------
   // U-07f «مختارات لك» uses the same page logic, without the discount wording
+  // ---------- home banner: 3 slides that change on their own every few seconds (swipe moves them too) ----------
+  var bnr = page === 'index.html' && screen.querySelector('[data-banner]');
+  if (bnr) {
+    var bSlides = [].slice.call(bnr.querySelectorAll('[data-slide]')), bDots = bnr.querySelector('[data-banner-dots]'), bCur = 0, bTimer = null;
+    var bEase = 'transform 560ms cubic-bezier(0.4, 0, 0.2, 1)';
+    bSlides.forEach(function (s, i) { s.style.transition = 'none'; s.style.transform = 'translateX(0)'; s.style.opacity = i ? '0' : '1'; });
+    // the next slide slides in from the left (RTL reading order), the current one leaves to the right
+    var bShow = function (n, dir) {
+      var prev = bCur; bCur = (n + bSlides.length) % bSlides.length; dir = dir || 1;
+      if (prev !== bCur) {
+        var a = bSlides[prev], b = bSlides[bCur];
+        b.style.transition = 'none'; b.style.transform = 'translateX(' + (dir > 0 ? '-100%' : '100%') + ')'; b.style.opacity = '1'; void b.offsetWidth;
+        a.style.transition = b.style.transition = bEase;
+        b.style.transform = 'translateX(0)'; a.style.transform = 'translateX(' + (dir > 0 ? '100%' : '-100%') + ')';
+        setTimeout(function () { if (bSlides[bCur] !== a) { a.style.transition = 'none'; a.style.opacity = '0'; a.style.transform = 'translateX(0)'; } }, 600);
+      }
+      bSlides.forEach(function (s, i) { var on = i === bCur; s.style.pointerEvents = on ? 'auto' : 'none'; if (on) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true'); });
+      var dark = bSlides[bCur].getAttribute('data-dots') === 'dark';
+      if (bDots) [].forEach.call(bDots.children, function (d, i) { var on = i === bCur; d.style.transition = 'width 300ms ease, background 300ms ease'; d.style.width = on ? '16px' : '5px'; d.style.background = dark ? (on ? '#1C1917' : 'rgba(28,25,23,0.22)') : (on ? '#FFFFFF' : 'rgba(255,255,255,0.6)'); });
+    };
+    var bStart = function () { clearInterval(bTimer); bTimer = setInterval(function () { if (!document.hidden) bShow(bCur + 1); }, 4500); };
+    var bX = null;
+    bnr.addEventListener('pointerdown', function (e) { bX = e.clientX; });
+    bnr.addEventListener('pointerup', function (e) { if (bX === null) return; var dx = e.clientX - bX; bX = null; if (Math.abs(dx) > 40) { bShow(bCur + (dx > 0 ? 1 : -1), dx > 0 ? 1 : -1); bStart(); } });
+    bShow(0); bStart();
+  }
+
   // ---------- brands: home row / brands.html → brand.html (the brand's 4 categories, then its pieces) ----------
   var BRANDS = { 'Zara': [26, 6, 12, 9, 8, 7, 7, 0, 4], 'Mango': [17, 4, 10, 6, 4, 4, 4, 0, 2], 'H&M': [15, 3, 12, 7, 6, 6, 3, 0, 3], 'Massimo Dutti': [5, 1, 4, 4, 2, 2, 2, 0, 1], 'Nike': [0, 0, 8, 2, 4, 0, 2, 0, 0], 'Adidas': [0, 0, 7, 2, 3, 0, 3, 0, 0], 'Michael Kors': [1, 1, 0, 0, 0, 0, 4, 3, 1], 'Coach': [0, 0, 0, 0, 0, 0, 5, 1, 1] };
   var BR_CATS = ['فساتين', 'فساتين سهرة', 'ملابس', 'معاطف', 'بناطيل', 'تريكو', 'شنط', 'ساعات', 'إكسسوارات'];
