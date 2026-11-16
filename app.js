@@ -389,6 +389,9 @@
     var onA = catChips.filter(function (a) { return a.getAttribute('aria-current'); })[0], offA = catChips.filter(function (a) { return !a.getAttribute('aria-current'); })[0];
     var chipOn = onA ? onA.getAttribute('style') : '', chipOff = offA ? offA.getAttribute('style') : '';
     catChips.forEach(function (a) { var on = a.textContent.trim() === curCat; a.setAttribute('style', on ? chipOn : chipOff); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    // the active tab can sit past the screen edge now that 9 categories share the row
+    var navC = document.querySelector('nav[aria-label="التصنيفات"]'), onC = navC && navC.querySelector('[aria-current]');
+    if (onC) navC.scrollLeft += onC.getBoundingClientRect().left - navC.getBoundingClientRect().left - (navC.clientWidth - onC.offsetWidth) / 2;
     var CAT_THE = { 'فساتين': 'الفساتين', 'فساتين سهرة': 'فساتين السهرة', 'ساعات': 'الساعات', 'إكسسوارات': 'الإكسسوارات', 'ملابس': 'الملابس', 'معاطف': 'المعاطف', 'بناطيل': 'البناطيل', 'تريكو': 'التريكو', 'شنط': 'الشنط' };
     var h1c = document.querySelector('.screen h1'); if (h1c) h1c.textContent = curCat;
     var sIn = document.querySelector('.screen input[type="search"]'); if (sIn) { sIn.placeholder = 'ابحث في ' + CAT_THE[curCat] + '...'; sIn.setAttribute('aria-label', 'ابحث في ' + CAT_THE[curCat]); }
