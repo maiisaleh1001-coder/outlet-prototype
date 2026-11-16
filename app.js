@@ -2536,6 +2536,12 @@
         });
       });
       brCards = [].slice.call(brGrid.children);
+      // the client's priority categories come first, taking turns so the first rows mix accessories, watches, bags and evening dresses
+      var brFirst = ['إكسسوارات', 'ساعات', 'شنط', 'فساتين سهرة'], brQ = brFirst.map(function () { return []; }), brRest = [];
+      brCards.forEach(function (c) { var k = brFirst.indexOf(catOfName(brNameOf(c))); if (k === -1) brRest.push(c); else brQ[k].push(c); });
+      var brSorted = []; for (var r = 0; brQ.some(function (q) { return q.length; }); r++) brQ.forEach(function (q) { if (q.length) brSorted.push(q.shift()); });
+      brSorted.concat(brRest).forEach(function (c) { brGrid.appendChild(c); });
+      brCards = [].slice.call(brGrid.children);
       brAll = Math.max(brAll, brCards.length); if (brSub) brSub.textContent = 'ماركة · ' + brAll + ' قطعة مستعملة';
     }
     brCards.forEach(function (c) {
