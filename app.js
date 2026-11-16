@@ -245,6 +245,9 @@
       desc: alt + '. قطعة مستعملة بحالة ' + cond + '، نظيفة وبدون عيوب ظاهرة، والمقاس ' + size + '. الصور للقطعة نفسها، وتُشحن مطويّة ومغلّفة بعناية.'
     };
   }
+  // demo brand and «أصلي / هاي كوبي» per piece (the seller sets both when listing)
+  function brandOf(n) { return ['Zara', 'Mango', 'H&M', 'Massimo Dutti', 'Nike', 'Adidas', 'Michael Kors', 'Coach'][hash(n + 'b') % 8]; }
+  function authOf(n) { return hash(n + 'a') % 4 === 0 ? 'هاي كوبي' : 'أصلي'; }
   function openProduct(card) { write('outlet-product', productInfo(card)); location.href = 'product.html'; }
   // product info without a card (favourites seed, old saves)
   function infoFor(src, name, alt, priceNum, sellerIdx, st) {
@@ -276,7 +279,7 @@
     if (closeBtn) closeBtn.focus({ preventScroll: true });
     wrap.addEventListener('click', function (e) {
       e.stopPropagation();
-      var b = e.target.closest('[data-act], [data-sort], [data-size]');
+      var b = e.target.closest('[data-act], [data-sort], [data-size], [data-city], [data-brand-f], [data-auth]');
       if (b && b.getAttribute('data-act') === 'close') { closeSheet(); return; }
       onClick(e, b, wrap);
     });
@@ -416,15 +419,16 @@
   }
 
   // ---------- filter + sort (dresses page) ----------
-  var filterState = read('outlet-filter', { sort: 'new', sizes: [], cities: [], min: 0, max: 600 });
-  filterState.cities = filterState.cities || [];
+  var filterState = read('outlet-filter', { sort: 'new', sizes: [], cities: [], brands: [], auth: '', min: 0, max: 600 });
+  filterState.cities = filterState.cities || []; filterState.brands = filterState.brands || []; filterState.auth = filterState.auth || '';
   if (page === 'category.html' && typeof curCat !== 'undefined' && curCat !== 'فساتين') filterState.sizes = [];
   var grid = document.querySelector('.screen div[style*="grid-template-columns: repeat(2"]');
   var gridCards = grid && page === 'category.html' ? [].slice.call(grid.children) : [];
   gridCards.forEach(function (c, i) { c._order = i; c._info = productInfo(c); });
   function matches(c, st) {
     var info = c._info;
-    return info.priceNum >= st.min && (st.max >= 600 || info.priceNum <= st.max) && (!st.sizes.length || st.sizes.indexOf(info.size) !== -1) && (!(st.cities || []).length || st.cities.indexOf(info.seller[2]) !== -1);
+    return info.priceNum >= st.min && (st.max >= 600 || info.priceNum <= st.max) && (!st.sizes.length || st.sizes.indexOf(info.size) !== -1) && (!(st.cities || []).length || st.cities.indexOf(info.seller[2]) !== -1)
+      && (!(st.brands || []).length || st.brands.indexOf(brandOf(info.name)) !== -1) && (!st.auth || authOf(info.name) === st.auth);
   }
   function applyFilter(st) {
     var shown = 0;
@@ -433,7 +437,7 @@
       if (st.sort === 'desc') return b._info.priceNum - a._info.priceNum;
       return a._order - b._order;
     }).forEach(function (c) { grid.appendChild(c); var ok = matches(c, st); c.classList.toggle('proto-hide', !ok); if (ok) shown++; });
-    var active = (st.sizes.length ? 1 : 0) + ((st.cities || []).length ? 1 : 0) + (st.min > 0 || st.max < 600 ? 1 : 0);
+    var active = (st.sizes.length ? 1 : 0) + ((st.cities || []).length ? 1 : 0) + ((st.brands || []).length ? 1 : 0) + (st.auth ? 1 : 0) + (st.min > 0 || st.max < 600 ? 1 : 0);
     var fBtn = document.querySelector('button[aria-label^="الفلاتر"]');
     if (fBtn) {
       var dot = fBtn.querySelector('.proto-count');
@@ -460,12 +464,14 @@
       if (b.hasAttribute('data-sort')) { st.sort = b.getAttribute('data-sort'); }
       else if (b.hasAttribute('data-size')) { var s = b.getAttribute('data-size'), i = st.sizes.indexOf(s); if (i === -1) st.sizes.push(s); else st.sizes.splice(i, 1); }
       else if (b.hasAttribute('data-city')) { var cy = b.getAttribute('data-city'), ci = st.cities.indexOf(cy); if (ci === -1) st.cities.push(cy); else st.cities.splice(ci, 1); }
-      else if (act === 'clear') { st = { sort: 'new', sizes: [], cities: [], min: 0, max: 600 }; }
+      else if (b.hasAttribute('data-brand-f')) { var bf = b.getAttribute('data-brand-f'), bi = st.brands.indexOf(bf); if (bi === -1) st.brands.push(bf); else st.brands.splice(bi, 1); }
+      else if (b.hasAttribute('data-auth')) { st.auth = b.getAttribute('data-auth'); }
+      else if (act === 'clear') { st = { sort: 'new', sizes: [], cities: [], brands: [], auth: '', min: 0, max: 600 }; }
       else if (act === 'apply') { filterState = st; write('outlet-filter', st); applyFilter(st); closeSheet(); grid.closest('[style*="overflow-y: auto"]').scrollTop = 0; return; }
       paint(w);
     }, opener);
     if (!wrap) return;
-    st.cities = st.cities || [];
+    st.cities = st.cities || []; st.brands = st.brands || []; st.auth = st.auth || '';
     // sizes follow the category: letters for dresses and clothes, numbers for shoes, none for bags
     var fCat = typeof curCat !== 'undefined' ? curCat : 'فساتين', sizeGroup = wrap.querySelector('[aria-label="المقاس"]');
     if (sizeGroup && ONE_SIZE[fCat]) sizeGroup.style.display = 'none';
@@ -481,6 +487,8 @@
       w.querySelectorAll('[data-sort]').forEach(function (b) { chipStyle(b, b.getAttribute('data-sort') === st.sort); });
       w.querySelectorAll('[data-size]').forEach(function (b) { chipStyle(b, st.sizes.indexOf(b.getAttribute('data-size')) !== -1); });
       w.querySelectorAll('[data-city]').forEach(function (b) { chipStyle(b, st.cities.indexOf(b.getAttribute('data-city')) !== -1); });
+      w.querySelectorAll('[data-brand-f]').forEach(function (b) { chipStyle(b, st.brands.indexOf(b.getAttribute('data-brand-f')) !== -1); });
+      w.querySelectorAll('[data-auth]').forEach(function (b) { chipStyle(b, b.getAttribute('data-auth') === st.auth); });
       var lo = w.querySelector('[data-price="min"]'), hi = w.querySelector('[data-price="max"]');
       lo.value = st.min; hi.value = st.max;
       var fill = w.querySelector('[data-price-fill]');
