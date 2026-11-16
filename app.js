@@ -217,7 +217,7 @@
   var sellers = [['خزانة لمى', '4.9', 'الرياض', 38], ['دولاب سارة', '4.8', 'جدة', 21], ['ركن هند', '5.0', 'الدمام', 54], ['ستايل نوف', '4.7', 'الخبر', 12]];
   var colors = [['أخضر', '#8FA68A'], ['أسود', '#1C1917'], ['أحمر', '#C0392B'], ['أبيض', '#F4F1EA'], ['بيج', '#D8C3A5'], ['كحلي', '#233A5E'], ['أزرق', '#8DB3D9'],
                 ['وردي', '#D9A3A8'], ['تراكوتا', '#B5583A'], ['الجمل', '#C19A6B'], ['جملي', '#C19A6B'], ['بني', '#A0703F'], ['كريمي', '#EFE6D2']];
-  function sizeOf(name) { return /حذاء/.test(name) ? '40' : /شنط/.test(name) ? 'مقاس واحد' : ['S', 'M', 'L', 'XL', 'M', 'XS', 'L'][hash(name) % 7]; }
+  function sizeOf(name) { return ONE_SIZE[catOfName(name)] ? 'مقاس واحد' : ['S', 'M', 'L', 'XL', 'M', 'XS', 'L'][hash(name) % 7]; }
   function cardOf(el) { var b = el.querySelector ? el : null; return el.closest('div[style*="border-radius: 18px"]'); }
   // BRD card details: type · condition · times used (same rule on the board and here)
   var ONE_SIZE = { 'شنط': 1, 'ساعات': 1, 'إكسسوارات': 1 };
@@ -379,8 +379,8 @@
     'تريكو': [['assets/sweater.jpg', 'كنزة صوف كريمي بألوان كحلي وأحمر', 'كنزة صوف ملونة', 98]],
     'شنط': [['assets/bag.jpg', 'شنطة يد جلد بلون بني فاتح', 'شنطة جلد كلاسيكية', 320]],
     'فساتين سهرة': [['assets/dress-pink.jpg', 'فستان سهرة وردي طويل', 'فستان سهرة وردي', 390], ['assets/dress-pleated.jpg', 'فستان سهرة بليسيه بأكمام طويلة', 'فستان سهرة بليسيه', 210]],
-    'ساعات': [],
-    'إكسسوارات': []
+    'ساعات': [['assets/watch-gold.jpg', 'ساعة ذهبية بسوار معدني وميناء بني', 'ساعة ذهبية كلاسيك', 1850], ['assets/watch-two-tone.jpg', 'ساعة نسائية بسوار فضي وذهبي', 'ساعة نسائية فضي وذهبي', 1200], ['assets/watch-gold-white.jpg', 'ساعة ذهبية مربعة بحزام جلد أبيض', 'ساعة بحزام جلد أبيض', 640], ['assets/watch-black.jpg', 'ساعة ذهبية بحزام جلد أسود', 'ساعة جلد أسود', 380]],
+    'إكسسوارات': [['assets/acc-gold-set.jpg', 'طقم سلسال وسوار وحلق ذهبي', 'طقم إكسسوارات ذهبي', 290], ['assets/acc-gem-necklace.jpg', 'سلسال فضي بحجر أزرق', 'سلسال بحجر أزرق', 340], ['assets/acc-sunglasses.jpg', 'نظارة شمسية بإطار فضي', 'نظارة شمسية فضية', 220], ['assets/acc-bead-bracelet.jpg', 'عقد خرز أسود لامع', 'عقد خرز أسود', 95]]
   };
   if (page === 'category.html') {
     var curCat = new URLSearchParams(location.search).get('cat') || 'فساتين';

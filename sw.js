@@ -70,6 +70,10 @@ const CORE = [
   './fonts/thmanyahsans-Regular.otf',
   './fonts/thmanyahsans-Medium.otf',
   './fonts/thmanyahsans-Bold.otf',
+  './assets/acc-bead-bracelet.jpg',
+  './assets/acc-gem-necklace.jpg',
+  './assets/acc-gold-set.jpg',
+  './assets/acc-sunglasses.jpg',
   './assets/bag-cut.png',
   './assets/bag.jpg',
   './assets/banner-coat.jpg',
@@ -101,6 +105,10 @@ const CORE = [
   './assets/sweater.jpg',
   './assets/trench-cut.png',
   './assets/trench.jpg',
+  './assets/watch-black.jpg',
+  './assets/watch-gold-white.jpg',
+  './assets/watch-gold.jpg',
+  './assets/watch-two-tone.jpg',
 ];
 
 self.addEventListener('install', (event) => {
