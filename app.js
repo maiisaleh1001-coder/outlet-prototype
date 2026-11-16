@@ -2490,7 +2490,7 @@
   }
 
   // ---------- brands: home row / brands.html → brand.html (the brand's 4 categories, then its pieces) ----------
-  var BRANDS = { 'Zara': [26, 6, 12, 9, 8, 7, 7, 0, 4], 'Mango': [17, 4, 10, 6, 4, 4, 4, 0, 2], 'H&M': [15, 3, 12, 7, 6, 6, 3, 0, 3], 'Massimo Dutti': [5, 1, 4, 4, 2, 2, 2, 0, 1], 'Nike': [0, 0, 8, 2, 4, 0, 2, 0, 0], 'Adidas': [0, 0, 7, 2, 3, 0, 3, 0, 0], 'Michael Kors': [1, 1, 0, 0, 0, 0, 4, 3, 1], 'Coach': [0, 0, 0, 0, 0, 0, 5, 1, 1] };
+  var BRANDS = { 'Zara': [26, 6, 12, 9, 8, 7, 7, 2, 4], 'Mango': [17, 4, 10, 6, 4, 4, 4, 2, 2], 'H&M': [15, 3, 12, 7, 6, 6, 3, 2, 3], 'Massimo Dutti': [5, 1, 4, 4, 2, 2, 2, 1, 1], 'Nike': [2, 1, 8, 2, 4, 2, 2, 3, 2], 'Adidas': [2, 1, 7, 2, 3, 2, 3, 2, 2], 'Michael Kors': [3, 2, 2, 2, 2, 2, 4, 3, 2], 'Coach': [2, 1, 2, 2, 2, 2, 5, 2, 2] };
   var BR_CATS = ['فساتين', 'فساتين سهرة', 'ملابس', 'معاطف', 'بناطيل', 'تريكو', 'شنط', 'ساعات', 'إكسسوارات'];
   // a brand tapped on a category page opens the brand page on that same category
   document.addEventListener('click', function (e) { var br = e.target.closest && e.target.closest('a[data-brand]'); if (br) { write('outlet-brand', br.getAttribute('data-brand')); write('outlet-brand-cat', br.closest('[data-cat-brands]') && typeof curCat !== 'undefined' ? curCat : ''); } }, true);
@@ -2515,26 +2515,43 @@
     var brTiles = [].slice.call(screen.querySelectorAll('[data-brand-cat]'));
     brTiles.forEach(function (t, i) {
       var n = brCounts[BR_CATS.indexOf(t.getAttribute('data-brand-cat'))] || 0;
-      t.setAttribute('aria-label', t.getAttribute('data-brand-cat') + ' من ' + brName + '، ' + n + ' قطعة');
-      var lab = t.querySelector('span[style*="font-size: 11px"]'); if (lab) lab.textContent = n ? n + ' قطعة' : 'لا توجد قطع';
-      if (!n) t.style.opacity = '0.55';
+      if (t.getAttribute('data-brand-cat')) t.setAttribute('aria-label', t.getAttribute('data-brand-cat') + ' من ' + brName);
     });
     var brGrid = screen.querySelector('[data-brand-grid]'), brCards = brGrid ? [].slice.call(brGrid.children) : [];
     var brNameOf = function (c) { var s = c.querySelector('span[style*="ellipsis"]'); return s ? s.textContent.trim() : ''; };
+    // every tab always has pieces: the board's cards, plus each category's demo pieces cloned from the first card
+    if (brGrid && brCards.length) {
+      var brHave = {}; brCards.forEach(function (c) { brHave[brNameOf(c)] = 1; });
+      var brTpl = brCards[0].cloneNode(true);
+      [].forEach.call(brTpl.querySelectorAll('s'), function (x) { x.remove(); });
+      [].forEach.call(brTpl.querySelectorAll('span'), function (x) { if (/^خصم/.test(x.textContent.trim())) x.remove(); });
+      BR_CATS.forEach(function (cat) {
+        (CAT_ITEMS[cat] || []).forEach(function (it) {
+          if (brHave[it[2]]) return; brHave[it[2]] = 1;
+          var n = brTpl.cloneNode(true), im = n.querySelector('img'); im.src = it[0]; im.alt = it[1];
+          n.querySelector('span[style*="ellipsis"]').textContent = it[2];
+          var pr = n.querySelector('span[style*="font-size: 16px"]'); if (pr) pr.lastChild.textContent = it[3];
+          var ab = n.querySelector('button[aria-label$=" للسلة"]'); if (ab) ab.setAttribute('aria-label', 'إضافة ' + it[2] + ' للسلة');
+          brGrid.appendChild(n);
+        });
+      });
+      brCards = [].slice.call(brGrid.children);
+      brAll = Math.max(brAll, brCards.length); if (brSub) brSub.textContent = 'ماركة · ' + brAll + ' قطعة مستعملة';
+    }
     brCards.forEach(function (c) {
       var nm = brNameOf(c), mt = c.querySelector('[data-meta]'); if (mt) mt.textContent = metaOf(nm);
       c._cat = catOfName(nm); c._sold = isSold((c.querySelector('img') || {}).getAttribute ? c.querySelector('img').getAttribute('src') : '');
-      // the demo shows Zara's six pieces; other brands get a few of them, and only in categories they carry
-      c._mine = brName === 'Zara' || (brCounts[BR_CATS.indexOf(c._cat)] > 0 && hash(nm + brName) % 3 !== 0);
+      c._mine = true; // demo: every brand shows a full grid
     });
-    var brPick = read('outlet-brand-cat', ''); write('outlet-brand-cat', ''); if (BR_CATS.indexOf(brPick) === -1 || !brCounts[BR_CATS.indexOf(brPick)]) brPick = '';
+    var brPick = read('outlet-brand-cat', ''); write('outlet-brand-cat', ''); if (BR_CATS.indexOf(brPick) === -1) brPick = '';
     var brPaint = function () {
       var q = brIn ? brIn.value.trim() : '', shown = 0;
       brCards.forEach(function (c) { var on = c._mine && !c._sold && (!brPick || c._cat === brPick) && (!q || brNameOf(c).indexOf(q) !== -1); c.style.display = on ? '' : 'none'; if (on) shown++; });
-      brTiles.forEach(function (t) { var on = t.getAttribute('data-brand-cat') === brPick; t.setAttribute('aria-pressed', on ? 'true' : 'false'); t.style.background = on ? '#FFF4EC' : '#F7F3F0'; t.style.boxShadow = on ? 'inset 0 0 0 2px #C2410C' : 'none'; });
+      brTiles.forEach(function (t) { var on = t.getAttribute('data-brand-cat') === brPick; t.setAttribute('aria-pressed', on ? 'true' : 'false'); t.style.background = on ? '#1C1917' : '#F7F3F0'; t.style.color = on ? '#FFFFFF' : '#1C1917'; t.style.fontWeight = on ? '700' : '500';
+        if (on && t.parentNode.scrollWidth > t.parentNode.clientWidth) { var nv = t.parentNode; nv.scrollLeft += t.getBoundingClientRect().left - nv.getBoundingClientRect().left - (nv.clientWidth - t.offsetWidth) / 2; } });
       var hd = screen.querySelector('[data-brand-head]'), ct = screen.querySelector('[data-brand-count]');
       if (hd) hd.textContent = brPick ? brPick + ' من ' + brName : 'كل قطع ' + brName;
-      if (ct) { var n = brPick ? brCounts[BR_CATS.indexOf(brPick)] : brAll; ct.textContent = n + ' قطعة'; }
+      if (ct) { var n = brPick || q ? shown : brAll; ct.textContent = n + ' قطعة'; }
       var em = screen.querySelector('[data-brand-empty]');
       if (!shown && !em) brGrid.insertAdjacentHTML('afterend', '<p data-brand-empty style="margin: 24px 0; text-align: center; font-size: 14px; line-height: 22px; color: #6B635D">' + (q ? 'لا توجد نتائج لـ«' + esc(q) + '» في ' + brName + '.' : 'لا توجد قطع ' + (brPick || '') + ' من ' + brName + ' حاليًا.') + '</p>');
       else if (em) { if (shown) em.remove(); else em.textContent = q ? 'لا توجد نتائج لـ«' + q + '» في ' + brName + '.' : 'لا توجد قطع ' + (brPick || '') + ' من ' + brName + ' حاليًا.'; }
@@ -2544,7 +2561,6 @@
       var t = e.target.closest('[data-brand-cat]'); if (!t || t.closest('.proto-sheet-wrap')) return;
       e.preventDefault(); e.stopPropagation();
       var c = t.getAttribute('data-brand-cat'); brPick = brPick === c ? '' : c; brPaint();
-      var hd = screen.querySelector('[data-brand-head]'); if (hd && brPick) hd.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, true);
     if (brIn) brIn.addEventListener('input', brPaint);
   }
