@@ -247,7 +247,9 @@
   }
   // demo brand and «أصلي / هاي كوبي» per piece (the seller sets both when listing)
   function brandOf(n) { return ['Zara', 'Mango', 'H&M', 'Massimo Dutti', 'Nike', 'Adidas', 'Michael Kors', 'Coach'][hash(n + 'b') % 8]; }
-  function authOf(n) { return hash(n + 'a') % 4 === 0 ? 'هاي كوبي' : 'أصلي'; }
+  var AUTH_TYPES = ['أصلي', 'درجة أولى', 'هاي كواليتي', 'تقليد'];
+  function authOf(n) { return ['أصلي', 'أصلي', 'درجة أولى', 'هاي كواليتي', 'تقليد'][hash(n + 'a') % 5]; }
+  function authNorm(a) { return a === 'هاي كوبي' ? 'هاي كواليتي' : a === 'أصلية' ? 'أصلي' : AUTH_TYPES.indexOf(a) !== -1 ? a : 'أصلي'; }
   function openProduct(card) { write('outlet-product', productInfo(card)); location.href = 'product.html'; }
   // product info without a card (favourites seed, old saves)
   function infoFor(src, name, alt, priceNum, sellerIdx, st) {
@@ -497,7 +499,7 @@
       label.textContent = ''; label.appendChild(svg);
       label.appendChild(document.createTextNode(st.min === 0 && st.max >= 600 ? 'كل الأسعار' : st.min + ' – ' + (st.max >= 600 ? '600+' : st.max)));
       var n = gridCards.filter(function (c) { return matches(c, st); }).length;
-      w.querySelector('[data-act="apply"]').textContent = n ? 'عرض ' + n + (n === 1 ? ' قطعة' : n === 2 ? ' قطعتين' : ' قطع') : 'لا توجد نتائج';
+      w.querySelector('[data-act="apply"]').textContent = n ? (n === 1 ? 'عرض قطعة واحدة' : n === 2 ? 'عرض قطعتين' : 'عرض ' + n + (n <= 10 ? ' قطع' : ' قطعة')) : 'لا توجد نتائج';
     }
     ['min', 'max'].forEach(function (k) {
       wrap.querySelector('[data-price="' + k + '"]').addEventListener('input', function (e) {
@@ -522,6 +524,8 @@
       set('off', function (el) { if (p.off) el.textContent = p.off; else el.remove(); });
       set('size', function (el) { el.textContent = p.size; });
       set('cond', function (el) { el.textContent = p.cond; });
+      set('brand', function (el) { el.textContent = p.brand || brandOf(p.name); });
+      set('auth', function (el) { el.textContent = p.auth ? authNorm(p.auth) : authOf(p.name); });
       set('cat', function (el) { el.textContent = p.cat || catOfName(p.name); });
       set('uses', function (el) { el.textContent = usesLabel(p.uses != null ? p.uses : usesOf(p.name)); });
       set('city', function (el) { el.textContent = p.seller[2]; });
@@ -842,7 +846,7 @@
     handover: { label: 'بانتظار التسليم', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'الاتفاق على التسليم', sub: 'يُحدَّد المكان والوقت في محادثة الطلب. بعد أن يسجّل البائع تسليم القطعة، سيظهر تأكيد الاستلام هنا.' },
     handed: { label: 'بانتظار تأكيد الاستلام', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'سجّل البائع تسليم القطعة', sub: 'إذا وصلت القطعة مطابقة للوصف، يكتمل الطلب بتأكيد الاستلام. وإذا كانت هناك مشكلة، الإبلاغ متاح من هنا.' },
     completed: { label: 'مكتمل', bg: '#ECF6EF', fg: '#1F7A4D', card: '#ECF6EF', title: 'الطلب اكتمل', sub: 'أصبحت مستحقات البائع متاحة في محفظته، وتقييم البائع متاح الآن.' },
-    refunded: { label: 'مسترد', bg: '#F2F2F2', fg: '#6B635D', card: '#ECF6EF', title: 'المبلغ رجع لمحفظتك', sub: 'كان القرار لصالحك، فتم إلغاء الطلب وتسجيل المبلغ في محفظتك.' },
+    refunded: { label: 'مسترد', bg: '#F2F2F2', fg: '#6B635D', card: '#ECF6EF', title: 'المبلغ رجع لمحفظتك', sub: 'كان القرار لصالحك، فرجعت القطعة للبائع واتسجل المبلغ في محفظتك.' },
     disputed: { label: 'محل نزاع', bg: '#FDEBDD', fg: '#9A3412', card: '#FFF4EC', title: 'بلاغك قيد المراجعة', sub: 'يراجع فريق outlet البلاغ. لن يكتمل الطلب تلقائيًا والمبلغ محجوز حتى صدور القرار.' },
     cancelled: { label: 'ملغى', bg: '#F2F2F2', fg: '#6B635D', card: '#F7F3F093', title: 'تم إلغاء الطلب', sub: 'المبلغ المدفوع رجع للمحفظة.' }
   };
@@ -875,10 +879,12 @@
         items: [{ src: 'assets/pants.jpg', alt: 'بنطلون واسع بيج', name: 'بنطلون بيج', size: 'M', cond: 'كالجديدة', priceNum: 85 }],
         seller: SELLERS[3], method: 'direct', addr: '', addrLine: '', sub: 85, fee: 9, delivery: 0, total: 94, pay: 'Apple Pay',
         times: { paid: '28 أكتوبر · 9:10 م', handover: '29 أكتوبر · 5:30 م', completed: '29 أكتوبر · 7:02 م' } },
-      { no: 'OUT-24502', date: '20 أكتوبر 2026', status: 'cancelled',
+      { no: 'OUT-24502', date: '20 أكتوبر 2026', status: 'disputed', prevStatus: 'arrived',
         items: [{ src: 'assets/bag.jpg', alt: 'شنطة يد جلد بلون بني فاتح', name: 'شنطة جلد كلاسيكية', size: 'مقاس واحد', cond: 'ممتازة', priceNum: 320 }],
         seller: SELLERS[2], method: 'courier', addr: 'البيت', addrLine: ADDRS[0].line, sub: 320, fee: 9, delivery: 25, total: 354, pay: 'بطاقة ائتمانية',
-        times: { paid: '20 أكتوبر · 2:45 م', cancelled: '20 أكتوبر · 4:10 م' } }
+        times: { paid: '20 أكتوبر · 2:45 م', preparing: '20 أكتوبر · 6:10 م', shipping: '21 أكتوبر · 11:00 ص', arrived: '22 أكتوبر · 1:30 م', disputed: '22 أكتوبر · 5:05 م' },
+        dispute: { ref: 'DSP-0944', reason: 'mismatch', text: 'لون الشنطة أغمق بكثير من الصور', shots: ['assets/bag.jpg'], date: '22 أكتوبر · 5:05 م', reviewed: '23 أكتوبر · 10:40 ص', decision: 'buyer', decided: '23 أكتوبر · 3:20 م', stage: 'refunded', returned: '25 أكتوبر', refunded: '26 أكتوبر',
+          verdict: 'راجعنا الصور والمحادثة، ولون القطعة مختلف بوضوح عن الإعلان، لذلك تم قبول البلاغ.' } }
     ];
     write('outlet-demo-orders-v3', d);
     return d;
@@ -1089,7 +1095,7 @@
       var dark = 'flex: 1.3; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700';
       var bar = screen.querySelector('[data-od-bar]'), btn = function (act, label, style) { return '<button type="button" data-act="' + act + '" style="' + style + '">' + label + '</button>'; };
       bar.style.display = 'flex';
-      bar.innerHTML = st === 'preparing' ? btn('cancel', 'إلغاء الطلب', light) + btn('chat', 'تواصل مع البائع', dark)
+      bar.innerHTML = st === 'preparing' ? btn('chat', 'تواصل مع البائع', dark.replace('flex: 1.3', 'flex: 1'))
         : st === 'shipping' ? btn('report', 'الإبلاغ عن مشكلة', light) + btn('chat', 'تواصل مع البائع', dark)
         : st === 'disputed' ? btn('dispute', 'تفاصيل البلاغ', light) + btn('chat', 'تواصل مع البائع', dark)
         : st === 'handover' ? btn('chat', 'تواصل مع البائع', dark.replace('flex: 1.3', 'flex: 1'))
@@ -1275,7 +1281,7 @@
         ['day', '29 أكتوبر'], ['them', 'أنا وصلت عند المدخل.', '4:58 م'], ['me', 'استلمت، شكرًا!', '5:30 م'],
         ['sys', 'تم تأكيد الاستلام واكتمل الطلب'], ['them', 'شكرًا، أتمنى البنطلون يعجبك.', '7:05 م']] },
       'OUT-24502': { unread: 0, msgs: [['day', '20 أكتوبر'], ['sys', 'تم الدفع وفُتحت المحادثة'], ['safe'],
-        ['me', 'أهلًا، هل الشنطة ما زالت متاحة؟', '2:50 م'], ['sys', 'تم إلغاء الطلب، ورجع المبلغ للمحفظة'], ['them', 'عذرًا، تم إلغاء الطلب.', '4:15 م']] }
+        ['me', 'أهلًا، هل الشنطة ما زالت متاحة؟', '2:50 م'], ['sys', 'قرار البلاغ لصالح المشتري، ورجع المبلغ للمحفظة'], ['them', 'آسفين على اللي حصل، وتم استرجاع المبلغ.', '4:15 م']] }
     };
     write('outlet-chats-v1', c);
     return c;
@@ -1441,7 +1447,7 @@
         { type: 'earn', amt: 331, ref: 'OUT-24588', date: '2 نوفمبر', month: 'نوفمبر 2026' },
         { type: 'wd', amt: -300, ref: 'WD-0198', date: '27 أكتوبر', month: 'أكتوبر 2026', status: 'مكتمل' },
         { type: 'earn', amt: 255, ref: 'OUT-24420', date: '25 أكتوبر', month: 'أكتوبر 2026' },
-        { type: 'refund', amt: 354, ref: 'OUT-24502', date: '20 أكتوبر', month: 'أكتوبر 2026', reason: 'إلغاء الطلب قبل الشحن' }
+        { type: 'refund', amt: 354, ref: 'OUT-24502', date: '20 أكتوبر', month: 'أكتوبر 2026', reason: 'قرار البلاغ لصالحك' }
       ],
       wd: [
         { ref: 'WD-0201', date: '4 نوفمبر · 11:15 ص', amount: 150, fee: 5, status: 'مرفوض', reason: 'اسم صاحب الحساب غير مطابق لاسم الآيبان في البنك' },
@@ -1864,7 +1870,7 @@
   }
   function products() {
     return read('outlet-products', null) || [
-      { id: 1, src: 'assets/dress-terracotta.jpg', alt: 'فستان تيراكوتا', name: 'فستان تيراكوتا ميدي', price: 190, disc: 38, st: 'منشور', sub: 'ظاهر للمشترين من 3 نوفمبر' },
+      { id: 1, src: 'assets/dress-terracotta.jpg', alt: 'فستان تيراكوتا', name: 'فستان تيراكوتا ميدي', price: 190, st: 'منشور', sub: 'ظاهر للمشترين من 3 نوفمبر' },
       { id: 2, src: 'assets/shirt.jpg', alt: 'قميص كتان سماوي', name: 'قميص كتان سماوي', price: 95, st: 'قيد المراجعة', sub: 'فريق outlet يراجعه، ولم يظهر للمشترين بعد' },
       { id: 3, src: 'assets/dress-ivory.jpg', alt: 'فستان عاجي طويل', name: 'فستان عاجي طويل', price: 220, st: 'مرفوض', sub: 'سبب الرفض: الصور غير واضحة، يُفضّل تصوير القطعة في ضوء النهار' },
       { id: 4, src: 'assets/dress-black.jpg', alt: 'فستان أسود', name: 'فستان أسود كلاسيك', price: 210, st: 'مخفي', sub: 'غير ظاهر للمشترين، ويمكن إعادة إظهاره بدون مراجعة' },
@@ -1999,7 +2005,7 @@
       vals[0].innerHTML = riyal(10, 11) + ioSum; vals[1].innerHTML = riyal(10, 11) + '−' + (ioSum - io.net); vals[2].innerHTML = riyal(12, 13) + io.net;
       earn.lastElementChild.textContent = st === 'completed' ? 'أُضيفت إلى رصيدك المتاح.' : st === 'cancelled' ? 'تم إلغاء الطلب، فلا توجد أرباح.' : 'معلّقة حتى يكتمل الطلب، ثم تُضاف إلى رصيدك المتاح.';
       var canCancel = (st === 'preparing' || st === 'handover') && !io.cancelReq && !io.cancelDecision && !io.sellerDelivered;
-      q2('[data-io-cancel]').style.display = canCancel ? 'block' : 'none';
+      var ioCancel = q2('[data-io-cancel]'); if (ioCancel) ioCancel.style.display = 'none'; // no cancellation on outlet
       var bar = q2('[data-io-chat]').parentNode;
       bar.innerHTML = (st === 'handover' && !io.sellerDelivered && !io.cancelReq)
         ? '<a href="#chat" data-io-chat style="flex: 1; ' + light + '">محادثة المشتري</a><button type="button" data-io-delivered style="flex: 1.3; ' + dark + '">تم التسليم</button>'
@@ -2054,7 +2060,8 @@
     var EDIT = page === 'edit-product.html', editId = read('outlet-edit-id', 0), editP = EDIT ? products().filter(function (x) { return x.id === editId; })[0] : null;
     if (EDIT && !editP) { location.replace('my-products.html'); return; }
     var $a = function (s) { return screen.querySelector(s); }, $$a = function (s) { return [].slice.call(screen.querySelectorAll(s)); };
-    var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلي', nobrand: false, disc: false };
+    var st = { cat: '', size: '', color: '', cond: '', auth: 'أصلي', nobrand: false, disc: false, brand: '' };
+    var bPick0 = $a('[data-ap-brand-pick][aria-pressed="true"]'); if (bPick0 && !EDIT) st.brand = bPick0.getAttribute('data-ap-brand-pick');
     var dOn = $a('[data-ap-disc-on="1"]'), amtIn = $a('[data-ap-disc-amt]');
     if (dOn) st.disc = dOn.getAttribute('aria-checked') === 'true';
     // demo build: a new product starts from the board's filled example; edit mode fills from the product below
@@ -2078,7 +2085,9 @@
       $$a('[data-ap-size]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-size') === st.size); });
       $$a('[data-ap-color]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-color') === st.color); });
       $$a('[data-ap-cond]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-cond') === st.cond); });
-      $$a('[data-ap-auth]').forEach(function (b) { var on = b.getAttribute('data-ap-auth') === st.auth; b.setAttribute('aria-checked', on ? 'true' : 'false'); b.style.background = on ? '#FFFFFF' : 'transparent'; b.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none'; b.style.fontWeight = on ? '700' : '500'; b.style.color = on ? '#1C1917' : '#6B635D'; });
+      $$a('[data-ap-auth]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-auth') === st.auth); });
+      $$a('[data-ap-brand-pick]').forEach(function (b) { chipPaint(b, b.getAttribute('data-ap-brand-pick') === st.brand); });
+      var bOther = $a('[data-ap-brand-other]'); if (bOther) bOther.style.display = st.brand === 'أخرى' ? 'flex' : 'none';
       // brand: «ماركة» shows the name field, «بدون ماركة» hides it
       $$a('[data-ap-hasbrand], [data-ap-nobrand]').forEach(function (b) { var on = b.hasAttribute('data-ap-nobrand') === st.nobrand; b.setAttribute('aria-checked', on ? 'true' : 'false'); b.style.background = on ? '#FFFFFF' : 'transparent'; b.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none'; b.style.fontWeight = on ? '700' : '500'; b.style.color = on ? '#1C1917' : '#6B635D'; });
       var bBox = $a('[data-ap-brand-box]'); if (bBox) bBox.style.display = st.nobrand ? 'none' : 'flex';
@@ -2105,9 +2114,10 @@
       st.cat = guessCat; st.size = editP.size || (ONE_SIZE[guessCat] ? 'مقاس واحد' : 'M');
       var guessCol = ['أسود', 'أبيض', 'بيج', 'بني', 'تيراكوتا', 'وردي', 'أخضر', 'أزرق'].filter(function (c) { return (editP.color || editP.name).indexOf(c) !== -1; })[0];
       st.color = editP.color && !guessCol ? 'آخر' : (guessCol || (/عاجي|أبيض/.test(editP.name) ? 'أبيض' : 'أسود'));
-      st.cond = editP.cond || 'ممتازة'; st.auth = editP.auth === 'تقليد' || editP.auth === 'هاي كوبي' ? 'هاي كوبي' : 'أصلي'; st.disc = !!discOf(editP); if (amtIn) amtIn.value = discOf(editP) || '';
+      st.cond = editP.cond || 'ممتازة'; st.auth = authNorm(editP.auth); st.disc = !!discOf(editP); if (amtIn) amtIn.value = discOf(editP) || '';
       nameIn.value = editP.name; priceIn.value = editP.price; usesIn.value = editP.uses != null ? editP.uses : 2; descIn.value = editP.desc || '';
-      if (editP.brand === 'بدون ماركة' || !editP.brand) st.nobrand = !editP.brand ? false : true; brandIn.value = editP.brand && editP.brand !== 'بدون ماركة' ? editP.brand : '';
+      if (editP.brand === 'بدون ماركة' || !editP.brand) st.nobrand = !editP.brand ? false : true; brandIn.value = '';
+      if (editP.brand && editP.brand !== 'بدون ماركة') { if ($a('[data-ap-brand-pick="' + editP.brand + '"]')) st.brand = editP.brand; else { st.brand = 'أخرى'; brandIn.value = editP.brand; } }
       if (!editP.brand) { st.nobrand = true; }
       $a('[data-ap-desc-count]').textContent = descIn.value.length + ' / 500';
       if (editP.city) $a('[data-ap-city-value]').textContent = editP.city;
@@ -2123,7 +2133,7 @@
     if (st.size === 'آخر') openSizeOther(customSize, false);
     var clearErr = function (k) { var f = $a('[data-ap-field="' + k + '"]'), e = f && f.querySelector('[data-ap-err]'); if (e) e.remove(); };
     screen.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-ap-cat], [data-ap-size], [data-ap-color], [data-ap-cond], [data-ap-auth], [data-ap-disc-on], [data-ap-hasbrand], [data-ap-nobrand], [data-ap-dec], [data-ap-inc], [data-ap-city], [data-ap-add], [data-ap-remove], [data-ap-submit], [data-ap-rules]');
+      var b = e.target.closest('[data-ap-cat], [data-ap-size], [data-ap-color], [data-ap-cond], [data-ap-auth], [data-ap-disc-on], [data-ap-hasbrand], [data-ap-nobrand], [data-ap-brand-pick], [data-ap-dec], [data-ap-inc], [data-ap-city], [data-ap-add], [data-ap-remove], [data-ap-submit], [data-ap-rules]');
       if (!b || b.closest('.proto-sheet-wrap')) return;
       e.preventDefault(); e.stopPropagation();
       if (b.hasAttribute('data-ap-cat')) { var c = b.getAttribute('data-ap-cat'); if (c !== st.cat) { st.cat = c; st.size = ONE_SIZE[c] ? 'مقاس واحد' : ''; renderSizes(); closeSizeOther(); } clearErr('cat'); }
@@ -2137,7 +2147,8 @@
       else if (b.hasAttribute('data-ap-auth')) st.auth = b.getAttribute('data-ap-auth');
       else if (b.hasAttribute('data-ap-disc-on')) { st.disc = b.getAttribute('data-ap-disc-on') === '1'; clearErr('disc'); if (st.disc && amtIn && !amtIn.value) setTimeout(function () { amtIn.focus(); }, 0); }
       else if (b.hasAttribute('data-ap-nobrand')) { st.nobrand = true; clearErr('brand'); }
-      else if (b.hasAttribute('data-ap-hasbrand')) { st.nobrand = false; clearErr('brand'); setTimeout(function () { brandIn.focus(); }, 0); }
+      else if (b.hasAttribute('data-ap-hasbrand')) { st.nobrand = false; clearErr('brand'); }
+      else if (b.hasAttribute('data-ap-brand-pick')) { st.brand = b.getAttribute('data-ap-brand-pick'); clearErr('brand'); if (st.brand === 'أخرى') setTimeout(function () { brandIn.focus(); }, 0); }
       else if (b.hasAttribute('data-ap-dec') || b.hasAttribute('data-ap-inc')) { if (usesIn.disabled) return; var n = (parseInt(usesIn.value, 10) || 0) + (b.hasAttribute('data-ap-inc') ? 1 : -1); usesIn.value = Math.max(0, Math.min(99, n)); }
       else if (b.hasAttribute('data-ap-city')) { pickSheet('المدينة', CITIES.map(function (x) { return x[0]; }), $a('[data-ap-city-value]').textContent, function (v) { $a('[data-ap-city-value]').textContent = v; }); }
       else if (b.hasAttribute('data-ap-rules')) { write('outlet-policy', 'prohibited'); location.href = 'policy.html'; return; }
@@ -2188,7 +2199,8 @@
       if (!st.cat) return fail('cat', 'التصنيف مطلوب');
       if (!size && !ONE_SIZE[st.cat]) return fail('size', st.size === 'آخر' ? 'اكتب المقاس' : 'المقاس مطلوب');
       if (!color) return fail('color', 'اللون مطلوب');
-      if (!st.nobrand && !brandIn.value.trim()) return fail('brand', 'اكتب اسم الماركة، أو اختار «بدون ماركة»');
+      if (!st.nobrand && !st.brand) return fail('brand', 'اختار الماركة، أو «بدون ماركة»');
+      if (!st.nobrand && st.brand === 'أخرى' && !brandIn.value.trim()) return fail('brand', 'اكتب اسم الماركة');
       if (!st.cond) return fail('cond', 'حالة المنتج مطلوبة');
       if (isNaN(uses) || uses < 0) return fail('uses', 'عدد مرات الاستخدام مطلوب');
       if (price <= 0) return fail('price', 'يلزم إدخال سعر صحيح');
@@ -2198,7 +2210,7 @@
       var PRL = products(), id = editP ? editP.id : Date.now();
       if (editP) PRL = PRL.filter(function (x) { return x.id !== editP.id; });
       PRL.unshift({ id: id, src: tiles()[0].querySelector('img').src, alt: name, name: name, price: price, disc: st.disc ? amt : 0, st: 'قيد المراجعة', sub: 'تم إرساله للمراجعة الآن، ولم يظهر للمشترين بعد',
-        cat: st.cat, size: size || st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : brandIn.value.trim(), cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
+        cat: st.cat, size: size || st.size, color: color, brand: st.nobrand ? 'بدون ماركة' : st.brand === 'أخرى' ? brandIn.value.trim() : st.brand, cond: st.cond, uses: uses, auth: st.auth, city: $a('[data-ap-city-value]').textContent, desc: descIn.value.trim() });
       write('outlet-products', PRL); write('outlet-ap-last', id);
       if (editP) { write('outlet-flash', 'تم حفظ التعديل وعاد المنتج للمراجعة'); location.replace('my-products.html'); return; }
       location.replace('add-product-sent.html');
@@ -2600,10 +2612,10 @@
         var ok = ofCat === 'الكل' || catOfName(ofName(c)) === ofCat;
         c._filtered = !ok; c.classList.toggle('proto-hide', !ok); if (ok) shown++;
       });
-      var ofWord = ofDeals ? 'عروض' : 'مختارات';
-      if (ofCount) ofCount.textContent = shown ? (shown === 1 ? 'قطعة واحدة' : shown === 2 ? 'قطعتين' : shown + ' قطع') + (ofDeals ? ' عليها خصم' : '') : 'لا توجد ' + ofWord + ' الآن';
+      var ofWord = ofDeals ? 'قطع جديدة' : 'مختارات';
+      if (ofCount) ofCount.textContent = shown ? (shown === 1 ? 'قطعة واحدة' : shown === 2 ? 'قطعتين' : shown + ' قطع')  : 'لا توجد ' + ofWord + ' الآن';
       ofEmpty.style.display = shown ? 'none' : 'flex';
-      ofEmpty.innerHTML = '<b style="font-size: 17px; line-height: 24px">لا توجد ' + ofWord + ' ' + (ofCat === 'الكل' ? 'الآن' : 'في ' + ofCat + ' الآن') + '</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">' + (ofDeals ? 'تظهر هنا القطع اللي خفّض البائعين سعرها.' : 'نضيف هنا قطعًا جديدة على حسب تصفحك ومفضلتك.') + '</span>';
+      ofEmpty.innerHTML = '<b style="font-size: 17px; line-height: 24px">لا توجد ' + ofWord + ' ' + (ofCat === 'الكل' ? 'الآن' : 'في ' + ofCat + ' الآن') + '</b><span style="font-size: 14px; line-height: 22px; color: #6B635D">' + (ofDeals ? 'تظهر هنا آخر القطع اللي نزلت على outlet.' : 'نضيف هنا قطعًا جديدة على حسب تصفحك ومفضلتك.') + '</span>';
     };
     ofPaint();
     screen.addEventListener('click', function (e) {
@@ -2656,7 +2668,7 @@
         : st === 'غير متوفر' ? ['غير متوفر حاليًا', 'المنتج ظاهر للمشترين بعلامة «غير متوفر»، ولا يمكن شراؤه أو إضافته للسلة. يمكن إتاحته مرة أخرى دون مراجعة.', '']
         : ['تم البيع', orderNo ? (activeOrder ? 'تم بيع القطعة في الطلب <span style="direction: ltr; display: inline-block">' + orderNo + '</span>، والطلب ما زال جاريًا. لا يمكن تعديل المنتج أو إخفاؤه حتى يكتمل الطلب.' : 'تم بيع القطعة في الطلب <span style="direction: ltr; display: inline-block">' + orderNo + '</span>، والطلب اكتمل.') : 'تم بيع القطعة.', ''];
       var net = Math.round(finalPrice(pd) * 0.85 * 10) / 10;
-      var rows = [['التصنيف', d.cat], ['المقاس', d.size], ['اللون', d.color], ['الماركة', d.brand], ['حالة المنتج', d.cond], ['مرات الاستخدام', d.uses != null ? usesTxt(d.uses) : ''], ['أصلي أو هاي كوبي', d.auth === 'تقليد' || d.auth === 'هاي كوبي' ? 'هاي كوبي' : 'أصلي'], ['مدينة الاستلام', d.city || profile().city]].filter(function (r) { return r[1]; });
+      var rows = [['التصنيف', d.cat], ['المقاس', d.size], ['اللون', d.color], ['الماركة', d.brand], ['حالة المنتج', d.cond], ['مرات الاستخدام', d.uses != null ? usesTxt(d.uses) : ''], ['نوع المنتج', authNorm(d.auth)], ['مدينة الاستلام', d.city || profile().city]].filter(function (r) { return r[1]; });
       var tile = 'width: 36px; height: 36px; flex: none; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #C2410C';
       var statT = function (path, n, l) { return '<div style="padding: 12px; border-radius: 16px; background: #F7F3F093; display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="' + tile + '"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></span><span style="display: flex; flex-direction: column"><b style="font-size: 16px; line-height: 22px">' + n + '</b><span style="font-size: 12px; line-height: 16px; color: #6B635D">' + l + '</span></span></div>'; };
       pdBody.innerHTML =
