@@ -183,6 +183,8 @@
   }
   function toggleFav(key, info) {
     var on = !favs[key];
+    // an unavailable piece can't be added to favourites
+    if (on && info && (info.unavail || isUnavail(info.name))) { toast('القطعة غير متوفرة، فمش ممكن تضيفها للمفضلة'); return false; }
     if (on) favs[key] = info || 1; else delete favs[key];
     write('outlet-favs', favs);
     toast(on ? 'تمت الإضافة للمفضلة' : 'تمت الإزالة من المفضلة');
@@ -209,6 +211,7 @@
         [].forEach.call(im.parentElement.querySelectorAll('span'), function (s) { if (/^خصم/.test(s.textContent.trim())) s.remove(); });
         im.insertAdjacentHTML('afterend', '<span data-unavail-badge style="position: absolute; top: 8px; right: 8px; height: 22px; padding: 0 8px; border-radius: 999px; background: #4A4440; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center">غير متوفر</span>');
       }
+      var fv = cd.querySelector('button[aria-label="إضافة للمفضلة"], button[aria-label="إزالة من المفضلة"]'); if (fv) { fv.disabled = true; fv.style.opacity = '0.4'; fv.style.cursor = 'not-allowed'; fv.setAttribute('aria-label', 'غير متوفر، لا يمكن إضافته للمفضلة'); }
       btn.disabled = true; btn.style.background = '#E7DED6'; btn.style.cursor = 'not-allowed'; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 18V6"></path></svg>';
     });
   }
@@ -259,7 +262,7 @@
       desc: (alt || name) + '. قطعة مستعملة بحالة ' + cond + '، نظيفة وبدون عيوب ظاهرة، والمقاس ' + size + '.' };
   }
   if (read('outlet-favs', null) === null) {
-    [infoFor('assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر بتصميم لف', 145, 0), infoFor('assets/dress-pink.jpg', 'فستان شيفون وردي', 'فستان شيفون وردي', 160, 0), infoFor('assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320, 2),
+    [infoFor('assets/dress-green.jpg', 'فستان لف أخضر', 'فستان كتان أخضر بتصميم لف', 145, 0), infoFor('assets/dress-pleated.jpg', 'فستان بليسيه طويل', 'فستان شيفون وردي بليسيه بأكمام طويلة', 210, 0), infoFor('assets/bag.jpg', 'شنطة جلد كلاسيكية', 'شنطة يد جلد بلون بني فاتح', 320, 2),
      infoFor('assets/trench.jpg', 'معطف ترنش كلاسيكي', 'معطف ترنش بيج', 520, 1, 'تم البيع'), infoFor('assets/shirt.jpg', 'قميص أزرق', 'قميص أزرق', 60, 2, 'غير متاح الآن')].forEach(function (p) { favs[p.src] = p; });
     write('outlet-favs', favs);
   }
@@ -2460,9 +2463,10 @@
     if (unP && (unP.unavail || isUnavail(unP.name))) {
       var unAdd = screen.querySelector('[data-act="add"]'), unBuy = screen.querySelector('[data-act="buy"]'), unImg = screen.querySelector('[data-p="img"]');
       if (unAdd) unAdd.remove();
+      var unFav = screen.querySelector('[data-p="fav"]'); if (unFav) { unFav.disabled = true; unFav.style.opacity = '0.45'; unFav.style.cursor = 'not-allowed'; unFav.setAttribute('aria-label', 'غير متوفر، لا يمكن إضافته للمفضلة'); }
       if (unBuy) { unBuy.removeAttribute('data-act'); unBuy.disabled = true; unBuy.textContent = 'غير متوفر'; unBuy.style.background = '#F2F2F2'; unBuy.style.color = '#8E857F'; unBuy.style.cursor = 'not-allowed'; }
       if (unImg) { unImg.style.opacity = '0.45'; unImg.insertAdjacentHTML('afterend', '<span data-p="unavail" style="position: absolute; left: 50%; bottom: 52px; transform: translateX(-50%); height: 34px; padding: 0 16px; border-radius: 999px; background: #4A4440; color: #FFFFFF; font-size: 14px; font-weight: 700; display: flex; align-items: center; white-space: nowrap">غير متوفر حاليًا</span>'); }
-      [].forEach.call(screen.querySelectorAll('p'), function (el) { if (/قطعة واحدة متاحة/.test(el.textContent)) { el.style.cssText = 'margin: 0; padding: 12px 14px; border-radius: 16px; background: #F2F2F2; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 18px; color: #4A4440'; el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10ZM12 8v5M11.995 16h.009"></path></svg>القطعة غير متوفرة حاليًا، ولا يمكن شراؤها الآن. يمكن إضافتها للمفضلة.'; } });
+      [].forEach.call(screen.querySelectorAll('p'), function (el) { if (/قطعة واحدة متاحة/.test(el.textContent)) { el.style.cssText = 'margin: 0; padding: 12px 14px; border-radius: 16px; background: #F2F2F2; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 18px; color: #4A4440'; el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10ZM12 8v5M11.995 16h.009"></path></svg>القطعة غير متوفرة حاليًا، فلا يمكن شراؤها أو إضافتها للمفضلة.'; } });
     }
   }
   if (page === 'index.html' || page === 'category.html' || page === 'search.html' || page === 'offers.html' || page === 'featured.html') {
