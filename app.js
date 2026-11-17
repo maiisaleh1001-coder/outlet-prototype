@@ -250,7 +250,7 @@
   }
   // demo brand and «أصلي / هاي كوبي» per piece (the seller sets both when listing)
   function brandOf(n) { return ['Zara', 'Mango', 'H&M', 'Massimo Dutti', 'Nike', 'Adidas', 'Michael Kors', 'Coach'][hash(n + 'b') % 8]; }
-  var AUTH_TYPES = ['أصلي', 'درجة أولى', 'هاي كواليتي', 'تقليد'];
+  var AUTH_TYPES = ['أصلي', 'هاي كواليتي', 'درجة أولى', 'تقليد'];
   function authOf(n) { return ['أصلي', 'أصلي', 'درجة أولى', 'هاي كواليتي', 'تقليد'][hash(n + 'a') % 5]; }
   function authNorm(a) { return a === 'هاي كوبي' ? 'هاي كواليتي' : a === 'أصلية' ? 'أصلي' : AUTH_TYPES.indexOf(a) !== -1 ? a : 'أصلي'; }
   function openProduct(card) { write('outlet-product', productInfo(card)); location.href = 'product.html'; }
