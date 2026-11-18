@@ -1855,7 +1855,7 @@
   var ST_SUB = { 'منشور': 'ظاهر للمشترين', 'غير متوفر': 'يظهر للمشترين بعلامة «غير متوفر» ولا يمكن شراؤه', 'مخفي': 'غير ظاهر للمشترين، ويمكن إعادة إظهاره بدون مراجعة' };
   var ST_TOAST = { 'منشور': 'المنتج منشور وظاهر للمشترين', 'غير متوفر': 'المنتج يظهر الآن كغير متوفر', 'مخفي': 'تم إخفاء المنتج' };
   function statusSheet(p, onSave) {
-    var opts = [['منشور', 'ظاهر للمشترين ويمكن شراؤه'], ['غير متوفر', 'يظهر للمشترين بعلامة «غير متوفر»، ولا يمكن شراؤه أو إضافته للسلة'], ['مخفي', 'لا يظهر للمشترين نهائيًا، ويبقى عندك في «منتجاتي»']];
+    var opts = [['منشور', 'ظاهر للمشترين ويمكن شراؤه'], ['غير متوفر', 'يظهر للمشترين بعلامة «غير متوفر»، ولا يمكن شراؤه أو إضافته للسلة'], ['مخفي', 'لا يظهر للمشترين نهائيًا، ويبقى عندك في «مبيعاتي»']];
     var pick = p.st;
     var dot = function (on) { return '<span aria-hidden="true" data-dot style="width: 22px; height: 22px; flex: none; box-sizing: border-box; border-radius: 999px; border: 2px solid ' + (on ? '#C2410C' : '#C9BFB7') + '; display: flex; align-items: center; justify-content: center">' + (on ? '<span style="width: 10px; height: 10px; border-radius: 999px; background: #C2410C"></span>' : '') + '</span>'; };
     mountSheet('<section role="dialog" aria-modal="true" aria-label="حالة المنتج" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
