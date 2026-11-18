@@ -2547,11 +2547,27 @@
     }
   }
   if (page === 'index.html' || page === 'category.html' || page === 'search.html' || page === 'offers.html' || page === 'featured.html') {
+    // home: a sold piece is swapped for another piece that is still available, so a row never runs empty
+    var onPage = {}, swapPool = [];
+    [].forEach.call(screen.querySelectorAll('span[style*="ellipsis"]'), function (x) { onPage[x.textContent.trim()] = 1; });
+    if (page === 'index.html') Object.keys(CAT_ITEMS).forEach(function (k) { CAT_ITEMS[k].forEach(function (it) { if (!isSold(it[0]) && !isUnavail(it[2]) && !swapPool.some(function (x) { return x[2] === it[2]; })) swapPool.push(it); }); });
+    swapPool.sort(function (a, b) { return (onPage[a[2]] ? 1 : 0) - (onPage[b[2]] ? 1 : 0); }); // pieces not shown anywhere on the page first
+    var swapIn = function (card, row) {
+      var im = card.querySelector('img'), nm = card.querySelector('span[style*="ellipsis"]'), pr = card.querySelector('span[style*="font-size: 16px"]');
+      if (!im || !nm || !pr) return false;
+      var inRow = {}; [].forEach.call(row.querySelectorAll('span[style*="ellipsis"]'), function (x) { inRow[x.textContent.trim()] = 1; });
+      var k = -1; swapPool.some(function (x, i) { if (!inRow[x[2]]) { k = i; return true; } return false; });
+      if (k === -1) return false;
+      var it = swapPool.splice(k, 1)[0];
+      im.setAttribute('src', it[0]); im.alt = it[1]; nm.textContent = it[2];
+      pr.innerHTML = (pr.querySelector('svg') ? pr.querySelector('svg').outerHTML : '') + it[3];
+      return true;
+    };
     [].forEach.call(screen.querySelectorAll('img'), function (im) {
       if (!isSold(im.getAttribute('src'))) return;
       var card = im.closest('div[style*="border-radius: 18px"]');
       while (card && card.parentElement && card.parentElement !== screen) { var ps = getComputedStyle(card.parentElement); if (ps.display === 'grid' || /auto|scroll/.test(ps.overflowX)) break; card = card.parentElement; }
-      if (card && card.parentElement !== screen) card.style.display = 'none';
+      if (card && card.parentElement !== screen && !(page === 'index.html' && swapIn(card, card.parentElement))) card.style.display = 'none';
     });
     var gg = page === 'category.html' && screen.querySelector('div[style*="grid-template-columns: repeat(2"]');
     var ggN = gg ? [].filter.call(gg.children, function (c) { return c.style.display !== 'none'; }).length : 0, ggC = gg && screen.querySelector('h1') && screen.querySelector('h1').nextElementSibling;
