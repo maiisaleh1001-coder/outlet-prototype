@@ -154,6 +154,17 @@
     btn.innerHTML = '<span style="display: inline-flex; align-items: center; justify-content: center; gap: 8px">' + ICON_TICK + label + '</span>';
     btn.style.borderColor = '#C2410C'; btn.style.background = '#FFF4EC'; btn.style.color = '#C2410C';
   }
+  // once the piece is in the cart the button becomes «الذهاب إلى السلة» and opens the cart
+  var ICON_GO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.57 5.93 3.5 12l6.07 6.07M20.5 12H3.67"></path></svg>';
+  function paintGoCart(btn) {
+    if (!btn) return;
+    btn.setAttribute('data-act', 'go-cart');
+    btn.innerHTML = '<span style="display: inline-flex; align-items: center; justify-content: center; gap: 8px">الذهاب إلى السلة' + ICON_GO + '</span>';
+    btn.style.borderColor = '#C2410C'; btn.style.background = '#FFF4EC'; btn.style.color = '#C2410C';
+  }
+  // «الشراء الآن» buys this one piece only: checkout and payment read it instead of the cart, and the cart is left as it was
+  var buyNow = read('outlet-buynow', null);
+  function orderCart() { return buyNow ? [buyNow] : cart; }
   // adds p; when the cart belongs to another seller, asks first. then() replaces the toast; added() runs whenever the piece ends up in the cart.
   function addToCart(p, then, added) {
     if (p && (p.unavail || isUnavail(p.name))) { toast('القطعة غير متوفرة حاليًا'); return; }
@@ -601,7 +612,7 @@
         setTimeout(function () { flipping = false; }, 240);
       }, 200);
     };
-    if (inCart(p || PAGE_DEFAULT)) paintAddedBtn(screen.querySelector('[data-act="add"]'), 'في السلة');
+    if (inCart(p || PAGE_DEFAULT)) paintGoCart(screen.querySelector('[data-act="add"]'));
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('[data-pager], [data-act], [data-p="fav"], [data-p="seller-link"]');
       if (!b || b.closest('.proto-sheet-wrap')) return; // sheets opened over the page handle their own buttons
@@ -614,8 +625,13 @@
         d.style.webkitLineClamp = open ? '3' : 'unset'; d.style.display = open ? '-webkit-box' : 'block';
         b.textContent = open ? 'قراءة المزيد' : 'عرض أقل';
       }
-      else if (b.getAttribute('data-act') === 'add') { addToCart(p || PAGE_DEFAULT, null, function () { paintAddedBtn(b, 'تمت الإضافة'); }); }
-      else if (b.getAttribute('data-act') === 'buy') { addToCart(p || PAGE_DEFAULT, function () { location.href = 'cart.html'; }); }
+      else if (b.getAttribute('data-act') === 'add') { addToCart(p || PAGE_DEFAULT, null, function () { paintAddedBtn(b, 'تمت الإضافة'); setTimeout(function () { paintGoCart(b); }, 1500); }); }
+      else if (b.getAttribute('data-act') === 'go-cart') { location.href = 'cart.html'; }
+      else if (b.getAttribute('data-act') === 'buy') {
+        var bp = p || PAGE_DEFAULT;
+        if (bp.unavail || isUnavail(bp.name)) { toast('القطعة غير متوفرة حاليًا'); return; }
+        write('outlet-buynow', cartItem(bp)); location.href = 'checkout.html';
+      }
     }, true);
   }
 
@@ -664,7 +680,7 @@
       e.preventDefault(); e.stopPropagation();
       if (b.getAttribute('data-act') === 'remove') {
         cart.splice(parseInt(b.getAttribute('data-i'), 10), 1); saveCart(); paintCart(false); renderCart(); toast('تمت إزالتها من السلة');
-      } else if (b.getAttribute('data-act') === 'checkout') { location.href = 'checkout.html'; }
+      } else if (b.getAttribute('data-act') === 'checkout') { write('outlet-buynow', null); location.href = 'checkout.html'; }
       else { write('outlet-seller-view', cart.length ? cart[0].seller[0] : 'خزانة لمى'); location.href = 'seller.html'; }
     }, true);
   }
@@ -680,7 +696,7 @@
   function orderSums() {
     var c = read('outlet-checkout', { addr: Math.max(0, ADDRS.findIndex(function (x) { return x.def; })), method: 'courier' }), a = ADDRS[c.addr] || ADDRS[0];
     var method = a.fee === null ? 'direct' : c.method;
-    var sub = cart.reduce(function (s, it) { return s + it.priceNum; }, 0);
+    var sub = orderCart().reduce(function (s, it) { return s + it.priceNum; }, 0);
     var delivery = method === 'courier' ? a.fee : 0;
     return { addr: a, method: method, sub: sub, fee: SERVICE_FEE, delivery: delivery, total: sub + SERVICE_FEE + delivery };
   }
@@ -688,7 +704,8 @@
 
   // ---------- checkout ----------
   if (page === 'checkout.html') {
-    if (!cart.length) { location.replace('cart.html'); return; }
+    var ocs = orderCart(); // the order's pieces (one piece for «الشراء الآن»)
+    if (!ocs.length) { location.replace('cart.html'); return; }
     var co = read('outlet-checkout', { addr: 0, method: 'courier' });
     var thumbsBox = screen.querySelector('[data-co-thumbs]');
     var thumbTpl = thumbsBox.firstElementChild.cloneNode(true);
@@ -712,10 +729,10 @@
       screen.querySelector('[data-courier-fee]').innerHTML = a.fee === null ? 'غير متاح' : riyal(11, 12) + a.fee;
       screen.querySelector('[data-courier-off]').style.display = a.fee === null ? 'block' : 'none';
       thumbsBox.innerHTML = '';
-      cart.forEach(function (it) { var t = thumbTpl.cloneNode(true), im = t.querySelector('img'); im.src = it.src; im.alt = it.name; var nm = t.querySelector('[data-co-name]'), pc = t.querySelector('[data-co-price]'); if (nm) nm.textContent = it.name; if (pc) pc.innerHTML = riyal(10, 11) + it.priceNum; thumbsBox.appendChild(t); });
+      ocs.forEach(function (it) { var t = thumbTpl.cloneNode(true), im = t.querySelector('img'); im.src = it.src; im.alt = it.name; var nm = t.querySelector('[data-co-name]'), pc = t.querySelector('[data-co-price]'); if (nm) nm.textContent = it.name; if (pc) pc.innerHTML = riyal(10, 11) + it.priceNum; thumbsBox.appendChild(t); });
       var countEl = screen.querySelector('[data-co-count]');
-      countEl.innerHTML = pieces(cart.length) + ' من <b data-co-seller style="color: #1C1917">' + esc(cart[0].seller[0]) + '</b>';
-      var sub = cart.reduce(function (s, it) { return s + it.priceNum; }, 0), fee = 9;
+      countEl.innerHTML = pieces(ocs.length) + ' من <b data-co-seller style="color: #1C1917">' + esc(ocs[0].seller[0]) + '</b>';
+      var sub = ocs.reduce(function (s, it) { return s + it.priceNum; }, 0), fee = 9;
       var delivery = co.method === 'courier' ? a.fee : 0;
       screen.querySelector('[data-sum-subtotal]').innerHTML = riyal(10, 11) + sub;
       screen.querySelector('[data-sum-fee]').innerHTML = riyal(10, 11) + fee;
@@ -752,11 +769,12 @@
 
   // ---------- payment ----------
   if (page === 'payment.html') {
-    if (!cart.length) { location.replace('cart.html'); return; }
+    var oc = orderCart();
+    if (!oc.length) { location.replace('cart.html'); return; }
     var sums = orderSums();
     var payMethod = read('outlet-pay-method', 'mada');
     screen.querySelectorAll('[data-pay-amount]').forEach(function (el, k) { el.innerHTML = (k === 0 ? riyal(22, 24) : riyal(12, 13)) + sums.total; });
-    screen.querySelector('[data-pay-summary]').textContent = pieces(cart.length) + ' من ' + cart[0].seller[0] + ' · ' + (sums.method === 'courier' ? 'توصيل بالمندوب' : 'تسليم مباشر مع البائع');
+    screen.querySelector('[data-pay-summary]').textContent = pieces(oc.length) + ' من ' + oc[0].seller[0] + ' · ' + (sums.method === 'courier' ? 'توصيل بالمندوب' : 'تسليم مباشر مع البائع');
     var form = screen.querySelector('[data-card-form]');
     var paintPay = function () {
       screen.querySelectorAll('[data-pay]').forEach(function (b) {
@@ -799,11 +817,13 @@
         var s = orderSums();
         var now = new Date();
         var order = { no: 'OUT-' + (24818 + Math.floor(Math.random() * 180)), date: fmtDate(now), status: s.method === 'direct' ? 'handover' : 'preparing',
-          items: cart.slice(), seller: cart[0].seller, method: s.method, addr: s.addr.label, addrLine: s.addr.line,
+          items: oc.slice(), seller: oc[0].seller, method: s.method, addr: s.addr.label, addrLine: s.addr.line,
           sub: s.sub, fee: s.fee, delivery: s.delivery, total: s.total, pay: PAY_LABEL[payMethod], times: { paid: fmtDate(now, true) }, paidAt: now.getTime() };
         write('outlet-last-order', order);
         var orders = read('outlet-orders', []); orders.unshift(order); write('outlet-orders', orders);
-        cart = []; saveCart();
+        if (buyNow) { cart = cart.filter(function (c) { return !(c.src === buyNow.src && c.name === buyNow.name); }); write('outlet-buynow', null); }
+        else cart = [];
+        saveCart();
         location.href = 'payment-success.html';
       });
     }, true);
