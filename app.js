@@ -1014,7 +1014,6 @@
       var newIn = SELL_ORDERS.filter(function (x) { return x.status === 'preparing' || x.status === 'handover'; }).length, iv = screen.querySelector('[data-row="incoming"] [data-row-value]'); if (iv) iv.textContent = newIn ? newIn + ' نشطة' : '';
       var val = function (k) { return screen.querySelector('[data-row="' + k + '"] [data-row-value]'); };
       val('orders').textContent = current ? current + ' حالية' : orders.length + ' طلبات';
-      val('favorites').textContent = Object.keys(favs).length || '';
       val('wallet').innerHTML = riyal(10, 11) + walletBal;
       var pend = orders.filter(function (x) { return effSt(x) === 'arrived' || effSt(x) === 'handed'; })[0];
       var card = screen.querySelector('[data-acc-pending]');
@@ -1429,7 +1428,7 @@
   var WBANKS = { '05': 'مصرف الإنماء', '10': 'البنك الأهلي السعودي', '15': 'بنك البلاد', '20': 'بنك الرياض', '30': 'البنك العربي الوطني', '45': 'البنك السعودي الأول', '55': 'البنك السعودي الفرنسي', '60': 'بنك الجزيرة', '65': 'البنك السعودي للاستثمار', '80': 'مصرف الراجحي' };
   var TXT = {
     pend: ['أرباح بيع معلقة', '#FEF6E7', '#9A5800', 'coin'], earn: ['أرباح بيع متاحة', '#ECF6EF', '#1F7A4D', 'coin'], refund: ['استرداد مبلغ', '#ECF6EF', '#1F7A4D', 'refund'],
-    wd: ['طلب سحب', '#F7F3F0', '#1C1917', 'bank'], release: ['إعادة مبلغ محجوز', '#ECF6EF', '#1F7A4D', 'back']
+    wd: ['طلب سحب', '#F7F3F0', '#1C1917', 'bank'], release: ['رجوع مبلغ السحب', '#ECF6EF', '#1F7A4D', 'back']
   };
   var TXI = {
     coin: '<path d="M8.67 14.33c0 1.29.99 2.33 2.22 2.33h2.51c1.07 0 1.94-.91 1.94-2.03 0-1.22-.53-1.65-1.32-1.93l-4.03-1.4c-.79-.28-1.32-.71-1.32-1.93 0-1.12.87-2.03 1.94-2.03h2.51c1.23 0 2.22 1.04 2.22 2.33M12 6v12"></path><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10Z"></path>',
@@ -1444,6 +1443,8 @@
     var w = read('outlet-wallet-v1', null);
     if (w) {
       var settled = false;
+      // older demo ledgers: the «إعادة مبلغ محجوز» row is now sale earnings
+      w.tx.forEach(function (t) { if (t.type === 'release' && t.ref === 'WD-0201') { t.type = 'earn'; t.ref = 'OUT-24765'; settled = true; } });
       w.tx.forEach(function (t) { if (t.settleAt && Date.now() >= t.settleAt) { delete t.status; delete t.settleAt; settled = true; } });
       if (settled) write('outlet-wallet-v1', w);
       return w;
@@ -1452,7 +1453,7 @@
       tx: [
         { type: 'pend', amt: 102, ref: 'OUT-24833', date: '8 نوفمبر', month: 'نوفمبر 2026', status: 'معلّق' },
         { type: 'pend', amt: 108, ref: 'OUT-24810', date: '7 نوفمبر', month: 'نوفمبر 2026', status: 'معلّق' },
-        { type: 'release', amt: 150, ref: 'WD-0201', date: '5 نوفمبر', month: 'نوفمبر 2026' },
+        { type: 'earn', amt: 150, ref: 'OUT-24765', date: '5 نوفمبر', month: 'نوفمبر 2026' },
         { type: 'wd', amt: -150, ref: 'WD-0201', date: '4 نوفمبر', month: 'نوفمبر 2026', status: 'مرفوض' },
         { type: 'earn', amt: 331, ref: 'OUT-24588', date: '2 نوفمبر', month: 'نوفمبر 2026' },
         { type: 'wd', amt: -300, ref: 'WD-0198', date: '27 أكتوبر', month: 'أكتوبر 2026', status: 'مكتمل' },
@@ -1473,7 +1474,8 @@
     w.tx.forEach(function (t) {
       // a refund is available only after the financial settlement (demo: a minute after it is recorded)
       if (t.type === 'refund' && t.settleAt) { if (Date.now() >= t.settleAt) { t.status = undefined; delete t.settleAt; } else t.status = 'قيد التسوية'; }
-      if (t.type === 'pend' || t.status === 'قيد التسوية') s.held += t.amt; else s.free += t.amt; if (t.type === 'wd' && t.status === 'قيد التنفيذ') s.reserved -= t.amt;
+      if (t.type === 'wd' && t.status === 'مرفوض') return;
+      if (t.type === 'pend' || t.status === 'قيد التسوية') s.held += t.amt; else s.free += t.amt;
     });
     return s;
   }
@@ -1490,7 +1492,7 @@
   function txSheet(t) {
     var T = TXT[t.type];
     var NOTE = { pend: 'صافي أرباحك بعد عمولة المنصة. يُحرَّر للرصيد المتاح عند اكتمال الطلب.', earn: 'صافي أرباحك بعد عمولة المنصة، والطلب اكتمل.', refund: (t.reason ? 'السبب: ' + t.reason + '. ' : '') + (t.status === 'قيد التسوية' ? 'يصبح المبلغ متاحًا للسحب بعد انتهاء التسوية المالية.' : 'تم تسجيل المبلغ في رصيدك المتاح.'),
-      wd: t.status === 'مرفوض' ? 'تم رفض الطلب، ورجع المبلغ لرصيدك في عملية «إعادة مبلغ محجوز».' : t.status === 'مكتمل' ? 'تم تحويله إلى حسابك البنكي.' : 'المبلغ محجوز حتى ينفّذ فريق outlet التحويل.', release: 'رجع لرصيدك المتاح بعد رفض طلب السحب.' };
+      wd: t.status === 'مرفوض' ? 'تم رفض الطلب، والمبلغ لسه في رصيدك المتاح.' : t.status === 'مكتمل' ? 'تم تحويله إلى حسابك البنكي.' : 'تم خصم المبلغ من رصيدك، ويصلك بعد ما ينفّذ فريق outlet التحويل.', release: 'رجع لرصيدك المتاح بعد رفض طلب السحب.' };
     var r = function (l, v) { return '<div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 22px"><span style="color: #6B635D">' + l + '</span>' + v + '</div>'; };
     mountSheet('<section role="dialog" aria-modal="true" aria-label="تفاصيل العملية" style="box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(28,25,23,0.18); display: flex; flex-direction: column; color: #1C1917">' + GRAB +
       '<div style="padding: 0 18px 28px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><span style="font-size: 14px; font-weight: 700; color: #6B635D">' + T[0] + '</span>' + money((t.amt > 0 ? '+' : '−') + Math.abs(t.amt), 30) + '</div>' +
@@ -1503,7 +1505,6 @@
     var ws = walletSums(), ww = wallet();
     screen.querySelector('[data-w-free]').innerHTML = money(ws.free, 34);
     screen.querySelector('[data-w-held]').innerHTML = money(ws.held, 16);
-    screen.querySelector('[data-w-reserved]').innerHTML = money(ws.reserved, 16);
     var wv = function (k) { return screen.querySelector('[data-row="' + k + '"] [data-row-value]'); };
     var pendingWd = ww.wd.filter(function (x) { return x.status === 'قيد التنفيذ'; }).length;
     wv('withdrawals').textContent = pendingWd ? pendingWd + ' قيد التنفيذ' : ww.wd.length;
@@ -1576,7 +1577,7 @@
       if (v <= 0) { toast('يجب أن يكون المبلغ أكبر من صفر'); return; }
       if (v > dsum.free) { toast('المبلغ أكبر من رصيدك المتاح (' + dsum.free + ' ريال)'); return; }
       if (v <= WD_FEE) { toast('يجب أن يكون المبلغ أكبر من رسوم التحويل'); return; }
-      askSheet('تأكيد طلب السحب؟', 'سنحجز ' + v + ' ريال من رصيدك، وسيصل ' + (v - WD_FEE) + ' ريال على ' + bi.bank + ' •••• ' + bi.last4 + ' بعد أن ينفّذ فريق outlet التحويل.', 'تأكيد', 'رجوع', function () {
+      askSheet('تأكيد طلب السحب؟', 'سيُخصم ' + v + ' ريال من رصيدك، وسيصل ' + (v - WD_FEE) + ' ريال على ' + bi.bank + ' •••• ' + bi.last4 + ' بعد أن ينفّذ فريق outlet التحويل.', 'تأكيد', 'رجوع', function () {
         var fresh = wallet(); if (v > walletSums(fresh).free) { toast('تغيّر رصيدك، يُرجى مراجعة المبلغ'); return; }
         var n = 207 + fresh.wd.filter(function (x) { return x.mine; }).length, ref = 'WD-0' + n, stamp = fmtDate(new Date(), true);
         fresh.wd.unshift({ ref: ref, date: 'اليوم · ' + stamp.split(' · ')[1], amount: v, fee: WD_FEE, status: 'قيد التنفيذ', mine: true, bank: bankInfo().bank, last4: bankInfo().last4 });
@@ -1593,14 +1594,14 @@
     var cardH = function (w) {
       var rej = w.status === 'مرفوض';
       var extra = w.status === 'مكتمل' ? '<span style="font-size: 12px; line-height: 18px; color: #6B635D">اتحوّل ' + w.done + ' · وصلك ' + (w.amount - w.fee) + ' ريال</span>'
-        : w.status === 'قيد التنفيذ' ? '<span style="font-size: 12px; line-height: 18px; color: #6B635D">المبلغ محجوز حتى ينفّذ فريق outlet التحويل. سيصلك ' + (w.amount - w.fee) + ' ريال بعد خصم رسوم التحويل.</span>' : '';
+        : w.status === 'قيد التنفيذ' ? '<span style="font-size: 12px; line-height: 18px; color: #6B635D">يصلك ' + (w.amount - w.fee) + ' ريال بعد خصم رسوم التحويل.</span>' : '';
       return '<div data-wd="' + w.ref + '" style="padding: 14px; border-radius: 18px; background: ' + (rej ? '#FEF3F2' : w.ref === fresh ? '#FFF4EC' : '#F7F3F093') + '; display: flex; flex-direction: column; gap: 10px">' +
         '<div style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 15px; line-height: 22px; direction: ltr; text-align: right">' + w.ref + '</b><span style="font-size: 12px; line-height: 16px; color: #8E857F">' + w.date + '</span></span>' + money(w.amount, 18) + '</div>' +
         '<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: #6B635D">' + wpill(w.status) + '<span style="direction: ltr">' + (w.bank || lbi.bank) + ' •••• ' + (w.last4 || lbi.last4) + '</span></div>' + extra +
         (rej ? '<div style="padding: 10px 12px; border-radius: 12px; background: #FFFFFF; font-size: 12px; line-height: 18px; color: #B42318"><b>سبب الرفض:</b> ' + esc(w.reason) + '. المبلغ رجع لرصيدك المتاح.' + (/بنك|آيبان|حساب/.test(w.reason || '') ? ' <a href="bank.html" style="color: #B42318; font-weight: 700">تعديل البيانات البنكية</a>' : '') + '</div>' : '') + '</div>';
     };
     screen.querySelector('[data-wd-list]').innerHTML = lw.wd.length ? lw.wd.map(cardH).join('') : '<p style="margin: 30px 0; text-align: center; font-size: 14px; color: #6B635D">لا توجد طلبات سحب سابقة.</p>';
-    if (fresh) { toast('تم إرسال طلب السحب ' + fresh + '، وتم حجز المبلغ'); write('outlet-wd-new', ''); }
+    if (fresh) { toast('تم إرسال طلب السحب ' + fresh + '، وتم خصم المبلغ من رصيدك'); write('outlet-wd-new', ''); }
   }
 
   // ---------- U-36..U-40 profile, addresses, bank, policies, settings ----------
@@ -1823,7 +1824,7 @@
     var dOrders = allOrders(), act = dOrders.filter(function (x) { return CURRENT[effSt(x)] && effSt(x) !== 'disputed'; }).length
       + SELL_ORDERS.filter(function (x) { return CURRENT[x.status] && x.status !== 'disputed'; }).length;
     var disp = dOrders.filter(function (x) { return effSt(x) === 'disputed'; }).length;
-    var dws = walletSums(), bal = dws.free + dws.held + dws.reserved;
+    var dws = walletSums(), bal = dws.free + dws.held;
     var reqs = [].slice.call(screen.querySelectorAll('[data-del-req]'));
     var OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z"></path><path d="M7.75 12l2.83 2.83 5.67-5.66"></path></svg>';
     var setReq = function (li, ok, sub) {
@@ -1832,7 +1833,7 @@
     };
     setReq(reqs[0], !act, act ? 'عندك ' + act + (act === 1 ? ' طلب لم يكتمل بعد.' : ' طلبات لم تكتمل بعد.') : 'لا توجد طلبات نشطة.');
     setReq(reqs[1], !disp, disp ? 'يوجد بلاغ ما زال قيد المراجعة.' : 'لا توجد بلاغات مفتوحة.');
-    setReq(reqs[2], !bal, bal ? 'فيه ' + bal + ' ريال في المحفظة (متاح أو معلّق أو محجوز في سحب). يجب سحبه أولًا.' : 'المحفظة فارغة.');
+    setReq(reqs[2], !bal, bal ? 'فيه ' + bal + ' ريال في المحفظة (متاح أو معلّق). يجب سحبه أولًا.' : 'المحفظة فارغة.');
     var blocked = act || disp || bal, pass = screen.querySelector('[data-del-pass]'), btn = screen.querySelector('[data-del-confirm]');
     var paintBtn = function () { var can = !blocked && pass.value.length >= 4; btn.disabled = !can; btn.style.opacity = can ? '1' : '0.4'; };
     pass.addEventListener('input', paintBtn); paintBtn();
