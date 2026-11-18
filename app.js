@@ -843,7 +843,7 @@
     return s;
   }
   var STATUS = {
-    preparing: { label: 'قيد التجهيز', bg: '#F7F3F0', fg: '#6B635D', card: '#F7F3F093', title: 'البائع يجهّز طلبك', sub: 'سنرسل إشعارًا فور استلام المندوب للقطع. الإلغاء متاح حتى بدء الشحن.' },
+    preparing: { label: 'قيد التجهيز', bg: '#F7F3F0', fg: '#6B635D', card: '#F7F3F093', title: 'البائع يجهّز طلبك', sub: 'سنرسل إشعارًا فور استلام المندوب للقطع.' },
     shipping: { label: 'قيد التوصيل', bg: '#FFF4EC', fg: '#C2410C', card: '#FFF4EC', title: 'طلبك في الطريق', sub: 'استلم المندوب القطع من البائع وهو في الطريق إلى عنوانك.' },
     arrived: { label: 'وصل المندوب', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'المندوب سلّم الطلب', sub: 'بعد مراجعة القطع، يكتمل الطلب بتأكيد الاستلام. وإذا كان هناك شيء غير سليم، الإبلاغ متاح من هنا.' },
     handover: { label: 'بانتظار التسليم', bg: '#FEF6E7', fg: '#9A5800', card: '#FEF6E7', title: 'الاتفاق على التسليم', sub: 'يُحدَّد المكان والوقت في محادثة الطلب. بعد أن يسجّل البائع تسليم القطعة، سيظهر تأكيد الاستلام هنا.' },
@@ -1093,7 +1093,6 @@
       screen.querySelector('[data-od-fee]').innerHTML = riyal(10, 11) + (o.fee || 0);
       screen.querySelector('[data-od-delivery]').innerHTML = o.delivery ? riyal(10, 11) + o.delivery : 'مجانًا';
       screen.querySelector('[data-od-total]').innerHTML = riyal(14, 15) + o.total;
-      screen.querySelector('[data-act="chat"]').style.visibility = 'visible';
       var light = 'flex: 1; height: 54px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700';
       var dark = 'flex: 1.3; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700';
       var bar = screen.querySelector('[data-od-bar]'), btn = function (act, label, style) { return '<button type="button" data-act="' + act + '" style="' + style + '">' + label + '</button>'; };
