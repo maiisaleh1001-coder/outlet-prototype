@@ -736,7 +736,7 @@
       var delivery = co.method === 'courier' ? a.fee : 0;
       screen.querySelector('[data-sum-subtotal]').innerHTML = riyal(10, 11) + sub;
       screen.querySelector('[data-sum-fee]').innerHTML = riyal(10, 11) + fee;
-      screen.querySelector('[data-sum-delivery]').innerHTML = delivery ? riyal(10, 11) + delivery : 'مجانًا';
+      var sumDel = screen.querySelector('[data-sum-delivery]'); sumDel.innerHTML = delivery ? riyal(10, 11) + delivery : ''; sumDel.parentElement.style.display = delivery ? '' : 'none'; // direct handover: no delivery row
       screen.querySelectorAll('[data-sum-total]').forEach(function (el, k) { el.innerHTML = (k === 0 ? riyal(14, 15) : riyal(12, 13)) + (sub + fee + delivery); });
     };
     var openAddresses = function (opener) {
@@ -1098,7 +1098,7 @@
       screen.querySelector('[data-od-address]').textContent = o.method === 'courier' ? o.addr + ' · ' + o.addrLine : 'يُحدَّد المكان والوقت في محادثة الطلب';
       screen.querySelector('[data-od-sub]').innerHTML = riyal(10, 11) + (o.sub || o.total);
       screen.querySelector('[data-od-fee]').innerHTML = riyal(10, 11) + (o.fee || 0);
-      screen.querySelector('[data-od-delivery]').innerHTML = o.delivery ? riyal(10, 11) + o.delivery : 'مجانًا';
+      var odDel = screen.querySelector('[data-od-delivery]'); odDel.innerHTML = o.delivery ? riyal(10, 11) + o.delivery : ''; odDel.parentElement.style.display = o.delivery ? '' : 'none';
       screen.querySelector('[data-od-total]').innerHTML = riyal(14, 15) + o.total;
       var light = 'flex: 1; height: 54px; border: 0; border-radius: 999px; background: #F7F3F0; color: #1C1917; font-family: inherit; font-size: 15px; font-weight: 700';
       var dark = 'flex: 1.3; height: 54px; border: 0; border-radius: 999px; background: #1C1917; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700';
