@@ -995,17 +995,6 @@
   }
 
   if (page === 'account.html') {
-    var mode = read('outlet-acc-mode', 'buy');
-    var setMode = function (m) {
-      mode = m; write('outlet-acc-mode', m);
-      screen.querySelectorAll('[data-mode]').forEach(function (t) {
-        var on = t.getAttribute('data-mode') === m;
-        t.setAttribute('aria-selected', on ? 'true' : 'false');
-        t.style.background = on ? '#FFFFFF' : 'transparent'; t.style.boxShadow = on ? '0 2px 8px rgba(28,25,23,0.08)' : 'none';
-        t.style.fontWeight = on ? '700' : '500'; t.style.color = on ? '#1C1917' : '#6B635D';
-      });
-      screen.querySelectorAll('[data-panel]').forEach(function (p) { p.style.display = p.getAttribute('data-panel') === m ? 'flex' : 'none'; });
-    };
     var note = screen.querySelector('[data-acc-note]'); if (note) note.remove();
     var apf = read('outlet-profile', { name: 'لمى الحربي' });
     var hello = screen.querySelector('a[href="edit-profile.html"]');
@@ -1037,15 +1026,14 @@
       screen.querySelector('[data-acc-title]').textContent = STATUS[effSt(pend)].title;
       screen.querySelector('[data-acc-sub]').textContent = pend.status === 'arrived' ? 'باقي ' + (pend.hoursLeft || 24) + ' ساعة، وبعدها يكتمل تلقائيًا' : 'يكتمل التسليم المباشر بتأكيد الاستلام فقط';
     };
-    setMode(mode); renderAcc();
+    renderAcc();
     var SOON = { favorites: 'شاشة المفضلة ما زالت قيد التصميم', addresses: 'شاشة العناوين ما زالت قيد التصميم', wallet: 'شاشة المحفظة ما زالت قيد التصميم', language: 'تغيير اللغة ما زال قيد التصميم', policies: 'الشروط والسياسات ما زالت قيد التصميم',
       withdraw: 'شاشة سحب الأرباح ما زالت قيد التصميم', incoming: 'شاشة الطلبات الواردة ما زالت قيد التصميم', listings: 'شاشة منتجاتي ما زالت قيد التصميم', pickup: 'عنوان الاستلام ما زال قيد التصميم', bank: 'البيانات البنكية ما زالت قيد التصميم',
       logout: 'تسجيل الخروج متاح في النسخة النهائية' };
     screen.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-mode], [data-pending], [data-row], a[href="#edit-profile"], a[href="#notifications"]');
+      var t = e.target.closest('[data-pending], [data-row], a[href="#edit-profile"], a[href="#notifications"]');
       if (!t || !screen.contains(t) || t.closest('.proto-sheet-wrap')) return;
       e.preventDefault(); e.stopPropagation();
-      if (t.hasAttribute('data-mode')) return setMode(t.getAttribute('data-mode'));
       var pa = t.getAttribute('data-pending'), no = screen.querySelector('[data-acc-pending]').getAttribute('data-no');
       if (pa === 'report') { write('outlet-order-view', no); location.href = 'report.html'; return; }
       if (pa === 'confirm') return askSheet('تأكيد الاستلام؟', 'بعد التأكيد يكتمل الطلب وتصبح مستحقات البائع متاحة في محفظته، ولا يمكن فتح نزاع بعدها.', 'نعم، استلمت القطع', 'ليس بعد', function () {
