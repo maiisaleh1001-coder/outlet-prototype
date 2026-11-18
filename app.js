@@ -436,7 +436,7 @@
 
   // ---------- filter + sort (dresses page) ----------
   var filterState = read('outlet-filter', { sort: 'new', sizes: [], cities: [], brands: [], auth: '', min: 0, max: 600 });
-  filterState.cities = filterState.cities || []; filterState.brands = filterState.brands || []; filterState.auth = filterState.auth || '';
+  filterState.cities = filterState.cities || []; filterState.brands = []; // no brand filter (brands have their own page) filterState.auth = filterState.auth || '';
   if (page === 'category.html' && typeof curCat !== 'undefined' && curCat !== 'فساتين') filterState.sizes = [];
   var grid = document.querySelector('.screen div[style*="grid-template-columns: repeat(2"]');
   var gridCards = grid && page === 'category.html' ? [].slice.call(grid.children) : [];
@@ -487,7 +487,7 @@
       paint(w);
     }, opener);
     if (!wrap) return;
-    st.cities = st.cities || []; st.brands = st.brands || []; st.auth = st.auth || '';
+    st.cities = st.cities || []; st.brands = []; st.auth = st.auth || '';
     // sizes follow the category: letters for dresses and clothes, numbers for shoes, none for bags
     var fCat = typeof curCat !== 'undefined' ? curCat : 'فساتين', sizeGroup = wrap.querySelector('[aria-label="المقاس"]');
     if (sizeGroup && ONE_SIZE[fCat]) sizeGroup.style.display = 'none';
