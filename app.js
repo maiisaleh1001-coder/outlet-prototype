@@ -912,6 +912,17 @@
     write('outlet-demo-orders-v3', d);
     return d;
   }
+  // one sale per seller status so «مبيعاتي» shows them all (older sessions get the missing ones added)
+  var SELL_DEMO_MORE = [
+    { no: 'OUT-24851', date: '9 نوفمبر 2026', status: 'shipping', role: 'sell', buyer: 'نوف', method: 'courier', net: 544, times: { paid: '9 نوفمبر · 10:15 ص', preparing: '9 نوفمبر · 10:15 ص', shipping: '10 نوفمبر · 12:30 م' },
+      items: [{ src: 'assets/watch-gold-white.jpg', alt: 'ساعة بحزام جلد أبيض', name: 'ساعة بحزام جلد أبيض', size: 'مقاس واحد', cond: 'ممتازة', priceNum: 640 }] },
+    { no: 'OUT-24846', date: '9 نوفمبر 2026', status: 'arrived', role: 'sell', buyer: 'لينا', method: 'courier', net: 255, hoursLeft: 16, times: { paid: '9 نوفمبر · 8:40 ص', preparing: '9 نوفمبر · 8:40 ص', shipping: '9 نوفمبر · 4:00 م', arrived: '10 نوفمبر · 11:20 ص' },
+      items: [{ src: 'assets/acc-gold-set.jpg', alt: 'طقم إكسسوارات ذهبي', name: 'طقم إكسسوارات ذهبي', size: 'مقاس واحد', cond: 'كالجديدة', priceNum: 300 }] },
+    { no: 'OUT-24829', date: '8 نوفمبر 2026', status: 'handover', sellerDelivered: true, role: 'sell', buyer: 'عبير', method: 'direct', net: 153, times: { paid: '8 نوفمبر · 9:05 ص', delivered: '9 نوفمبر · 6:30 م' },
+      items: [{ src: 'assets/dress-terracotta.jpg', alt: 'فستان تيراكوتا ميدي', name: 'فستان تيراكوتا ميدي', size: 'M', cond: 'ممتازة', priceNum: 180 }] },
+    { no: 'OUT-24795', date: '6 نوفمبر 2026', status: 'disputed', prevStatus: 'arrived', role: 'sell', buyer: 'هيا', method: 'courier', net: 187, times: { paid: '6 نوفمبر · 1:10 م', preparing: '6 نوفمبر · 1:10 م', shipping: '7 نوفمبر · 10:00 ص', arrived: '8 نوفمبر · 2:15 م', disputed: '8 نوفمبر · 7:40 م' },
+      items: [{ src: 'assets/dress-black.jpg', alt: 'فستان أسود', name: 'فستان أسود كلاسيكي', size: 'S', cond: 'جيدة', priceNum: 220 }] }
+  ];
   var SELL_ORDERS = read('outlet-sell-orders', null) || [
     { no: 'OUT-24833', date: '8 نوفمبر 2026', status: 'preparing', role: 'sell', buyer: 'مها', method: 'courier', net: 102, times: { paid: '8 نوفمبر · 12:02 م' },
       items: [{ src: 'assets/sweater.jpg', alt: 'سويتر مخطط', name: 'سويتر مخطط', size: 'M', cond: 'ممتازة', priceNum: 120 }] },
@@ -922,6 +933,9 @@
     { no: 'OUT-24420', date: '21 أكتوبر 2026', status: 'completed', role: 'sell', buyer: 'سلمى', method: 'direct', net: 255, times: { paid: '21 أكتوبر · 7:00 م', delivered: '24 أكتوبر · 5:10 م', completed: '25 أكتوبر · 10:30 ص' },
       items: [{ src: 'assets/dress-polka.jpg', alt: 'فستان منقط', name: 'فستان منقط', size: 'M', cond: 'ممتازة', priceNum: 300 }] }
   ];
+  SELL_DEMO_MORE.forEach(function (d) { if (!SELL_ORDERS.some(function (x) { return x.no === d.no; })) SELL_ORDERS.push(d); });
+  // newest first (by order number), so every status sits in date order
+  SELL_ORDERS.sort(function (a, b) { return parseInt(b.no.replace(/\D/g, ''), 10) - parseInt(a.no.replace(/\D/g, ''), 10); });
   function allOrders() {
     // demo: on a direct-handover order the seller records the handover a minute after payment
     var mine = read('outlet-orders', []), ch = false;
@@ -1947,6 +1961,9 @@
       if (o.cancelReq) return 'طلب الإلغاء قيد مراجعة فريق outlet';
       if (o.status === 'preparing') return 'يلزم تجهيز القطعة، وسيستلمها المندوب من عنوان الاستلام';
       if (o.status === 'handover') return o.sellerDelivered ? 'بانتظار تأكيد المشتري للاستلام' : 'يتم الاتفاق على التسليم في المحادثة، ثم الضغط على «تم التسليم»';
+      if (o.status === 'shipping') return 'المندوب استلم القطعة، وهي في الطريق للمشتري';
+      if (o.status === 'arrived') return 'القطعة وصلت، والطلب يكتمل بتأكيد المشتري أو بعد 24 ساعة';
+      if (o.status === 'disputed') return 'فيه بلاغ على الطلب، وأرباحك معلّقة لحد قرار فريق outlet';
       return '';
     };
     var renderI = function () {
